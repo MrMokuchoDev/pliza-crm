@@ -19,9 +19,12 @@ class DatabaseSeeder extends Seeder
             SalePhaseSeeder::class,
         ]);
 
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@minicrm.test',
-        ]);
+        User::updateOrCreate(
+            ['email' => 'admin@minicrm.test'],
+            [
+                'name' => 'Admin',
+                'password' => bcrypt('password'),
+            ]
+        );
     }
 }
