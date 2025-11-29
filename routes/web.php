@@ -3,6 +3,7 @@
 use App\Http\Controllers\ProfileController;
 use App\Infrastructure\Http\Livewire\Leads\LeadIndex;
 use App\Infrastructure\Http\Livewire\Leads\LeadShow;
+use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
 use Illuminate\Support\Facades\Route;
 
@@ -36,9 +37,7 @@ Route::middleware(['auth'])->group(function () {
     })->name('sites.index');
 
     // Maintenance Panel
-    Route::get('/admin/maintenance', function () {
-        return view('pages.maintenance');
-    })->name('maintenance');
+    Route::get('/admin/maintenance', MaintenancePanel::class)->name('maintenance');
 
     // Profile (de Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
