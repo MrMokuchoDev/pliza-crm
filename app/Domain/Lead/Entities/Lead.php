@@ -7,7 +7,7 @@ namespace App\Domain\Lead\Entities;
 use App\Domain\Lead\ValueObjects\SourceType;
 
 /**
- * Entidad de dominio para leads.
+ * Entidad de dominio para leads (contactos).
  */
 final class Lead
 {
@@ -20,7 +20,6 @@ final class Lead
         public readonly SourceType $sourceType,
         public readonly ?string $sourceSiteId,
         public readonly ?string $sourceUrl,
-        public readonly string $salePhaseId,
         public readonly ?array $metadata,
         public readonly ?\DateTimeImmutable $createdAt = null,
         public readonly ?\DateTimeImmutable $updatedAt = null,
@@ -29,7 +28,6 @@ final class Lead
 
     public static function create(
         string $id,
-        string $salePhaseId,
         ?string $name = null,
         ?string $email = null,
         ?string $phone = null,
@@ -48,7 +46,6 @@ final class Lead
             sourceType: $sourceType,
             sourceSiteId: $sourceSiteId,
             sourceUrl: $sourceUrl,
-            salePhaseId: $salePhaseId,
             metadata: $metadata,
             createdAt: new \DateTimeImmutable(),
             updatedAt: new \DateTimeImmutable(),

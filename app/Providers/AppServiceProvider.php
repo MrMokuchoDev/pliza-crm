@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Infrastructure\Http\Livewire\Deals\DealFormModal;
+use App\Infrastructure\Http\Livewire\Deals\DealIndex;
+use App\Infrastructure\Http\Livewire\Deals\DealKanban;
+use App\Infrastructure\Http\Livewire\Deals\DealShow;
 use App\Infrastructure\Http\Livewire\Leads\LeadFormModal;
 use App\Infrastructure\Http\Livewire\Leads\LeadIndex;
 use App\Infrastructure\Http\Livewire\Leads\LeadShow;
@@ -31,6 +35,10 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.infrastructure.http.livewire.leads.lead-index', LeadIndex::class);
         Livewire::component('app.infrastructure.http.livewire.leads.lead-show', LeadShow::class);
         Livewire::component('lead-form-modal', LeadFormModal::class);
+        Livewire::component('deal-form-modal', DealFormModal::class);
+        Livewire::component('app.infrastructure.http.livewire.deals.deal-index', DealIndex::class);
+        Livewire::component('app.infrastructure.http.livewire.deals.deal-show', DealShow::class);
+        Livewire::component('app.infrastructure.http.livewire.deals.deal-kanban', DealKanban::class);
         Livewire::component('app.infrastructure.http.livewire.maintenance.maintenance-panel', MaintenancePanel::class);
         Livewire::component('app.infrastructure.http.livewire.sites.site-index', SiteIndex::class);
     }

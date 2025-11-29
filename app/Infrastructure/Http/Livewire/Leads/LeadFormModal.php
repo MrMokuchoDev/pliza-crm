@@ -6,7 +6,6 @@ namespace App\Infrastructure\Http\Livewire\Leads;
 
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -24,8 +23,6 @@ class LeadFormModal extends Component
 
     public string $message = '';
 
-    public string $salePhaseId = '';
-
     protected function rules(): array
     {
         return [
@@ -33,21 +30,14 @@ class LeadFormModal extends Component
             'email' => 'nullable|email|max:255',
             'phone' => 'nullable|string|max:50',
             'message' => 'nullable|string|max:5000',
-            'salePhaseId' => 'required|exists:sale_phases,id',
         ];
     }
 
     protected function messages(): array
     {
         return [
-            'salePhaseId.required' => 'La fase de venta es requerida.',
             'email.email' => 'El email debe ser válido.',
         ];
-    }
-
-    public function mount(): void
-    {
-        $this->setDefaultPhase();
     }
 
     #[On('openLeadModal')]
@@ -63,7 +53,6 @@ class LeadFormModal extends Component
                 $this->email = $lead->email ?? '';
                 $this->phone = $lead->phone ?? '';
                 $this->message = $lead->message ?? '';
-                $this->salePhaseId = $lead->sale_phase_id;
             }
         }
 
@@ -80,9 +69,8 @@ class LeadFormModal extends Component
                 'email' => $this->email ?: null,
                 'phone' => $this->phone ?: null,
                 'message' => $this->message ?: null,
-                'sale_phase_id' => $this->salePhaseId,
             ]);
-            $this->dispatch('notify', type: 'success', message: 'Lead actualizado');
+            $this->dispatch('notify', type: 'success', message: 'Contacto actualizado');
         } else {
             LeadModel::create([
                 'name' => $this->name ?: null,
@@ -90,9 +78,8 @@ class LeadFormModal extends Component
                 'phone' => $this->phone ?: null,
                 'message' => $this->message ?: null,
                 'source_type' => SourceType::MANUAL->value,
-                'sale_phase_id' => $this->salePhaseId,
             ]);
-            $this->dispatch('notify', type: 'success', message: 'Lead creado');
+            $this->dispatch('notify', type: 'success', message: 'Contacto creado');
         }
 
         $this->close();
@@ -112,22 +99,11 @@ class LeadFormModal extends Component
         $this->email = '';
         $this->phone = '';
         $this->message = '';
-        $this->setDefaultPhase();
         $this->resetValidation();
-    }
-
-    private function setDefaultPhase(): void
-    {
-        $defaultPhase = SalePhaseModel::where('is_default', true)->first();
-        $this->salePhaseId = $defaultPhase?->id ?? '';
     }
 
     public function render()
     {
-        $phases = SalePhaseModel::orderBy('order')->get();
-
-        return view('livewire.leads.form-modal', [
-            'phases' => $phases,
-        ]);
+        return view('livewire.leads.form-modal');
     }
 }

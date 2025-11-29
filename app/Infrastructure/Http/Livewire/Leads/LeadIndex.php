@@ -6,7 +6,6 @@ namespace App\Infrastructure\Http\Livewire\Leads;
 
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -22,22 +21,14 @@ class LeadIndex extends Component
     // Filters
     public string $search = '';
 
-    public string $filterPhase = '';
-
     public string $filterSource = '';
 
     protected $queryString = [
         'search' => ['except' => ''],
-        'filterPhase' => ['except' => ''],
         'filterSource' => ['except' => ''],
     ];
 
     public function updatingSearch(): void
-    {
-        $this->resetPage();
-    }
-
-    public function updatingFilterPhase(): void
     {
         $this->resetPage();
     }
@@ -57,7 +48,13 @@ class LeadIndex extends Component
         $this->dispatch('openLeadModal', leadId: $id);
     }
 
+    public function openCreateDealModal(string $leadId): void
+    {
+        $this->dispatch('openDealModal', leadId: $leadId);
+    }
+
     #[On('leadSaved')]
+    #[On('dealSaved')]
     public function refreshList(): void
     {
         // La lista se refresca automáticamente
@@ -76,17 +73,8 @@ class LeadIndex extends Component
         }
 
         LeadModel::destroy($this->deletingId);
-        $this->dispatch('notify', type: 'success', message: 'Lead eliminado correctamente');
+        $this->dispatch('notify', type: 'success', message: 'Contacto eliminado correctamente');
         $this->closeDeleteModal();
-    }
-
-    public function updatePhase(string $leadId, string $phaseId): void
-    {
-        LeadModel::where('id', $leadId)->update([
-            'sale_phase_id' => $phaseId,
-            'updated_at' => now(),
-        ]);
-        $this->dispatch('notify', type: 'success', message: 'Fase actualizada');
     }
 
     public function closeDeleteModal(): void
@@ -98,14 +86,13 @@ class LeadIndex extends Component
     public function clearFilters(): void
     {
         $this->search = '';
-        $this->filterPhase = '';
         $this->filterSource = '';
         $this->resetPage();
     }
 
     public function render()
     {
-        $query = LeadModel::with('salePhase')
+        $query = LeadModel::withCount(['deals', 'activeDeals'])
             ->when($this->search, function ($q) {
                 $q->where(function ($sq) {
                     $sq->where('name', 'like', "%{$this->search}%")
@@ -113,28 +100,24 @@ class LeadIndex extends Component
                         ->orWhere('phone', 'like', "%{$this->search}%");
                 });
             })
-            ->when($this->filterPhase, fn ($q) => $q->where('sale_phase_id', $this->filterPhase))
             ->when($this->filterSource, fn ($q) => $q->where('source_type', $this->filterSource))
             ->orderByDesc('created_at');
 
         $leads = $query->paginate(10);
 
-        $phases = SalePhaseModel::orderBy('order')->get();
         $sourceTypes = SourceType::cases();
 
         // Stats
         $totalLeads = LeadModel::count();
-        $leadsByPhase = LeadModel::selectRaw('sale_phase_id, count(*) as count')
-            ->groupBy('sale_phase_id')
-            ->pluck('count', 'sale_phase_id')
-            ->toArray();
+        $leadsWithDeals = LeadModel::has('deals')->count();
+        $leadsWithoutDeals = $totalLeads - $leadsWithDeals;
 
         return view('livewire.leads.index', [
             'leads' => $leads,
-            'phases' => $phases,
             'sourceTypes' => $sourceTypes,
             'totalLeads' => $totalLeads,
-            'leadsByPhase' => $leadsByPhase,
-        ])->layout('components.layouts.app', ['title' => 'Leads']);
+            'leadsWithDeals' => $leadsWithDeals,
+            'leadsWithoutDeals' => $leadsWithoutDeals,
+        ])->layout('components.layouts.app', ['title' => 'Contactos']);
     }
 }

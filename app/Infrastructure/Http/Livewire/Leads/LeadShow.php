@@ -6,7 +6,6 @@ namespace App\Infrastructure\Http\Livewire\Leads;
 
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use App\Infrastructure\Persistence\Eloquent\NoteModel;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -15,8 +14,6 @@ class LeadShow extends Component
     public ?LeadModel $lead = null;
 
     public string $leadId;
-
-    public string $salePhaseId = '';
 
     // Note form
     public string $noteContent = '';
@@ -44,25 +41,17 @@ class LeadShow extends Component
 
     public function loadLead(): void
     {
-        $this->lead = LeadModel::with(['salePhase', 'notes', 'sourceSite'])->find($this->leadId);
-        if ($this->lead) {
-            $this->salePhaseId = $this->lead->sale_phase_id;
-        }
+        $this->lead = LeadModel::with(['notes', 'sourceSite', 'deals.salePhase'])->find($this->leadId);
     }
 
-    public function updatePhase(): void
+    public function openCreateDealModal(): void
     {
-        if (! $this->lead || $this->salePhaseId === $this->lead->sale_phase_id) {
-            return;
-        }
+        $this->dispatch('openDealModal', leadId: $this->leadId);
+    }
 
-        $this->lead->update([
-            'sale_phase_id' => $this->salePhaseId,
-            'updated_at' => now(),
-        ]);
-
-        $this->loadLead();
-        $this->dispatch('notify', type: 'success', message: 'Fase actualizada');
+    public function openEditDealModal(string $dealId): void
+    {
+        $this->dispatch('openDealModal', dealId: $dealId);
     }
 
     public function addNote(): void
@@ -123,6 +112,7 @@ class LeadShow extends Component
     }
 
     #[On('leadSaved')]
+    #[On('dealSaved')]
     public function onLeadSaved(): void
     {
         $this->loadLead();
@@ -137,7 +127,7 @@ class LeadShow extends Component
     {
         if ($this->lead) {
             $this->lead->delete();
-            $this->dispatch('notify', type: 'success', message: 'Lead eliminado');
+            $this->dispatch('notify', type: 'success', message: 'Contacto eliminado');
             $this->redirect(route('leads.index'), navigate: true);
         }
     }
@@ -152,13 +142,10 @@ class LeadShow extends Component
     {
         if (! $this->lead) {
             return view('livewire.leads.not-found')
-                ->layout('components.layouts.app', ['title' => 'Lead no encontrado']);
+                ->layout('components.layouts.app', ['title' => 'Contacto no encontrado']);
         }
 
-        $phases = SalePhaseModel::orderBy('order')->get();
-
-        return view('livewire.leads.show', [
-            'phases' => $phases,
-        ])->layout('components.layouts.app', ['title' => $this->lead->name ?? 'Detalle del Lead']);
+        return view('livewire.leads.show')
+            ->layout('components.layouts.app', ['title' => $this->lead->name ?? 'Detalle del Contacto']);
     }
 }

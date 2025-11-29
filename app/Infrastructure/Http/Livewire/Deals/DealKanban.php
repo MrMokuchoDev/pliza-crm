@@ -1,0 +1,120 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Infrastructure\Http\Livewire\Deals;
+
+use App\Infrastructure\Persistence\Eloquent\DealModel;
+use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
+use Livewire\Attributes\On;
+use Livewire\Component;
+
+class DealKanban extends Component
+{
+    public string $search = '';
+
+    #[On('dealSaved')]
+    public function refreshBoard(): void
+    {
+        // El board se refresca automáticamente
+    }
+
+    public function openCreateModal(?string $leadId = null): void
+    {
+        $this->dispatch('openDealModal', leadId: $leadId);
+    }
+
+    public function openEditModal(string $dealId): void
+    {
+        $this->dispatch('openDealModal', dealId: $dealId);
+    }
+
+    public function moveToPhase(string $dealId, string $phaseId): void
+    {
+        $deal = DealModel::with(['salePhase', 'lead'])->find($dealId);
+        $newPhase = SalePhaseModel::find($phaseId);
+
+        if (! $deal || ! $newPhase) {
+            return;
+        }
+
+        if ($deal->sale_phase_id === $phaseId) {
+            return;
+        }
+
+        // Si el negocio está cerrado y se quiere mover a una fase abierta,
+        // verificar que el contacto no tenga otro negocio abierto
+        if ($deal->salePhase?->is_closed && ! $newPhase->is_closed) {
+            if ($deal->lead && $deal->lead->hasOpenDeal($deal->id)) {
+                $this->dispatch('notify', type: 'error', message: 'Este contacto ya tiene un negocio abierto. Cierra o elimina el otro negocio antes de reabrir este.');
+
+                return;
+            }
+        }
+
+        $updateData = [
+            'sale_phase_id' => $phaseId,
+            'updated_at' => now(),
+        ];
+
+        // Si se mueve a fase cerrada, establecer fecha de cierre
+        if ($newPhase->is_closed && ! $deal->close_date) {
+            $updateData['close_date'] = now();
+        }
+
+        // Si se mueve a fase abierta, limpiar fecha de cierre
+        if (! $newPhase->is_closed) {
+            $updateData['close_date'] = null;
+        }
+
+        $deal->update($updateData);
+
+        $message = $newPhase->is_closed
+            ? ($newPhase->is_won ? 'Negocio marcado como ganado' : 'Negocio marcado como perdido')
+            : "Negocio movido a {$newPhase->name}";
+
+        $this->dispatch('notify', type: 'success', message: $message);
+    }
+
+    public function render()
+    {
+        $openPhases = SalePhaseModel::where('is_closed', false)
+            ->orderBy('order')
+            ->get();
+
+        $closedPhases = SalePhaseModel::where('is_closed', true)
+            ->orderBy('order')
+            ->get();
+
+        $dealsByPhase = [];
+        foreach ($openPhases as $phase) {
+            $query = DealModel::with('lead')
+                ->where('sale_phase_id', $phase->id)
+                ->when($this->search, function ($q) {
+                    $q->where(function ($sq) {
+                        $sq->where('name', 'like', "%{$this->search}%")
+                            ->orWhereHas('lead', function ($lq) {
+                                $lq->where('name', 'like', "%{$this->search}%")
+                                    ->orWhere('email', 'like', "%{$this->search}%")
+                                    ->orWhere('phone', 'like', "%{$this->search}%");
+                            });
+                    });
+                })
+                ->orderByDesc('updated_at')
+                ->get();
+
+            $dealsByPhase[$phase->id] = $query;
+        }
+
+        $totalDeals = DealModel::whereIn('sale_phase_id', $openPhases->pluck('id'))->count();
+        $totalValue = DealModel::whereIn('sale_phase_id', $openPhases->pluck('id'))->sum('value');
+
+        return view('livewire.deals.kanban', [
+            'openPhases' => $openPhases,
+            'closedPhases' => $closedPhases,
+            'dealsByPhase' => $dealsByPhase,
+            'totalDeals' => $totalDeals,
+            'totalValue' => $totalValue,
+        ])->layout('components.layouts.app', ['title' => 'Pipeline']);
+    }
+}

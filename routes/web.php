@@ -1,6 +1,9 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Infrastructure\Http\Livewire\Deals\DealIndex;
+use App\Infrastructure\Http\Livewire\Deals\DealKanban;
+use App\Infrastructure\Http\Livewire\Deals\DealShow;
 use App\Infrastructure\Http\Livewire\Leads\LeadIndex;
 use App\Infrastructure\Http\Livewire\Leads\LeadShow;
 use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
@@ -17,17 +20,17 @@ Route::get('/', function () {
 Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/dashboard', function () {
-        return redirect()->route('leads.index');
+        return redirect()->route('deals.kanban');
     })->name('dashboard');
 
-    // Leads
-    Route::get('/leads', LeadIndex::class)->name('leads.index');
-    Route::get('/leads/{id}', LeadShow::class)->name('leads.show');
+    // Contactos (Leads)
+    Route::get('/contactos', LeadIndex::class)->name('leads.index');
+    Route::get('/contactos/{id}', LeadShow::class)->name('leads.show');
 
-    // Kanban
-    Route::get('/kanban', function () {
-        return view('pages.kanban');
-    })->name('kanban');
+    // Negocios (Deals)
+    Route::get('/negocios', DealIndex::class)->name('deals.index');
+    Route::get('/negocios/{id}', DealShow::class)->name('deals.show');
+    Route::get('/pipeline', DealKanban::class)->name('deals.kanban');
 
     // Sale Phases
     Route::get('/sale-phases', SalePhaseIndex::class)->name('sale-phases.index');
