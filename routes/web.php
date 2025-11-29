@@ -5,6 +5,7 @@ use App\Infrastructure\Http\Livewire\Leads\LeadIndex;
 use App\Infrastructure\Http\Livewire\Leads\LeadShow;
 use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
+use App\Infrastructure\Http\Livewire\Sites\SiteIndex;
 use Illuminate\Support\Facades\Route;
 
 // Ruta pública - redirige a login
@@ -32,9 +33,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sale-phases', SalePhaseIndex::class)->name('sale-phases.index');
 
     // Sites
-    Route::get('/sites', function () {
-        return view('pages.sites.index');
-    })->name('sites.index');
+    Route::get('/sites', SiteIndex::class)->name('sites.index');
 
     // Maintenance Panel
     Route::get('/admin/maintenance', MaintenancePanel::class)->name('maintenance');
