@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Infrastructure\Http\Livewire\Leads\LeadIndex;
+use App\Infrastructure\Http\Livewire\Leads\LeadShow;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
 use Illuminate\Support\Facades\Route;
 
@@ -17,13 +19,8 @@ Route::middleware(['auth'])->group(function () {
     })->name('dashboard');
 
     // Leads
-    Route::get('/leads', function () {
-        return view('pages.leads.index');
-    })->name('leads.index');
-
-    Route::get('/leads/{id}', function ($id) {
-        return view('pages.leads.show', ['id' => $id]);
-    })->name('leads.show');
+    Route::get('/leads', LeadIndex::class)->name('leads.index');
+    Route::get('/leads/{id}', LeadShow::class)->name('leads.show');
 
     // Kanban
     Route::get('/kanban', function () {

@@ -166,7 +166,9 @@
                 </button>
 
                 <!-- Page Title (hidden on mobile, shown on desktop) -->
-                <div class="hidden lg:block"></div>
+                <div class="hidden lg:block">
+                    <h1 class="text-lg font-semibold text-gray-900">{{ $title ?? 'Dashboard' }}</h1>
+                </div>
 
                 <!-- User Menu -->
                 <div class="flex items-center gap-4" x-data="{ open: false }">
@@ -223,7 +225,7 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 p-6">
+            <main class="flex-1 px-6 pt-1 pb-6">
                 {{ $slot }}
             </main>
         </div>
