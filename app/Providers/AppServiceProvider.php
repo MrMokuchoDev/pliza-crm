@@ -7,6 +7,7 @@ use App\Infrastructure\Http\Livewire\Leads\LeadIndex;
 use App\Infrastructure\Http\Livewire\Leads\LeadShow;
 use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
+use App\Infrastructure\Http\Livewire\Sites\SiteIndex;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -31,5 +32,6 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.infrastructure.http.livewire.leads.lead-show', LeadShow::class);
         Livewire::component('lead-form-modal', LeadFormModal::class);
         Livewire::component('app.infrastructure.http.livewire.maintenance.maintenance-panel', MaintenancePanel::class);
+        Livewire::component('app.infrastructure.http.livewire.sites.site-index', SiteIndex::class);
     }
 }
