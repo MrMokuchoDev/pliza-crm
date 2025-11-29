@@ -31,7 +31,6 @@ class LeadModel extends Model
         'source_type',
         'source_site_id',
         'source_url',
-        'sale_phase_id',
         'metadata',
     ];
 
@@ -46,9 +45,16 @@ class LeadModel extends Model
         ];
     }
 
-    public function salePhase(): BelongsTo
+    public function deals(): HasMany
     {
-        return $this->belongsTo(SalePhaseModel::class, 'sale_phase_id');
+        return $this->hasMany(DealModel::class, 'lead_id')->orderByDesc('created_at');
+    }
+
+    public function activeDeals(): HasMany
+    {
+        return $this->hasMany(DealModel::class, 'lead_id')
+            ->whereHas('salePhase', fn ($q) => $q->where('is_closed', false))
+            ->orderByDesc('created_at');
     }
 
     public function sourceSite(): BelongsTo
@@ -61,8 +67,14 @@ class LeadModel extends Model
         return $this->hasMany(NoteModel::class, 'lead_id')->orderByDesc('created_at');
     }
 
-    public function getDaysInPhaseAttribute(): int
+    public function hasOpenDeal(?string $excludeDealId = null): bool
     {
-        return (int) $this->updated_at->diffInDays(now());
+        $query = $this->activeDeals();
+
+        if ($excludeDealId) {
+            $query->where('id', '!=', $excludeDealId);
+        }
+
+        return $query->exists();
     }
 }

@@ -10,7 +10,7 @@
                     <form wire:submit="save">
                         <div class="bg-white px-6 pt-6 pb-4">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">
-                                {{ $leadId ? 'Editar Lead' : 'Nuevo Lead' }}
+                                {{ $leadId ? 'Editar Contacto' : 'Nuevo Contacto' }}
                             </h3>
 
                             <div class="space-y-4">
@@ -20,7 +20,7 @@
                                     <input type="text"
                                            wire:model="name"
                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Nombre del lead">
+                                           placeholder="Nombre del contacto">
                                     @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                 </div>
 
@@ -50,20 +50,8 @@
                                     <textarea wire:model="message"
                                               rows="3"
                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                              placeholder="Informaci&oacute;n adicional sobre el lead..."></textarea>
+                                              placeholder="Informaci&oacute;n adicional sobre el contacto..."></textarea>
                                     @error('message') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                                </div>
-
-                                <!-- Sale Phase -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Fase de Venta</label>
-                                    <select wire:model="salePhaseId"
-                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                        @foreach($phases as $phase)
-                                            <option value="{{ $phase->id }}">{{ $phase->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('salePhaseId') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                 </div>
                             </div>
                         </div>
@@ -76,7 +64,7 @@
                             </button>
                             <button type="submit"
                                     class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
-                                {{ $leadId ? 'Actualizar' : 'Crear Lead' }}
+                                {{ $leadId ? 'Actualizar' : 'Crear Contacto' }}
                             </button>
                         </div>
                     </form>
