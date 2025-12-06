@@ -184,6 +184,17 @@ class DealFormModal extends Component
 
     public function save(): void
     {
+        // Verificar PRIMERO si se quiere cerrar como GANADO sin valor
+        $phase = SalePhaseModel::find($this->salePhaseId);
+        if ($phase?->is_closed && $phase?->is_won) {
+            if (empty($this->value) || ! is_numeric($this->value)) {
+                $this->addError('value', 'El valor del negocio es obligatorio para cerrarlo como ganado.');
+                $this->dispatch('notify', type: 'error', message: 'Debes ingresar el valor del negocio para cerrarlo como ganado.');
+
+                return;
+            }
+        }
+
         $this->validate();
 
         // If creating new lead
@@ -205,8 +216,6 @@ class DealFormModal extends Component
                 'phone' => $this->leadPhone ?: null,
             ]);
         }
-
-        $phase = SalePhaseModel::find($this->salePhaseId);
 
         // Si estamos editando un negocio cerrado y se quiere mover a fase abierta,
         // verificar que el contacto no tenga otro negocio abierto

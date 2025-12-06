@@ -1,6 +1,17 @@
 (function() {
     'use strict';
 
+    // Namespace global para el widget
+    window.MiniCRMWidget = window.MiniCRMWidget || {
+        initialized: false,
+        widgets: [],
+        containers: {},
+        modal: null,
+        currentConfig: null
+    };
+
+    const MCW = window.MiniCRMWidget;
+
     // Obtener el script actual y sus atributos
     const currentScript = document.currentScript;
     if (!currentScript) {
@@ -8,17 +19,21 @@
         return;
     }
 
+    // Generar ID único para esta instancia
+    const widgetId = 'mcw-' + Date.now() + '-' + Math.random().toString(36).substring(2, 11);
+
     // Colores por defecto según tipo
     const typeColors = {
-        whatsapp: '#25D366',  // Verde WhatsApp
-        phone: '#3B82F6',     // Azul
-        contact_form: '#A855F7' // Púrpura
+        whatsapp: '#25D366',
+        phone: '#3B82F6',
+        contact_form: '#A855F7'
     };
 
     const widgetType = currentScript.getAttribute('data-type') || 'whatsapp';
     const customColor = currentScript.getAttribute('data-color');
 
     const config = {
+        id: widgetId,
         siteId: currentScript.getAttribute('data-site-id'),
         type: widgetType,
         phone: currentScript.getAttribute('data-phone') || '',
@@ -34,200 +49,8 @@
         return;
     }
 
-    // Función para obtener estilos de posición
-    const getPositionStyles = (pos) => {
-        const positions = {
-            'bottom-right': 'right: 20px; bottom: 20px;',
-            'bottom-left': 'left: 20px; bottom: 20px;',
-            'top-right': 'right: 20px; top: 20px;',
-            'top-left': 'left: 20px; top: 20px;'
-        };
-        return positions[pos] || positions['bottom-right'];
-    };
-
-    // Estilos CSS
-    const styles = `
-        .mcw-widget-container * {
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-        }
-        .mcw-fab {
-            position: fixed;
-            ${getPositionStyles(config.position)}
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            background: ${config.color};
-            border: none;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s, box-shadow 0.2s;
-            z-index: 99998;
-        }
-        .mcw-fab:hover {
-            transform: scale(1.1);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-        }
-        .mcw-fab svg {
-            width: 28px;
-            height: 28px;
-            fill: white;
-        }
-        .mcw-modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 99999;
-            padding: 20px;
-        }
-        .mcw-modal-overlay.mcw-active {
-            display: flex;
-        }
-        .mcw-modal {
-            background: white;
-            border-radius: 16px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            overflow: hidden;
-            animation: mcw-slideUp 0.3s ease;
-        }
-        @keyframes mcw-slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .mcw-modal-header {
-            background: ${config.color};
-            color: white;
-            padding: 20px;
-            text-align: center;
-        }
-        .mcw-modal-header h3 {
-            margin: 0;
-            font-size: 20px;
-            font-weight: 600;
-        }
-        .mcw-modal-header p {
-            margin: 8px 0 0;
-            font-size: 14px;
-            opacity: 0.9;
-        }
-        .mcw-modal-body {
-            padding: 24px;
-        }
-        .mcw-form-group {
-            margin-bottom: 16px;
-        }
-        .mcw-form-group label {
-            display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
-            margin-bottom: 6px;
-        }
-        .mcw-form-group label span {
-            color: #EF4444;
-        }
-        .mcw-form-group input,
-        .mcw-form-group textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #D1D5DB;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .mcw-form-group input:focus,
-        .mcw-form-group textarea:focus {
-            outline: none;
-            border-color: ${config.color};
-            box-shadow: 0 0 0 3px ${config.color}20;
-        }
-        .mcw-form-group textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
-        .mcw-form-group .mcw-error {
-            color: #EF4444;
-            font-size: 12px;
-            margin-top: 4px;
-            display: none;
-        }
-        .mcw-form-group.mcw-invalid input,
-        .mcw-form-group.mcw-invalid textarea {
-            border-color: #EF4444;
-        }
-        .mcw-form-group.mcw-invalid .mcw-error {
-            display: block;
-        }
-        .mcw-btn-submit {
-            width: 100%;
-            padding: 14px;
-            background: ${config.color};
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: opacity 0.2s;
-        }
-        .mcw-btn-submit:hover {
-            opacity: 0.9;
-        }
-        .mcw-btn-submit:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-        }
-        .mcw-btn-close {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            background: rgba(255,255,255,0.2);
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: background 0.2s;
-        }
-        .mcw-btn-close:hover {
-            background: rgba(255,255,255,0.3);
-        }
-        .mcw-btn-close svg {
-            width: 18px;
-            height: 18px;
-            stroke: white;
-        }
-        .mcw-success {
-            text-align: center;
-            padding: 40px 20px;
-        }
-        .mcw-success svg {
-            width: 64px;
-            height: 64px;
-            stroke: #10B981;
-            margin-bottom: 16px;
-        }
-        .mcw-success h4 {
-            font-size: 20px;
-            color: #111827;
-            margin: 0 0 8px;
-        }
-        .mcw-success p {
-            color: #6B7280;
-            margin: 0;
-        }
-    `;
+    // Registrar widget
+    MCW.widgets.push(config);
 
     // Iconos SVG
     const icons = {
@@ -245,101 +68,361 @@
         contact_form: 'Completa el formulario y nos pondremos en contacto'
     };
 
-    // Crear contenedor
-    const container = document.createElement('div');
-    container.className = 'mcw-widget-container';
-    container.innerHTML = `
-        <style>${styles}</style>
-        <button class="mcw-fab" id="mcw-fab">${icons[config.type] || icons.contact_form}</button>
-        <div class="mcw-modal-overlay" id="mcw-overlay">
-            <div class="mcw-modal">
-                <div class="mcw-modal-header" style="position: relative;">
-                    <button class="mcw-btn-close" id="mcw-close">${icons.close}</button>
-                    <h3>${config.title}</h3>
-                    <p>${descriptions[config.type] || descriptions.contact_form}</p>
-                </div>
-                <div class="mcw-modal-body" id="mcw-body">
-                    <form id="mcw-form">
-                        <div class="mcw-form-group">
-                            <label>Nombre <span>*</span></label>
-                            <input type="text" name="name" required placeholder="Tu nombre">
-                            <div class="mcw-error">El nombre es requerido</div>
-                        </div>
-                        <div class="mcw-form-group">
-                            <label>Teléfono <span>*</span></label>
-                            <input type="tel" name="phone" required placeholder="+57 300 123 4567">
-                            <div class="mcw-error">El teléfono es requerido</div>
-                        </div>
-                        <div class="mcw-form-group">
-                            <label>Email</label>
-                            <input type="email" name="email" placeholder="tu@email.com">
-                            <div class="mcw-error">Email inválido</div>
-                        </div>
-                        <div class="mcw-form-group">
-                            <label>Mensaje <span>*</span></label>
-                            <textarea name="message" required placeholder="¿En qué podemos ayudarte?"></textarea>
-                            <div class="mcw-error">El mensaje es requerido</div>
-                        </div>
-                        <button type="submit" class="mcw-btn-submit">${config.buttonText}</button>
-                    </form>
+    // Inicializar estilos globales (solo una vez)
+    function initStyles() {
+        if (document.getElementById('mcw-global-styles')) return;
+
+        const styles = document.createElement('style');
+        styles.id = 'mcw-global-styles';
+        styles.textContent = `
+            .mcw-widget-container * {
+                box-sizing: border-box;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            }
+            .mcw-buttons-container {
+                position: fixed;
+                display: flex;
+                gap: 12px;
+                z-index: 99998;
+            }
+            .mcw-buttons-container.bottom-right {
+                right: 20px;
+                bottom: 20px;
+                flex-direction: row-reverse;
+            }
+            .mcw-buttons-container.bottom-left {
+                left: 20px;
+                bottom: 20px;
+                flex-direction: row;
+            }
+            .mcw-buttons-container.top-right {
+                right: 20px;
+                top: 20px;
+                flex-direction: row-reverse;
+            }
+            .mcw-buttons-container.top-left {
+                left: 20px;
+                top: 20px;
+                flex-direction: row;
+            }
+            .mcw-fab {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                border: none;
+                cursor: pointer;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: transform 0.2s, box-shadow 0.2s;
+                flex-shrink: 0;
+            }
+            .mcw-fab:hover {
+                transform: scale(1.1);
+                box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            }
+            .mcw-fab svg {
+                width: 26px;
+                height: 26px;
+                fill: white;
+            }
+            .mcw-modal-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0,0,0,0.5);
+                display: none;
+                align-items: center;
+                justify-content: center;
+                z-index: 99999;
+                padding: 20px;
+            }
+            .mcw-modal-overlay.mcw-active {
+                display: flex;
+            }
+            .mcw-modal {
+                background: white;
+                border-radius: 16px;
+                width: 100%;
+                max-width: 400px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+                overflow: hidden;
+                animation: mcw-slideUp 0.3s ease;
+            }
+            @keyframes mcw-slideUp {
+                from { opacity: 0; transform: translateY(20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            .mcw-modal-header {
+                color: white;
+                padding: 20px;
+                text-align: center;
+                position: relative;
+            }
+            .mcw-modal-header h3 {
+                margin: 0;
+                font-size: 20px;
+                font-weight: 600;
+            }
+            .mcw-modal-header p {
+                margin: 8px 0 0;
+                font-size: 14px;
+                opacity: 0.9;
+            }
+            .mcw-modal-body {
+                padding: 24px;
+            }
+            .mcw-form-group {
+                margin-bottom: 16px;
+            }
+            .mcw-form-group label {
+                display: block;
+                font-size: 14px;
+                font-weight: 500;
+                color: #374151;
+                margin-bottom: 6px;
+            }
+            .mcw-form-group label span {
+                color: #EF4444;
+            }
+            .mcw-form-group input,
+            .mcw-form-group textarea {
+                width: 100%;
+                padding: 12px;
+                border: 1px solid #D1D5DB;
+                border-radius: 8px;
+                font-size: 14px;
+                transition: border-color 0.2s, box-shadow 0.2s;
+            }
+            .mcw-form-group input:focus,
+            .mcw-form-group textarea:focus {
+                outline: none;
+                border-color: var(--mcw-color);
+                box-shadow: 0 0 0 3px var(--mcw-color-light);
+            }
+            .mcw-form-group textarea {
+                resize: vertical;
+                min-height: 80px;
+            }
+            .mcw-form-group .mcw-error {
+                color: #EF4444;
+                font-size: 12px;
+                margin-top: 4px;
+                display: none;
+            }
+            .mcw-form-group.mcw-invalid input,
+            .mcw-form-group.mcw-invalid textarea {
+                border-color: #EF4444;
+            }
+            .mcw-form-group.mcw-invalid .mcw-error {
+                display: block;
+            }
+            .mcw-btn-submit {
+                width: 100%;
+                padding: 14px;
+                color: white;
+                border: none;
+                border-radius: 8px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: opacity 0.2s;
+            }
+            .mcw-btn-submit:hover {
+                opacity: 0.9;
+            }
+            .mcw-btn-submit:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+            }
+            .mcw-btn-close {
+                position: absolute;
+                top: 12px;
+                right: 12px;
+                background: rgba(255,255,255,0.2);
+                border: none;
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                cursor: pointer;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background 0.2s;
+            }
+            .mcw-btn-close:hover {
+                background: rgba(255,255,255,0.3);
+            }
+            .mcw-btn-close svg {
+                width: 18px;
+                height: 18px;
+                stroke: white;
+            }
+            .mcw-success {
+                text-align: center;
+                padding: 40px 20px;
+            }
+            .mcw-success svg {
+                width: 64px;
+                height: 64px;
+                stroke: #10B981;
+                margin-bottom: 16px;
+            }
+            .mcw-success h4 {
+                font-size: 20px;
+                color: #111827;
+                margin: 0 0 8px;
+            }
+            .mcw-success p {
+                color: #6B7280;
+                margin: 0;
+            }
+        `;
+        document.head.appendChild(styles);
+    }
+
+    // Obtener o crear contenedor para una posición
+    function getOrCreateContainer(position) {
+        const containerId = 'mcw-container-' + position;
+
+        if (MCW.containers[position]) {
+            return MCW.containers[position];
+        }
+
+        const container = document.createElement('div');
+        container.id = containerId;
+        container.className = 'mcw-buttons-container ' + position;
+        document.body.appendChild(container);
+
+        MCW.containers[position] = container;
+        return container;
+    }
+
+    // Crear o obtener el modal compartido
+    function getOrCreateModal() {
+        if (MCW.modal) {
+            return MCW.modal;
+        }
+
+        const modalWrapper = document.createElement('div');
+        modalWrapper.className = 'mcw-widget-container';
+        modalWrapper.innerHTML = `
+            <div class="mcw-modal-overlay" id="mcw-modal-overlay">
+                <div class="mcw-modal">
+                    <div class="mcw-modal-header" id="mcw-modal-header">
+                        <button class="mcw-btn-close" id="mcw-btn-close">${icons.close}</button>
+                        <h3 id="mcw-modal-title"></h3>
+                        <p id="mcw-modal-description"></p>
+                    </div>
+                    <div class="mcw-modal-body" id="mcw-modal-body"></div>
                 </div>
             </div>
-        </div>
-    `;
+        `;
+        document.body.appendChild(modalWrapper);
 
-    // Insertar en el DOM
-    document.body.appendChild(container);
+        const overlay = document.getElementById('mcw-modal-overlay');
+        const closeBtn = document.getElementById('mcw-btn-close');
 
-    // Referencias a elementos
-    const fab = document.getElementById('mcw-fab');
-    const overlay = document.getElementById('mcw-overlay');
-    const closeBtn = document.getElementById('mcw-close');
-    const body = document.getElementById('mcw-body');
-
-    // Guardar HTML original del formulario para restaurarlo después
-    const originalFormHtml = body.innerHTML;
-
-    // Abrir modal
-    fab.addEventListener('click', () => {
-        overlay.classList.add('mcw-active');
-    });
-
-    // Cerrar modal
-    closeBtn.addEventListener('click', () => {
-        overlay.classList.remove('mcw-active');
-    });
-
-    overlay.addEventListener('click', (e) => {
-        if (e.target === overlay) {
+        // Cerrar modal
+        closeBtn.addEventListener('click', () => {
             overlay.classList.remove('mcw-active');
-        }
-    });
+        });
+
+        overlay.addEventListener('click', (e) => {
+            if (e.target === overlay) {
+                overlay.classList.remove('mcw-active');
+            }
+        });
+
+        MCW.modal = {
+            overlay: overlay,
+            header: document.getElementById('mcw-modal-header'),
+            title: document.getElementById('mcw-modal-title'),
+            description: document.getElementById('mcw-modal-description'),
+            body: document.getElementById('mcw-modal-body')
+        };
+
+        return MCW.modal;
+    }
+
+    // Generar formulario HTML
+    function getFormHtml(cfg) {
+        return `
+            <form id="mcw-form">
+                <div class="mcw-form-group">
+                    <label>Nombre <span>*</span></label>
+                    <input type="text" name="name" required placeholder="Tu nombre">
+                    <div class="mcw-error">El nombre es requerido</div>
+                </div>
+                <div class="mcw-form-group">
+                    <label>Teléfono <span>*</span></label>
+                    <input type="tel" name="phone" required placeholder="+57 300 123 4567">
+                    <div class="mcw-error">El teléfono es requerido</div>
+                </div>
+                <div class="mcw-form-group">
+                    <label>Email</label>
+                    <input type="email" name="email" placeholder="tu@email.com">
+                    <div class="mcw-error">Email inválido</div>
+                </div>
+                <div class="mcw-form-group">
+                    <label>Mensaje <span>*</span></label>
+                    <textarea name="message" required placeholder="¿En qué podemos ayudarte?"></textarea>
+                    <div class="mcw-error">El mensaje es requerido</div>
+                </div>
+                <button type="submit" class="mcw-btn-submit" style="background: ${cfg.color};">${cfg.buttonText}</button>
+            </form>
+        `;
+    }
 
     // Validar email
     function isValidEmail(email) {
-        if (!email) return true; // Email es opcional
+        if (!email) return true;
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
     }
 
-    // Función para manejar el envío del formulario
-    function attachFormSubmit() {
-        const currentForm = document.getElementById('mcw-form');
-        if (!currentForm) return;
+    // Abrir modal con configuración específica
+    function openModal(cfg) {
+        const modal = getOrCreateModal();
+        MCW.currentConfig = cfg;
 
-        currentForm.addEventListener('submit', async (e) => {
+        // Actualizar estilos del modal
+        modal.header.style.background = cfg.color;
+        modal.title.textContent = cfg.title;
+        modal.description.textContent = descriptions[cfg.type] || descriptions.contact_form;
+
+        // Establecer variables CSS para el color
+        modal.body.style.setProperty('--mcw-color', cfg.color);
+        modal.body.style.setProperty('--mcw-color-light', cfg.color + '20');
+
+        // Cargar formulario
+        modal.body.innerHTML = getFormHtml(cfg);
+
+        // Attach form submit
+        attachFormSubmit(cfg, modal);
+
+        // Mostrar modal
+        modal.overlay.classList.add('mcw-active');
+    }
+
+    // Manejar envío del formulario
+    function attachFormSubmit(cfg, modal) {
+        const form = document.getElementById('mcw-form');
+        if (!form) return;
+
+        form.addEventListener('submit', async (e) => {
             e.preventDefault();
 
             // Limpiar errores previos
-            currentForm.querySelectorAll('.mcw-form-group').forEach(g => g.classList.remove('mcw-invalid'));
+            form.querySelectorAll('.mcw-form-group').forEach(g => g.classList.remove('mcw-invalid'));
 
-            const formData = new FormData(currentForm);
+            const formData = new FormData(form);
             const data = {
                 name: formData.get('name').trim(),
                 phone: formData.get('phone').trim(),
                 email: formData.get('email').trim(),
                 message: formData.get('message').trim(),
-                site_id: config.siteId,
-                source_type: config.type === 'contact_form' ? 'contact_form' : (config.type + '_button'),
+                site_id: cfg.siteId,
+                source_type: cfg.type === 'contact_form' ? 'contact_form' : (cfg.type + '_button'),
                 source_url: window.location.href,
                 page_url: window.location.href,
                 user_agent: navigator.userAgent
@@ -349,31 +432,31 @@
             let hasErrors = false;
 
             if (!data.name) {
-                currentForm.querySelector('[name="name"]').closest('.mcw-form-group').classList.add('mcw-invalid');
+                form.querySelector('[name="name"]').closest('.mcw-form-group').classList.add('mcw-invalid');
                 hasErrors = true;
             }
             if (!data.phone) {
-                currentForm.querySelector('[name="phone"]').closest('.mcw-form-group').classList.add('mcw-invalid');
+                form.querySelector('[name="phone"]').closest('.mcw-form-group').classList.add('mcw-invalid');
                 hasErrors = true;
             }
             if (!isValidEmail(data.email)) {
-                currentForm.querySelector('[name="email"]').closest('.mcw-form-group').classList.add('mcw-invalid');
+                form.querySelector('[name="email"]').closest('.mcw-form-group').classList.add('mcw-invalid');
                 hasErrors = true;
             }
             if (!data.message) {
-                currentForm.querySelector('[name="message"]').closest('.mcw-form-group').classList.add('mcw-invalid');
+                form.querySelector('[name="message"]').closest('.mcw-form-group').classList.add('mcw-invalid');
                 hasErrors = true;
             }
 
             if (hasErrors) return;
 
             // Deshabilitar botón
-            const submitBtn = currentForm.querySelector('.mcw-btn-submit');
+            const submitBtn = form.querySelector('.mcw-btn-submit');
             submitBtn.disabled = true;
             submitBtn.textContent = 'Enviando...';
 
             try {
-                const response = await fetch(config.apiUrl, {
+                const response = await fetch(cfg.apiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -387,7 +470,7 @@
                 }
 
                 // Mostrar éxito
-                body.innerHTML = `
+                modal.body.innerHTML = `
                     <div class="mcw-success">
                         ${icons.check}
                         <h4>¡Mensaje enviado!</h4>
@@ -397,35 +480,60 @@
 
                 // Acción post-envío según tipo
                 setTimeout(() => {
-                    if (config.type === 'whatsapp' && config.phone) {
-                        const cleanPhone = config.phone.replace(/[^0-9]/g, '');
+                    if (cfg.type === 'whatsapp' && cfg.phone) {
+                        const cleanPhone = cfg.phone.replace(/[^0-9]/g, '');
                         const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(data.message)}`;
                         window.open(whatsappUrl, '_blank');
-                    } else if (config.type === 'phone' && config.phone) {
-                        window.location.href = `tel:${config.phone}`;
+                    } else if (cfg.type === 'phone' && cfg.phone) {
+                        window.location.href = `tel:${cfg.phone}`;
                     }
 
                     // Cerrar modal después de 2 segundos
                     setTimeout(() => {
-                        overlay.classList.remove('mcw-active');
-                        // Reset form después de que se cierre el modal
-                        setTimeout(() => {
-                            body.innerHTML = originalFormHtml;
-                            // Re-attach event listener al nuevo formulario
-                            attachFormSubmit();
-                        }, 300);
+                        modal.overlay.classList.remove('mcw-active');
                     }, 2000);
                 }, 500);
 
             } catch (error) {
                 console.error('MiniCRM Widget Error:', error);
                 submitBtn.disabled = false;
-                submitBtn.textContent = config.buttonText;
+                submitBtn.textContent = cfg.buttonText;
                 alert('Error al enviar el mensaje. Por favor intenta de nuevo.');
             }
         });
     }
 
-    // Attach inicial del formulario
-    attachFormSubmit();
+    // Crear botón FAB
+    function createFab(cfg) {
+        const fab = document.createElement('button');
+        fab.className = 'mcw-fab';
+        fab.id = cfg.id;
+        fab.style.background = cfg.color;
+        fab.innerHTML = icons[cfg.type] || icons.contact_form;
+        fab.title = cfg.title;
+
+        fab.addEventListener('click', () => {
+            openModal(cfg);
+        });
+
+        return fab;
+    }
+
+    // Inicializar widget
+    function init() {
+        initStyles();
+
+        const container = getOrCreateContainer(config.position);
+        const fab = createFab(config);
+        container.appendChild(fab);
+
+        getOrCreateModal();
+    }
+
+    // Ejecutar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+    } else {
+        init();
+    }
 })();

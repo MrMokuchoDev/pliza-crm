@@ -33,6 +33,13 @@ class DealShow extends Component
 
     public ?string $deletingCommentId = null;
 
+    // Value modal for closing as won
+    public bool $showValueModal = false;
+
+    public ?string $pendingWonPhaseId = null;
+
+    public ?string $dealValue = null;
+
     protected function rules(): array
     {
         return [
@@ -76,6 +83,57 @@ class DealShow extends Component
             }
         }
 
+        // Si se quiere cerrar como GANADO, mostrar modal para pedir valor
+        if ($newPhase?->is_closed && $newPhase?->is_won) {
+            $this->pendingWonPhaseId = $this->salePhaseId;
+            $this->dealValue = $this->deal->value ? (string) $this->deal->value : null;
+            $this->showValueModal = true;
+            // Revertir temporalmente la selección visual
+            $this->salePhaseId = $this->deal->sale_phase_id;
+            $this->phaseSelectKey++;
+
+            return;
+        }
+
+        $this->applyPhaseChange($newPhase);
+    }
+
+    public function confirmWonWithValue(): void
+    {
+        $this->validate([
+            'dealValue' => 'required|numeric|min:0',
+        ], [
+            'dealValue.required' => 'El valor del negocio es obligatorio para cerrarlo como ganado.',
+            'dealValue.numeric' => 'El valor debe ser un número válido.',
+            'dealValue.min' => 'El valor no puede ser negativo.',
+        ]);
+
+        $newPhase = SalePhaseModel::find($this->pendingWonPhaseId);
+
+        // Actualizar valor del negocio
+        $this->deal->update(['value' => $this->dealValue]);
+
+        // Aplicar cambio de fase
+        $this->salePhaseId = $this->pendingWonPhaseId;
+        $this->applyPhaseChange($newPhase);
+
+        // Cerrar modal y limpiar
+        $this->showValueModal = false;
+        $this->pendingWonPhaseId = null;
+        $this->dealValue = null;
+    }
+
+    public function cancelWonPhase(): void
+    {
+        $this->showValueModal = false;
+        $this->pendingWonPhaseId = null;
+        $this->dealValue = null;
+        $this->salePhaseId = $this->deal->sale_phase_id;
+        $this->phaseSelectKey++;
+    }
+
+    private function applyPhaseChange(?SalePhaseModel $newPhase): void
+    {
         $updateData = [
             'sale_phase_id' => $this->salePhaseId,
             'updated_at' => now(),

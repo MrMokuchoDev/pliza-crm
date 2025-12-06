@@ -21,6 +21,15 @@ class DealIndex extends Component
 
     public int $refreshKey = 0;
 
+    // Value modal for closing as won
+    public bool $showValueModal = false;
+
+    public ?string $pendingWonDealId = null;
+
+    public ?string $pendingWonPhaseId = null;
+
+    public ?string $dealValue = null;
+
     // Filters
     public string $search = '';
 
@@ -106,8 +115,65 @@ class DealIndex extends Component
             }
         }
 
+        // Si se quiere cerrar como GANADO, mostrar modal para pedir valor
+        if ($newPhase->is_closed && $newPhase->is_won) {
+            $this->pendingWonDealId = $dealId;
+            $this->pendingWonPhaseId = $phaseId;
+            $this->dealValue = $deal->value ? (string) $deal->value : null;
+            $this->showValueModal = true;
+            $this->refreshKey++; // Revertir visualmente el select
+
+            return;
+        }
+
+        $this->applyPhaseChange($deal, $newPhase);
+    }
+
+    public function confirmWonWithValue(): void
+    {
+        $this->validate([
+            'dealValue' => 'required|numeric|min:0',
+        ], [
+            'dealValue.required' => 'El valor del negocio es obligatorio para cerrarlo como ganado.',
+            'dealValue.numeric' => 'El valor debe ser un número válido.',
+            'dealValue.min' => 'El valor no puede ser negativo.',
+        ]);
+
+        $deal = DealModel::find($this->pendingWonDealId);
+        $newPhase = SalePhaseModel::find($this->pendingWonPhaseId);
+
+        if (! $deal || ! $newPhase) {
+            $this->cancelWonPhase();
+
+            return;
+        }
+
+        // Actualizar valor del negocio
+        $deal->update(['value' => $this->dealValue]);
+
+        // Aplicar cambio de fase
+        $this->applyPhaseChange($deal, $newPhase);
+
+        // Cerrar modal y limpiar
+        $this->showValueModal = false;
+        $this->pendingWonDealId = null;
+        $this->pendingWonPhaseId = null;
+        $this->dealValue = null;
+    }
+
+    public function cancelWonPhase(): void
+    {
+        $this->showValueModal = false;
+        $this->pendingWonDealId = null;
+        $this->pendingWonPhaseId = null;
+        $this->dealValue = null;
+        $this->refreshKey++;
+    }
+
+    private function applyPhaseChange(DealModel $deal, SalePhaseModel $newPhase): void
+    {
         $updateData = [
-            'sale_phase_id' => $phaseId,
+            'sale_phase_id' => $newPhase->id,
             'updated_at' => now(),
         ];
 
@@ -121,7 +187,7 @@ class DealIndex extends Component
             $updateData['close_date'] = null;
         }
 
-        DealModel::where('id', $dealId)->update($updateData);
+        $deal->update($updateData);
 
         $message = $newPhase->is_closed
             ? ($newPhase->is_won ? 'Negocio marcado como ganado' : 'Negocio marcado como perdido')
