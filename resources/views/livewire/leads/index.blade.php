@@ -71,7 +71,7 @@
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contacto</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Datos</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Origen</th>
-                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Negocios</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Negocio</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
                             <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
                         </tr>
@@ -133,16 +133,25 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
-                                    <div class="flex items-center gap-2">
-                                        @if($lead->deals_count > 0)
-                                            <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                                {{ $lead->deals_count }} {{ $lead->deals_count === 1 ? 'negocio' : 'negocios' }}
-                                            </span>
-                                            @if($lead->active_deals_count > 0)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700">
-                                                    {{ $lead->active_deals_count }} activo{{ $lead->active_deals_count !== 1 ? 's' : '' }}
+                                    <div class="flex flex-col gap-1">
+                                        @if($lead->active_deals_count > 0)
+                                            @php $activeDeal = $lead->activeDeals->first(); @endphp
+                                            <div class="flex items-center gap-2">
+                                                <span class="w-2 h-2 rounded-full animate-pulse" style="background-color: {{ $activeDeal->salePhase->color ?? '#10B981' }}"></span>
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium" style="background-color: {{ $activeDeal->salePhase->color ?? '#10B981' }}20; color: {{ $activeDeal->salePhase->color ?? '#10B981' }}">
+                                                    {{ $activeDeal->salePhase->name ?? 'En proceso' }}
                                                 </span>
-                                            @endif
+                                            </div>
+                                            <span class="text-xs text-gray-500 truncate max-w-[140px]" title="{{ $activeDeal->name }}">
+                                                {{ Str::limit($activeDeal->name, 20) }}
+                                            </span>
+                                        @elseif($lead->deals_count > 0)
+                                            <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                </svg>
+                                                {{ $lead->deals_count }} cerrado{{ $lead->deals_count !== 1 ? 's' : '' }}
+                                            </span>
                                         @else
                                             <span class="text-xs text-gray-400">Sin negocios</span>
                                         @endif
