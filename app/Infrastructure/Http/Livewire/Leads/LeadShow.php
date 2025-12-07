@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Livewire\Leads;
 
 use App\Application\Lead\Services\LeadService;
+use App\Application\Note\DTOs\NoteData;
+use App\Application\Note\Services\NoteService;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use App\Infrastructure\Persistence\Eloquent\NoteModel;
 use Livewire\Attributes\On;
@@ -59,16 +61,17 @@ class LeadShow extends Component
     {
         $this->validate();
 
+        $noteService = app(NoteService::class);
+        $noteData = new NoteData(
+            leadId: $this->leadId,
+            content: $this->noteContent,
+        );
+
         if ($this->editingNoteId) {
-            NoteModel::where('id', $this->editingNoteId)->update([
-                'content' => $this->noteContent,
-            ]);
+            $noteService->update($this->editingNoteId, $noteData);
             $this->dispatch('notify', type: 'success', message: 'Nota actualizada');
         } else {
-            NoteModel::create([
-                'lead_id' => $this->leadId,
-                'content' => $this->noteContent,
-            ]);
+            $noteService->create($noteData);
             $this->dispatch('notify', type: 'success', message: 'Nota agregada');
         }
 
@@ -99,7 +102,8 @@ class LeadShow extends Component
     public function deleteNote(): void
     {
         if ($this->deletingNoteId) {
-            NoteModel::destroy($this->deletingNoteId);
+            $noteService = app(NoteService::class);
+            $noteService->delete($this->deletingNoteId);
             $this->dispatch('notify', type: 'success', message: 'Nota eliminada');
             $this->showDeleteNoteModal = false;
             $this->deletingNoteId = null;

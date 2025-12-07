@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Application\Lead\Handlers;
 
 use App\Application\Lead\Commands\DeleteLeadCommand;
+use App\Application\Note\Services\NoteService;
 use App\Infrastructure\Persistence\Eloquent\DealCommentModel;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
-use App\Infrastructure\Persistence\Eloquent\NoteModel;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -22,6 +22,10 @@ use Illuminate\Support\Facades\DB;
  */
 class DeleteLeadHandler
 {
+    public function __construct(
+        private readonly NoteService $noteService,
+    ) {}
+
     /**
      * @return array{success: bool, deleted: array{comments: int, deals: int, notes: int}}
      */
@@ -56,9 +60,8 @@ class DeleteLeadHandler
             $deletedCounts['deals'] = DealModel::where('lead_id', $command->leadId)->count();
             DealModel::where('lead_id', $command->leadId)->delete();
 
-            // Eliminar notas asociadas
-            $deletedCounts['notes'] = NoteModel::where('lead_id', $command->leadId)->count();
-            NoteModel::where('lead_id', $command->leadId)->delete();
+            // Eliminar notas asociadas usando NoteService
+            $deletedCounts['notes'] = $this->noteService->deleteByLeadId($command->leadId);
 
             // Eliminar el contacto
             LeadModel::destroy($command->leadId);
