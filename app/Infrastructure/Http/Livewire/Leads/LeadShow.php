@@ -7,13 +7,12 @@ namespace App\Infrastructure\Http\Livewire\Leads;
 use App\Application\Lead\Services\LeadService;
 use App\Application\Note\DTOs\NoteData;
 use App\Application\Note\Services\NoteService;
-use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class LeadShow extends Component
 {
-    public ?LeadModel $lead = null;
+    public $lead = null;
 
     public string $leadId;
 
@@ -43,7 +42,8 @@ class LeadShow extends Component
 
     public function loadLead(): void
     {
-        $this->lead = LeadModel::with(['notes', 'sourceSite', 'deals.salePhase'])->find($this->leadId);
+        $leadService = app(LeadService::class);
+        $this->lead = $leadService->findWithRelations($this->leadId);
     }
 
     public function openCreateDealModal(): void

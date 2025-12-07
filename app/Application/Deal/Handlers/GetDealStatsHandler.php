@@ -1,0 +1,39 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Application\Deal\Handlers;
+
+use App\Application\Deal\Queries\GetDealStatsQuery;
+use App\Infrastructure\Persistence\Eloquent\DealModel;
+
+/**
+ * Handler para obtener estadísticas de deals.
+ */
+class GetDealStatsHandler
+{
+    /**
+     * @return array{total: int, open: int, total_value: float}
+     */
+    public function handle(GetDealStatsQuery $query): array
+    {
+        $total = DealModel::count();
+
+        if ($query->openPhaseIds === null || empty($query->openPhaseIds)) {
+            return [
+                'total' => $total,
+                'open' => 0,
+                'total_value' => 0,
+            ];
+        }
+
+        $openDeals = DealModel::whereIn('sale_phase_id', $query->openPhaseIds)->count();
+        $totalValue = DealModel::whereIn('sale_phase_id', $query->openPhaseIds)->sum('value') ?? 0;
+
+        return [
+            'total' => $total,
+            'open' => $openDeals,
+            'total_value' => (float) $totalValue,
+        ];
+    }
+}

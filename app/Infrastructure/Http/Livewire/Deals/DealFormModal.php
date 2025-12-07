@@ -8,11 +8,9 @@ use App\Application\Deal\DTOs\DealData;
 use App\Application\Deal\Services\DealService;
 use App\Application\Lead\DTOs\LeadData;
 use App\Application\Lead\Services\LeadService;
+use App\Application\SalePhase\Services\SalePhaseService;
 use App\Domain\Deal\Services\DealPhaseService;
 use App\Domain\Lead\ValueObjects\SourceType;
-use App\Infrastructure\Persistence\Eloquent\DealModel;
-use App\Infrastructure\Persistence\Eloquent\LeadModel;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -84,7 +82,8 @@ class DealFormModal extends Component
         $this->resetForm();
 
         if ($dealId) {
-            $deal = DealModel::with('lead')->find($dealId);
+            $dealService = app(DealService::class);
+            $deal = $dealService->findWithLead($dealId);
             if ($deal) {
                 $this->dealId = $dealId;
                 $this->leadId = $deal->lead_id;
@@ -105,10 +104,12 @@ class DealFormModal extends Component
             }
         } elseif ($leadId) {
             // Creating new deal for existing lead
-            $lead = LeadModel::find($leadId);
+            $leadService = app(LeadService::class);
+            $leadData = $leadService->findWithOpenDealCheck($leadId);
+            $lead = $leadData['lead'];
             if ($lead) {
                 // Check if lead already has an open deal
-                if ($lead->hasOpenDeal()) {
+                if ($leadData['has_open_deal']) {
                     $this->dispatch('notify', type: 'error', message: 'Este contacto ya tiene un negocio abierto.');
 
                     return;
@@ -136,13 +137,15 @@ class DealFormModal extends Component
 
     public function selectLead(string $id): void
     {
-        $lead = LeadModel::find($id);
+        $leadService = app(LeadService::class);
+        $leadData = $leadService->findWithOpenDealCheck($id);
+        $lead = $leadData['lead'];
         if (! $lead) {
             return;
         }
 
         // Check if lead has open deal
-        if ($lead->hasOpenDeal()) {
+        if ($leadData['has_open_deal']) {
             $this->leadHasOpenDealError = 'Este contacto ya tiene un negocio abierto.';
 
             return;
@@ -191,7 +194,8 @@ class DealFormModal extends Component
     public function save(): void
     {
         // Verificar PRIMERO si se quiere cerrar como GANADO sin valor
-        $phase = SalePhaseModel::find($this->salePhaseId);
+        $phaseService = app(SalePhaseService::class);
+        $phase = $phaseService->find($this->salePhaseId);
         if ($phase) {
             $valueValidation = DealPhaseService::validateValueForWonPhase($phase, $this->value);
             if (! $valueValidation['valid']) {
@@ -205,8 +209,9 @@ class DealFormModal extends Component
         $this->validate();
 
         // Si estamos editando un negocio, validar cambio de fase ANTES de la transacción
+        $dealService = app(DealService::class);
         if ($this->dealId && $phase) {
-            $deal = DealModel::with(['salePhase', 'lead'])->find($this->dealId);
+            $deal = $dealService->findWithRelations($this->dealId);
             if ($deal && $deal->sale_phase_id !== $phase->id) {
                 $service = new DealPhaseService();
                 $validation = $service->canChangePhase($deal, $phase);
@@ -301,28 +306,21 @@ class DealFormModal extends Component
 
     private function setDefaultPhase(): void
     {
-        $defaultPhase = SalePhaseModel::where('is_default', true)->first()
-            ?? SalePhaseModel::where('is_closed', false)->orderBy('order')->first();
+        $phaseService = app(SalePhaseService::class);
+        $defaultPhase = $phaseService->getDefaultOrFirstOpen();
         $this->salePhaseId = $defaultPhase?->id ?? '';
     }
 
     public function render()
     {
-        $phases = SalePhaseModel::orderBy('order')->get();
+        $phaseService = app(SalePhaseService::class);
+        $phases = $phaseService->getAllOrdered();
 
         // Search leads if searching
         $searchResults = collect();
         if ($this->showLeadSearch && strlen($this->leadSearch) >= 2) {
-            $searchResults = LeadModel::query()
-                ->where(function ($q) {
-                    $q->where('name', 'like', "%{$this->leadSearch}%")
-                        ->orWhere('email', 'like', "%{$this->leadSearch}%")
-                        ->orWhere('phone', 'like', "%{$this->leadSearch}%");
-                })
-                ->withCount(['activeDeals'])
-                ->orderByDesc('created_at')
-                ->limit(10)
-                ->get();
+            $leadService = app(LeadService::class);
+            $searchResults = $leadService->search($this->leadSearch);
         }
 
         return view('livewire.deals.form-modal', [

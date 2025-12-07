@@ -6,7 +6,6 @@ namespace App\Infrastructure\Http\Livewire\Sites;
 
 use App\Application\Site\DTOs\SiteData;
 use App\Application\Site\Services\SiteService;
-use App\Infrastructure\Persistence\Eloquent\SiteModel;
 use Livewire\Component;
 
 class SiteIndex extends Component
@@ -43,7 +42,7 @@ class SiteIndex extends Component
     // Embed code modal
     public bool $showEmbedModal = false;
 
-    public ?SiteModel $embedSite = null;
+    public $embedSite = null;
 
     public string $selectedWidgetType = 'whatsapp';
 

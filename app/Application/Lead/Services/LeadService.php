@@ -10,12 +10,24 @@ use App\Application\Lead\Commands\UpdateLeadCommand;
 use App\Application\Lead\DTOs\LeadData;
 use App\Application\Lead\Handlers\CreateLeadHandler;
 use App\Application\Lead\Handlers\DeleteLeadHandler;
+use App\Application\Lead\Handlers\FindLeadHandler;
+use App\Application\Lead\Handlers\GetLeadRelatedCountsHandler;
+use App\Application\Lead\Handlers\GetLeadStatsHandler;
+use App\Application\Lead\Handlers\GetPaginatedLeadsHandler;
+use App\Application\Lead\Handlers\SearchLeadsHandler;
 use App\Application\Lead\Handlers\UpdateLeadHandler;
+use App\Application\Lead\Queries\FindLeadQuery;
+use App\Application\Lead\Queries\GetLeadRelatedCountsQuery;
+use App\Application\Lead\Queries\GetLeadStatsQuery;
+use App\Application\Lead\Queries\GetPaginatedLeadsQuery;
+use App\Application\Lead\Queries\SearchLeadsQuery;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  * Servicio de aplicación para gestionar Leads.
- * Orquesta los comandos y handlers.
+ * Orquesta los comandos, queries y handlers.
  */
 class LeadService
 {
@@ -23,6 +35,11 @@ class LeadService
         private readonly CreateLeadHandler $createHandler,
         private readonly UpdateLeadHandler $updateHandler,
         private readonly DeleteLeadHandler $deleteHandler,
+        private readonly FindLeadHandler $findHandler,
+        private readonly SearchLeadsHandler $searchHandler,
+        private readonly GetPaginatedLeadsHandler $paginatedHandler,
+        private readonly GetLeadStatsHandler $statsHandler,
+        private readonly GetLeadRelatedCountsHandler $relatedCountsHandler,
     ) {}
 
     /**
@@ -58,22 +75,46 @@ class LeadService
     }
 
     /**
-     * Obtener conteos de relaciones para mostrar en confirmación de eliminación.
-     *
-     * @return array{deals: int, notes: int}
+     * Buscar un Lead por ID.
      */
-    public function getRelatedCounts(string $leadId): array
+    public function find(string $leadId): ?LeadModel
     {
-        $lead = LeadModel::withCount(['deals', 'notes'])->find($leadId);
+        $query = new FindLeadQuery($leadId);
 
-        if (! $lead) {
-            return ['deals' => 0, 'notes' => 0];
-        }
+        return $this->findHandler->handle($query);
+    }
+
+    /**
+     * Buscar un Lead con todas sus relaciones.
+     */
+    public function findWithRelations(string $leadId): ?LeadModel
+    {
+        $query = new FindLeadQuery($leadId, withRelations: true);
+
+        return $this->findHandler->handle($query);
+    }
+
+    /**
+     * Buscar un Lead y verificar si tiene negocio abierto.
+     *
+     * @return array{lead: LeadModel|null, has_open_deal: bool}
+     */
+    public function findWithOpenDealCheck(string $leadId): array
+    {
+        $lead = $this->find($leadId);
 
         return [
-            'deals' => $lead->deals_count,
-            'notes' => $lead->notes_count,
+            'lead' => $lead,
+            'has_open_deal' => $lead?->hasOpenDeal() ?? false,
         ];
+    }
+
+    /**
+     * Verificar si un Lead existe.
+     */
+    public function exists(string $leadId): bool
+    {
+        return $this->find($leadId) !== null;
     }
 
     /**
@@ -81,7 +122,7 @@ class LeadService
      */
     public function getDisplayName(string $leadId): string
     {
-        $lead = LeadModel::find($leadId);
+        $lead = $this->find($leadId);
 
         if (! $lead) {
             return 'Sin nombre';
@@ -91,18 +132,50 @@ class LeadService
     }
 
     /**
-     * Buscar un Lead por ID.
+     * Obtener conteos de relaciones para mostrar en confirmación de eliminación.
+     *
+     * @return array{deals: int, notes: int}
      */
-    public function find(string $leadId): ?LeadModel
+    public function getRelatedCounts(string $leadId): array
     {
-        return LeadModel::find($leadId);
+        $query = new GetLeadRelatedCountsQuery($leadId);
+
+        return $this->relatedCountsHandler->handle($query);
     }
 
     /**
-     * Verificar si un Lead existe.
+     * Buscar leads por término de búsqueda.
+     *
+     * @return Collection<int, LeadModel>
      */
-    public function exists(string $leadId): bool
+    public function search(string $term, int $limit = 10): Collection
     {
-        return LeadModel::where('id', $leadId)->exists();
+        $query = new SearchLeadsQuery($term, $limit);
+
+        return $this->searchHandler->handle($query);
+    }
+
+    /**
+     * Obtener todos los leads paginados con filtros.
+     *
+     * @param  array{search?: string, source?: string}  $filters
+     */
+    public function getPaginated(array $filters = [], int $perPage = 10): LengthAwarePaginator
+    {
+        $query = new GetPaginatedLeadsQuery($filters, $perPage);
+
+        return $this->paginatedHandler->handle($query);
+    }
+
+    /**
+     * Obtener estadísticas de leads.
+     *
+     * @return array{total: int, with_deals: int, without_deals: int}
+     */
+    public function getStats(): array
+    {
+        $query = new GetLeadStatsQuery();
+
+        return $this->statsHandler->handle($query);
     }
 }

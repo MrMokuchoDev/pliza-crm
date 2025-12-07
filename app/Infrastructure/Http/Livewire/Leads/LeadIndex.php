@@ -7,7 +7,6 @@ namespace App\Infrastructure\Http\Livewire\Leads;
 use App\Application\Lead\Services\LeadService;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Http\Livewire\Traits\HasNotifications;
-use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -119,33 +118,23 @@ class LeadIndex extends Component
 
     public function render()
     {
-        $query = LeadModel::withCount(['deals', 'activeDeals'])
-            ->with(['activeDeals' => fn ($q) => $q->with('salePhase')->limit(1)])
-            ->when($this->search, function ($q) {
-                $q->where(function ($sq) {
-                    $sq->where('name', 'like', "%{$this->search}%")
-                        ->orWhere('email', 'like', "%{$this->search}%")
-                        ->orWhere('phone', 'like', "%{$this->search}%");
-                });
-            })
-            ->when($this->filterSource, fn ($q) => $q->where('source_type', $this->filterSource))
-            ->orderByDesc('created_at');
+        $leadService = app(LeadService::class);
 
-        $leads = $query->paginate(10);
+        $filters = array_filter([
+            'search' => $this->search,
+            'source' => $this->filterSource,
+        ]);
+        $leads = $leadService->getPaginated($filters);
 
         $sourceTypes = SourceType::cases();
-
-        // Stats
-        $totalLeads = LeadModel::count();
-        $leadsWithDeals = LeadModel::has('deals')->count();
-        $leadsWithoutDeals = $totalLeads - $leadsWithDeals;
+        $stats = $leadService->getStats();
 
         return view('livewire.leads.index', [
             'leads' => $leads,
             'sourceTypes' => $sourceTypes,
-            'totalLeads' => $totalLeads,
-            'leadsWithDeals' => $leadsWithDeals,
-            'leadsWithoutDeals' => $leadsWithoutDeals,
+            'totalLeads' => $stats['total'],
+            'leadsWithDeals' => $stats['with_deals'],
+            'leadsWithoutDeals' => $stats['without_deals'],
         ])->layout('components.layouts.app', ['title' => 'Contactos']);
     }
 }

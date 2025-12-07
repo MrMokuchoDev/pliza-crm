@@ -13,15 +13,27 @@ use App\Application\SalePhase\Commands\UpdateSalePhaseCommand;
 use App\Application\SalePhase\DTOs\SalePhaseData;
 use App\Application\SalePhase\Handlers\CreateSalePhaseHandler;
 use App\Application\SalePhase\Handlers\DeleteSalePhaseHandler;
+use App\Application\SalePhase\Handlers\FindSalePhaseHandler;
+use App\Application\SalePhase\Handlers\GetActivePhasesHandler;
+use App\Application\SalePhase\Handlers\GetAllPhasesOrderedHandler;
+use App\Application\SalePhase\Handlers\GetClosedPhasesHandler;
+use App\Application\SalePhase\Handlers\GetDefaultPhaseHandler;
+use App\Application\SalePhase\Handlers\GetOpenPhaseIdsHandler;
 use App\Application\SalePhase\Handlers\ReorderPhasesHandler;
 use App\Application\SalePhase\Handlers\SetDefaultPhaseHandler;
 use App\Application\SalePhase\Handlers\UpdateSalePhaseHandler;
+use App\Application\SalePhase\Queries\FindSalePhaseQuery;
+use App\Application\SalePhase\Queries\GetActivePhasesQuery;
+use App\Application\SalePhase\Queries\GetAllPhasesOrderedQuery;
+use App\Application\SalePhase\Queries\GetClosedPhasesQuery;
+use App\Application\SalePhase\Queries\GetDefaultPhaseQuery;
+use App\Application\SalePhase\Queries\GetOpenPhaseIdsQuery;
 use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Illuminate\Support\Collection;
 
 /**
  * Servicio de aplicación para gestionar Fases de Venta.
- * Orquesta los comandos y handlers.
+ * Orquesta los comandos, queries y handlers.
  */
 class SalePhaseService
 {
@@ -31,6 +43,12 @@ class SalePhaseService
         private readonly DeleteSalePhaseHandler $deleteHandler,
         private readonly ReorderPhasesHandler $reorderHandler,
         private readonly SetDefaultPhaseHandler $setDefaultHandler,
+        private readonly FindSalePhaseHandler $findHandler,
+        private readonly GetAllPhasesOrderedHandler $allOrderedHandler,
+        private readonly GetActivePhasesHandler $activePhasesHandler,
+        private readonly GetClosedPhasesHandler $closedPhasesHandler,
+        private readonly GetOpenPhaseIdsHandler $openPhaseIdsHandler,
+        private readonly GetDefaultPhaseHandler $defaultPhaseHandler,
         private readonly DealService $dealService,
     ) {}
 
@@ -93,7 +111,9 @@ class SalePhaseService
      */
     public function find(string $phaseId): ?SalePhaseModel
     {
-        return SalePhaseModel::find($phaseId);
+        $query = new FindSalePhaseQuery($phaseId);
+
+        return $this->findHandler->handle($query);
     }
 
     /**
@@ -103,7 +123,9 @@ class SalePhaseService
      */
     public function getAllOrdered(): Collection
     {
-        return SalePhaseModel::orderBy('order')->get();
+        $query = new GetAllPhasesOrderedQuery();
+
+        return $this->allOrderedHandler->handle($query);
     }
 
     /**
@@ -113,9 +135,9 @@ class SalePhaseService
      */
     public function getActivePhases(): Collection
     {
-        return SalePhaseModel::where('is_closed', false)
-            ->orderBy('order')
-            ->get();
+        $query = new GetActivePhasesQuery();
+
+        return $this->activePhasesHandler->handle($query);
     }
 
     /**
@@ -123,7 +145,9 @@ class SalePhaseService
      */
     public function getDefaultPhase(): ?SalePhaseModel
     {
-        return SalePhaseModel::where('is_default', true)->first();
+        $query = new GetDefaultPhaseQuery();
+
+        return $this->defaultPhaseHandler->handle($query);
     }
 
     /**
@@ -139,7 +163,7 @@ class SalePhaseService
      */
     public function countActivePhases(): int
     {
-        return SalePhaseModel::where('is_closed', false)->count();
+        return $this->getActivePhases()->count();
     }
 
     /**
@@ -149,9 +173,9 @@ class SalePhaseService
      */
     public function getClosedPhases(): Collection
     {
-        return SalePhaseModel::where('is_closed', true)
-            ->orderBy('order')
-            ->get();
+        $query = new GetClosedPhasesQuery();
+
+        return $this->closedPhasesHandler->handle($query);
     }
 
     /**
@@ -161,8 +185,19 @@ class SalePhaseService
      */
     public function getOpenPhaseIds(): array
     {
-        return SalePhaseModel::where('is_closed', false)
-            ->pluck('id')
-            ->toArray();
+        $query = new GetOpenPhaseIdsQuery();
+
+        return $this->openPhaseIdsHandler->handle($query);
+    }
+
+    /**
+     * Obtener la fase por defecto para nuevos negocios.
+     * Retorna la fase marcada como default, o la primera fase abierta.
+     */
+    public function getDefaultOrFirstOpen(): ?SalePhaseModel
+    {
+        $query = new GetDefaultPhaseQuery(fallbackToFirstOpen: true);
+
+        return $this->defaultPhaseHandler->handle($query);
     }
 }
