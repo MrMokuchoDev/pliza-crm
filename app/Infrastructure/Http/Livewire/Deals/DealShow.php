@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Deals;
 
+use App\Domain\Deal\Services\DealPhaseService;
 use App\Infrastructure\Persistence\Eloquent\DealCommentModel;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
@@ -69,53 +70,51 @@ class DealShow extends Component
         }
 
         $newPhase = SalePhaseModel::find($this->salePhaseId);
-        $currentPhase = $this->deal->salePhase;
-
-        // Si el negocio está cerrado y se quiere mover a una fase abierta,
-        // verificar que el contacto no tenga otro negocio abierto
-        if ($currentPhase?->is_closed && ! $newPhase?->is_closed) {
-            if ($this->deal->lead && $this->deal->lead->hasOpenDeal($this->deal->id)) {
-                $this->salePhaseId = $this->deal->sale_phase_id; // Revertir selección
-                $this->phaseSelectKey++; // Forzar re-render del select
-                $this->dispatch('notify', type: 'error', message: 'Este contacto ya tiene un negocio abierto. Cierra o elimina el otro negocio antes de reabrir este.');
-
-                return;
-            }
+        if (! $newPhase) {
+            return;
         }
 
-        // Si se quiere cerrar como GANADO, mostrar modal para pedir valor
-        if ($newPhase?->is_closed && $newPhase?->is_won) {
-            $this->pendingWonPhaseId = $this->salePhaseId;
-            $this->dealValue = $this->deal->value ? (string) $this->deal->value : null;
-            $this->showValueModal = true;
-            // Revertir temporalmente la selección visual
+        $service = new DealPhaseService();
+        $validation = $service->canChangePhase($this->deal, $newPhase);
+
+        if (! $validation['can_change']) {
+            if ($validation['reason'] === DealPhaseService::RESULT_REQUIRES_VALUE) {
+                $this->pendingWonPhaseId = $this->salePhaseId;
+                $this->dealValue = $this->deal->value ? (string) $this->deal->value : null;
+                $this->showValueModal = true;
+            } else {
+                $this->dispatch('notify', type: 'error', message: $service->getErrorMessage($validation['reason']));
+            }
+
+            // Revertir selección visual
             $this->salePhaseId = $this->deal->sale_phase_id;
             $this->phaseSelectKey++;
 
             return;
         }
 
-        $this->applyPhaseChange($newPhase);
+        $result = $service->applyPhaseChange($this->deal, $newPhase);
+        $this->loadDeal();
+        $this->dispatch('notify', type: 'success', message: $result['message']);
     }
 
     public function confirmWonWithValue(): void
     {
-        $this->validate([
-            'dealValue' => 'required|numeric|min:0',
-        ], [
-            'dealValue.required' => 'El valor del negocio es obligatorio para cerrarlo como ganado.',
-            'dealValue.numeric' => 'El valor debe ser un número válido.',
-            'dealValue.min' => 'El valor no puede ser negativo.',
-        ]);
+        $validationRules = DealPhaseService::getWonValueValidationRules();
+        $this->validate($validationRules['rules'], $validationRules['messages']);
 
         $newPhase = SalePhaseModel::find($this->pendingWonPhaseId);
+        if (! $newPhase) {
+            $this->cancelWonPhase();
 
-        // Actualizar valor del negocio
-        $this->deal->update(['value' => $this->dealValue]);
+            return;
+        }
 
-        // Aplicar cambio de fase
-        $this->salePhaseId = $this->pendingWonPhaseId;
-        $this->applyPhaseChange($newPhase);
+        $service = new DealPhaseService();
+        $result = $service->changePhaseWithValue($this->deal, $newPhase, (float) $this->dealValue);
+
+        $this->loadDeal();
+        $this->dispatch('notify', type: $result['success'] ? 'success' : 'error', message: $result['message']);
 
         // Cerrar modal y limpiar
         $this->showValueModal = false;
@@ -130,33 +129,6 @@ class DealShow extends Component
         $this->dealValue = null;
         $this->salePhaseId = $this->deal->sale_phase_id;
         $this->phaseSelectKey++;
-    }
-
-    private function applyPhaseChange(?SalePhaseModel $newPhase): void
-    {
-        $updateData = [
-            'sale_phase_id' => $this->salePhaseId,
-            'updated_at' => now(),
-        ];
-
-        // Si se mueve a fase cerrada, establecer fecha de cierre
-        if ($newPhase?->is_closed && ! $this->deal->close_date) {
-            $updateData['close_date'] = now();
-        }
-
-        // Si se mueve a fase abierta, limpiar fecha de cierre
-        if (! $newPhase?->is_closed) {
-            $updateData['close_date'] = null;
-        }
-
-        $this->deal->update($updateData);
-        $this->loadDeal();
-
-        $message = $newPhase?->is_closed
-            ? ($newPhase->is_won ? 'Negocio marcado como ganado' : 'Negocio marcado como perdido')
-            : 'Fase actualizada';
-
-        $this->dispatch('notify', type: 'success', message: $message);
     }
 
     public function addComment(): void

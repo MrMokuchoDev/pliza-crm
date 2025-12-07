@@ -109,9 +109,12 @@ class LeadCaptureController extends Controller
         if ($email) {
             $existingLead = LeadModel::where('email', $email)->first();
         }
-        if (! $existingLead && $normalizedPhone) {
-            // Buscar por teléfono normalizado comparando todos los contactos
+        if (! $existingLead && $normalizedPhone && strlen($normalizedPhone) >= 7) {
+            // Buscar por teléfono normalizado - usar los últimos 7 dígitos para filtro inicial
+            // y luego verificar coincidencia exacta normalizada
+            $lastDigits = substr($normalizedPhone, -7);
             $existingLead = LeadModel::whereNotNull('phone')
+                ->where('phone', 'like', '%' . $lastDigits . '%')
                 ->get()
                 ->first(fn ($lead) => $this->normalizePhone($lead->phone) === $normalizedPhone);
         }
