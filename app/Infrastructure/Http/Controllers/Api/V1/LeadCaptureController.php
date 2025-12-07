@@ -54,24 +54,37 @@ class LeadCaptureController extends Controller
 
         // Validar que la petición viene del dominio registrado
         $origin = $request->header('Origin') ?? $request->header('Referer');
-        if ($origin) {
-            $originHost = parse_url($origin, PHP_URL_HOST);
-            $siteHost = parse_url($site->domain, PHP_URL_HOST) ?? $site->domain;
+        if (! $origin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Origen de la petición no identificado',
+            ], 403);
+        }
 
-            // Limpiar www. para comparación
-            $originHost = preg_replace('/^www\./', '', $originHost ?? '');
-            $siteHost = preg_replace('/^www\./', '', $siteHost);
+        $originHost = parse_url($origin, PHP_URL_HOST);
+        $siteHost = parse_url($site->domain, PHP_URL_HOST) ?? $site->domain;
 
-            // Permitir localhost/127.0.0.1 en desarrollo
-            $isLocalOrigin = in_array($originHost, ['localhost', '127.0.0.1']);
-            $isLocalSite = in_array($siteHost, ['localhost', '127.0.0.1']);
+        // Limpiar www. para comparación
+        $originHost = preg_replace('/^www\./', '', $originHost ?? '');
+        $siteHost = preg_replace('/^www\./', '', $siteHost);
 
-            if (! $isLocalOrigin && ! $isLocalSite && $originHost !== $siteHost) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Dominio no autorizado',
-                ], 403);
-            }
+        // Solo permitir localhost/127.0.0.1 en entorno de desarrollo
+        $isLocalOrigin = in_array($originHost, ['localhost', '127.0.0.1']);
+        $isDevelopment = app()->environment('local', 'development', 'testing');
+
+        if ($isLocalOrigin && ! $isDevelopment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dominio no autorizado',
+            ], 403);
+        }
+
+        // Validar que el origen coincida con el dominio configurado del sitio
+        if (! $isLocalOrigin && $originHost !== $siteHost) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dominio no autorizado para este sitio',
+            ], 403);
         }
 
         // Obtener fase por defecto
