@@ -7,10 +7,47 @@
         widgets: [],
         containers: {},
         modal: null,
-        currentConfig: null
+        currentConfig: null,
+        itiInstance: null,
+        itiLoaded: false
     };
 
     const MCW = window.MiniCRMWidget;
+
+    // Cargar intl-tel-input CSS y JS desde CDN
+    function loadIntlTelInput() {
+        if (MCW.itiLoaded) return Promise.resolve();
+
+        return new Promise((resolve) => {
+            // CSS
+            if (!document.getElementById('iti-css')) {
+                const css = document.createElement('link');
+                css.id = 'iti-css';
+                css.rel = 'stylesheet';
+                css.href = 'https://cdn.jsdelivr.net/npm/intl-tel-input@24.6.0/build/css/intlTelInput.css';
+                document.head.appendChild(css);
+            }
+
+            // JS
+            if (!document.getElementById('iti-js')) {
+                const script = document.createElement('script');
+                script.id = 'iti-js';
+                script.src = 'https://cdn.jsdelivr.net/npm/intl-tel-input@24.6.0/build/js/intlTelInput.min.js';
+                script.onload = () => {
+                    MCW.itiLoaded = true;
+                    resolve();
+                };
+                script.onerror = () => resolve(); // Continuar sin ITI si falla
+                document.head.appendChild(script);
+            } else {
+                MCW.itiLoaded = true;
+                resolve();
+            }
+        });
+    }
+
+    // Pre-cargar la librería
+    loadIntlTelInput();
 
     // Obtener el script actual y sus atributos
     const currentScript = document.currentScript;
@@ -217,6 +254,26 @@
             .mcw-form-group.mcw-invalid .mcw-error {
                 display: block;
             }
+            /* Estilos para intl-tel-input */
+            .mcw-form-group .iti {
+                width: 100%;
+            }
+            .mcw-form-group .iti__tel-input {
+                width: 100%;
+                padding: 12px;
+                padding-left: 52px;
+                border: 1px solid #D1D5DB;
+                border-radius: 8px;
+                font-size: 14px;
+            }
+            .mcw-form-group .iti__tel-input:focus {
+                outline: none;
+                border-color: var(--mcw-color);
+                box-shadow: 0 0 0 3px var(--mcw-color-light);
+            }
+            .mcw-form-group.mcw-invalid .iti__tel-input {
+                border-color: #EF4444;
+            }
             .mcw-btn-submit {
                 width: 100%;
                 padding: 14px;
@@ -356,13 +413,13 @@
                 </div>
                 <div class="mcw-form-group">
                     <label>Teléfono <span>*</span></label>
-                    <input type="tel" name="phone" required placeholder="+57 300 123 4567">
-                    <div class="mcw-error">El teléfono es requerido</div>
+                    <input type="tel" name="phone" id="mcw-phone-input" required>
+                    <div class="mcw-error">Ingresa un número de teléfono válido</div>
                 </div>
                 <div class="mcw-form-group">
                     <label>Email</label>
                     <input type="email" name="email" placeholder="tu@email.com">
-                    <div class="mcw-error">Email inválido</div>
+                    <div class="mcw-error">Ingresa un email válido</div>
                 </div>
                 <div class="mcw-form-group">
                     <label>Mensaje <span>*</span></label>
@@ -374,6 +431,32 @@
         `;
     }
 
+    // Inicializar intl-tel-input en el campo de teléfono
+    function initPhoneInput() {
+        const phoneInput = document.getElementById('mcw-phone-input');
+        if (!phoneInput || !window.intlTelInput) return null;
+
+        // Destruir instancia anterior si existe
+        if (MCW.itiInstance) {
+            MCW.itiInstance.destroy();
+        }
+
+        MCW.itiInstance = window.intlTelInput(phoneInput, {
+            initialCountry: "auto",
+            geoIpLookup: function(callback) {
+                fetch("https://ipapi.co/json")
+                    .then(res => res.json())
+                    .then(data => callback(data.country_code))
+                    .catch(() => callback("co")); // Default Colombia
+            },
+            preferredCountries: ["co", "mx", "ar", "cl", "pe", "ec", "ve", "us", "es"],
+            separateDialCode: true,
+            utilsScript: "https://cdn.jsdelivr.net/npm/intl-tel-input@24.6.0/build/js/utils.js"
+        });
+
+        return MCW.itiInstance;
+    }
+
     // Validar email
     function isValidEmail(email) {
         if (!email) return true;
@@ -381,7 +464,7 @@
     }
 
     // Abrir modal con configuración específica
-    function openModal(cfg) {
+    async function openModal(cfg) {
         const modal = getOrCreateModal();
         MCW.currentConfig = cfg;
 
@@ -396,6 +479,10 @@
 
         // Cargar formulario
         modal.body.innerHTML = getFormHtml(cfg);
+
+        // Esperar a que intl-tel-input esté cargado e inicializar
+        await loadIntlTelInput();
+        setTimeout(() => initPhoneInput(), 50); // Pequeño delay para asegurar que el DOM esté listo
 
         // Attach form submit
         attachFormSubmit(cfg, modal);
@@ -416,9 +503,24 @@
             form.querySelectorAll('.mcw-form-group').forEach(g => g.classList.remove('mcw-invalid'));
 
             const formData = new FormData(form);
+
+            // Obtener teléfono completo con código de país desde intl-tel-input
+            let phoneNumber = formData.get('phone').trim();
+            let phoneValid = true;
+
+            if (MCW.itiInstance) {
+                // Obtener número en formato E.164 (+573001234567)
+                phoneNumber = MCW.itiInstance.getNumber();
+
+                // Validar usando la librería
+                if (phoneNumber && !MCW.itiInstance.isValidNumber()) {
+                    phoneValid = false;
+                }
+            }
+
             const data = {
                 name: formData.get('name').trim(),
-                phone: formData.get('phone').trim(),
+                phone: phoneNumber,
                 email: formData.get('email').trim(),
                 message: formData.get('message').trim(),
                 site_id: cfg.siteId,
@@ -435,8 +537,12 @@
                 form.querySelector('[name="name"]').closest('.mcw-form-group').classList.add('mcw-invalid');
                 hasErrors = true;
             }
-            if (!data.phone) {
-                form.querySelector('[name="phone"]').closest('.mcw-form-group').classList.add('mcw-invalid');
+            if (!data.phone || !phoneValid) {
+                const phoneGroup = form.querySelector('[name="phone"]').closest('.mcw-form-group');
+                phoneGroup.classList.add('mcw-invalid');
+                if (!phoneValid && data.phone) {
+                    phoneGroup.querySelector('.mcw-error').textContent = 'El número de teléfono no es válido para el país seleccionado';
+                }
                 hasErrors = true;
             }
             if (!isValidEmail(data.email)) {
@@ -465,8 +571,43 @@
                     body: JSON.stringify(data)
                 });
 
+                const result = await response.json();
+
                 if (!response.ok) {
-                    throw new Error('Error al enviar');
+                    // Mostrar errores de validación del servidor
+                    if (result.errors) {
+                        // Mapear errores a los campos del formulario
+                        const fieldMap = {
+                            'name': 'name',
+                            'phone': 'phone',
+                            'email': 'email',
+                            'message': 'message'
+                        };
+
+                        Object.keys(result.errors).forEach(field => {
+                            const inputName = fieldMap[field];
+                            if (inputName) {
+                                const formGroup = form.querySelector(`[name="${inputName}"]`)?.closest('.mcw-form-group');
+                                if (formGroup) {
+                                    formGroup.classList.add('mcw-invalid');
+                                    const errorDiv = formGroup.querySelector('.mcw-error');
+                                    if (errorDiv) {
+                                        // Mostrar el primer mensaje de error
+                                        const errorMsg = Array.isArray(result.errors[field])
+                                            ? result.errors[field][0]
+                                            : result.errors[field];
+                                        errorDiv.textContent = errorMsg;
+                                    }
+                                }
+                            }
+                        });
+
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = cfg.buttonText;
+                        return;
+                    }
+
+                    throw new Error(result.message || 'Error al enviar');
                 }
 
                 // Mostrar éxito
@@ -498,7 +639,12 @@
                 console.error('MiniCRM Widget Error:', error);
                 submitBtn.disabled = false;
                 submitBtn.textContent = cfg.buttonText;
-                alert('Error al enviar el mensaje. Por favor intenta de nuevo.');
+
+                // Mostrar error más específico si está disponible
+                const errorMessage = error.message && error.message !== 'Error al enviar'
+                    ? error.message
+                    : 'Error al enviar el mensaje. Por favor verifica los datos e intenta de nuevo.';
+                alert(errorMessage);
             }
         });
     }
