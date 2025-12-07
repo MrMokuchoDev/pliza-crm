@@ -219,7 +219,7 @@ class SiteIndex extends Component
 
         $attributesStr = implode("\n       ", $attributes);
 
-        return "<script src=\"{$baseUrl}/widget.js\"\n       {$attributesStr}>\n</script>";
+        return "<script defer src=\"{$baseUrl}/widget.js\"\n       {$attributesStr}>\n</script>";
     }
 
     private function resetForm(): void
