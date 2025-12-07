@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Leads;
 
+use App\Infrastructure\Persistence\Eloquent\DealCommentModel;
+use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use App\Infrastructure\Persistence\Eloquent\NoteModel;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -126,8 +129,26 @@ class LeadShow extends Component
     public function deleteLead(): void
     {
         if ($this->lead) {
-            $this->lead->delete();
-            $this->dispatch('notify', type: 'success', message: 'Contacto eliminado');
+            DB::transaction(function () {
+                // Obtener IDs de negocios para eliminar sus comentarios
+                $dealIds = DealModel::where('lead_id', $this->lead->id)->pluck('id');
+
+                // Eliminar comentarios de negocios
+                if ($dealIds->isNotEmpty()) {
+                    DealCommentModel::whereIn('deal_id', $dealIds)->delete();
+                }
+
+                // Eliminar negocios asociados
+                DealModel::where('lead_id', $this->lead->id)->delete();
+
+                // Eliminar notas asociadas
+                NoteModel::where('lead_id', $this->lead->id)->delete();
+
+                // Eliminar el contacto
+                $this->lead->delete();
+            });
+
+            $this->dispatch('notify', type: 'success', message: 'Contacto y sus negocios eliminados');
             $this->redirect(route('leads.index'), navigate: true);
         }
     }

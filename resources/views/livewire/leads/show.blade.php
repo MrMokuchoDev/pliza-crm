@@ -350,7 +350,20 @@
                             </div>
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900">Eliminar Contacto</h3>
-                                <p class="text-sm text-gray-500 mt-1">Esta accion no se puede deshacer. El contacto, sus negocios y notas seran eliminados.</p>
+                                <p class="text-sm text-gray-500 mt-1">Esta acción no se puede deshacer.</p>
+                                @if($lead && ($lead->deals->count() > 0 || $lead->notes->count() > 0))
+                                    <div class="mt-3 p-3 bg-red-50 rounded-lg border border-red-200">
+                                        <p class="text-sm font-medium text-red-800">También se eliminarán:</p>
+                                        <ul class="mt-1 text-sm text-red-700 list-disc list-inside">
+                                            @if($lead->deals->count() > 0)
+                                                <li>{{ $lead->deals->count() }} negocio(s)</li>
+                                            @endif
+                                            @if($lead->notes->count() > 0)
+                                                <li>{{ $lead->notes->count() }} nota(s)</li>
+                                            @endif
+                                        </ul>
+                                    </div>
+                                @endif
                             </div>
                         </div>
                     </div>
