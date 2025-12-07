@@ -202,8 +202,7 @@ class SiteIndex extends Component
         $settings = $this->embedSite->settings ?? [];
         $phone = $settings['phone'] ?? '';
         $position = $settings['position'] ?? 'bottom-right';
-        $color = $settings['color'] ?? null;
-        $title = $settings['title'] ?? 'Contactanos';
+        $title = $settings['title'] ?? 'Contáctanos';
         $buttonText = $settings['button_text'] ?? 'Enviar';
 
         $attributes = [
@@ -216,13 +215,6 @@ class SiteIndex extends Component
         }
 
         $attributes[] = "data-position=\"{$position}\"";
-
-        // Solo incluir color si es personalizado (no los defaults por tipo)
-        $defaultColors = ['#3B82F6', '#25D366', '#A855F7'];
-        if ($color && ! in_array($color, $defaultColors)) {
-            $attributes[] = "data-color=\"{$color}\"";
-        }
-
         $attributes[] = "data-title=\"{$title}\"";
         $attributes[] = "data-button-text=\"{$buttonText}\"";
 
