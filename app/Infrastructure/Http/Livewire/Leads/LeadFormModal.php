@@ -25,10 +25,15 @@ class LeadFormModal extends Component
 
     protected function rules(): array
     {
+        $emailUniqueRule = 'unique:leads,email';
+        if ($this->leadId) {
+            $emailUniqueRule .= ',' . $this->leadId;
+        }
+
         return [
             'name' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
+            'email' => ['nullable', 'email', 'max:255', $emailUniqueRule],
+            'phone' => ['nullable', 'string', 'min:7', 'max:20', 'regex:/^\+?[0-9\s\-\(\)]+$/'],
             'message' => 'nullable|string|max:5000',
         ];
     }
@@ -37,6 +42,9 @@ class LeadFormModal extends Component
     {
         return [
             'email.email' => 'El email debe ser válido.',
+            'email.unique' => 'Este email ya está registrado en otro contacto.',
+            'phone.min' => 'El teléfono debe tener al menos 7 dígitos.',
+            'phone.regex' => 'El teléfono solo puede contener números, espacios, guiones y paréntesis.',
         ];
     }
 
@@ -61,6 +69,14 @@ class LeadFormModal extends Component
 
     public function save(): void
     {
+        // Validar que al menos uno de los datos de contacto esté presente
+        if (empty($this->email) && empty($this->phone)) {
+            $this->addError('email', 'Debes proporcionar al menos un email o teléfono.');
+            $this->addError('phone', 'Debes proporcionar al menos un email o teléfono.');
+
+            return;
+        }
+
         $this->validate();
 
         if ($this->leadId) {

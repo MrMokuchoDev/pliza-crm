@@ -129,11 +129,36 @@ class SalePhaseIndex extends Component
         $activeCount = SalePhaseModel::where('is_closed', false)->count();
         if (! $phase->is_closed && $activeCount <= 1) {
             $this->dispatch('notify', type: 'error', message: 'No puedes eliminar la única fase activa');
+
             return;
         }
 
-        // Transferir negocios (deals) si hay fase destino
-        if ($this->transferToPhaseId) {
+        // Contar negocios en esta fase
+        $dealsCount = \App\Infrastructure\Persistence\Eloquent\DealModel::where('sale_phase_id', $this->deletingId)->count();
+
+        // Si hay negocios, validar fase destino
+        if ($dealsCount > 0) {
+            if (! $this->transferToPhaseId) {
+                $this->dispatch('notify', type: 'error', message: 'Debes seleccionar una fase destino para transferir los ' . $dealsCount . ' negocio(s).');
+
+                return;
+            }
+
+            // Validar que la fase destino exista y sea diferente
+            $targetPhase = SalePhaseModel::find($this->transferToPhaseId);
+            if (! $targetPhase) {
+                $this->dispatch('notify', type: 'error', message: 'La fase destino seleccionada no existe.');
+
+                return;
+            }
+
+            if ($this->transferToPhaseId === $this->deletingId) {
+                $this->dispatch('notify', type: 'error', message: 'La fase destino no puede ser la misma que se está eliminando.');
+
+                return;
+            }
+
+            // Transferir negocios
             \App\Infrastructure\Persistence\Eloquent\DealModel::where('sale_phase_id', $this->deletingId)
                 ->update(['sale_phase_id' => $this->transferToPhaseId]);
         }

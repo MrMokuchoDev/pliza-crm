@@ -19,17 +19,21 @@ class LeadCaptureController extends Controller
 {
     public function capture(Request $request): JsonResponse
     {
-        // Validar datos
+        // Validar datos - teléfono validado en frontend con intl-tel-input
         $validator = Validator::make($request->all(), [
             'site_id' => 'required|uuid',
             'name' => 'nullable|string|max:255',
             'email' => 'nullable|email|max:255',
-            'phone' => 'nullable|string|max:50',
+            'phone' => ['nullable', 'string', 'min:7', 'max:20', 'regex:/^\+?[0-9\s\-\(\)]+$/'],
             'message' => 'nullable|string|max:5000',
             'source_type' => 'required|string|in:whatsapp_button,phone_button,contact_form',
             'source_url' => 'nullable|string|max:2000',
             'page_url' => 'nullable|string|max:2000',
             'user_agent' => 'nullable|string|max:500',
+        ], [
+            'email.email' => 'El email proporcionado no es válido.',
+            'phone.min' => 'El teléfono debe tener al menos 7 dígitos.',
+            'phone.regex' => 'El teléfono solo puede contener números, espacios, guiones y paréntesis.',
         ]);
 
         if ($validator->fails()) {
@@ -37,6 +41,18 @@ class LeadCaptureController extends Controller
                 'success' => false,
                 'message' => 'Datos inválidos',
                 'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        // Validar que al menos email o teléfono esté presente
+        if (empty($request->input('email')) && empty($request->input('phone'))) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Debes proporcionar al menos un email o teléfono.',
+                'errors' => [
+                    'email' => ['Debes proporcionar al menos un email o teléfono.'],
+                    'phone' => ['Debes proporcionar al menos un email o teléfono.'],
+                ],
             ], 422);
         }
 
