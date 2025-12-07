@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Infrastructure\Http\Livewire\Dashboard\DashboardIndex;
 use App\Infrastructure\Http\Livewire\Deals\DealFormModal;
 use App\Infrastructure\Http\Livewire\Deals\DealIndex;
 use App\Infrastructure\Http\Livewire\Deals\DealKanban;
@@ -31,6 +32,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // Registrar componentes Livewire desde Infrastructure
+        Livewire::component('app.infrastructure.http.livewire.dashboard.dashboard-index', DashboardIndex::class);
         Livewire::component('app.infrastructure.http.livewire.sale-phases.sale-phase-index', SalePhaseIndex::class);
         Livewire::component('app.infrastructure.http.livewire.leads.lead-index', LeadIndex::class);
         Livewire::component('app.infrastructure.http.livewire.leads.lead-show', LeadShow::class);
