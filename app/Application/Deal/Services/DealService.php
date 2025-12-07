@@ -157,4 +157,99 @@ class DealService
 
         return $count;
     }
+
+    /**
+     * Obtener deals paginados con filtros.
+     *
+     * @param  array{search?: string, phase_id?: string, source_type?: string}  $filters
+     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
+     */
+    public function getPaginated(array $filters = [], int $perPage = 10)
+    {
+        $query = DealModel::with(['lead', 'salePhase']);
+
+        if (! empty($filters['search'])) {
+            $search = $filters['search'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('lead', function ($lq) use ($search) {
+                        $lq->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        if (! empty($filters['phase_id'])) {
+            $query->where('sale_phase_id', $filters['phase_id']);
+        }
+
+        if (! empty($filters['source_type'])) {
+            $query->whereHas('lead', fn ($lq) => $lq->where('source_type', $filters['source_type']));
+        }
+
+        return $query->orderByDesc('created_at')->paginate($perPage);
+    }
+
+    /**
+     * Obtener deals por fase con filtros (para Kanban).
+     *
+     * @param  array<string>  $phaseIds
+     * @param  string|null  $search
+     * @return \Illuminate\Database\Eloquent\Collection
+     */
+    public function getByPhaseIds(array $phaseIds, ?string $search = null)
+    {
+        $query = DealModel::with('lead')
+            ->whereIn('sale_phase_id', $phaseIds);
+
+        if ($search) {
+            $query->where(function ($sq) use ($search) {
+                $sq->where('name', 'like', "%{$search}%")
+                    ->orWhereHas('lead', function ($lq) use ($search) {
+                        $lq->where('name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%")
+                            ->orWhere('phone', 'like', "%{$search}%");
+                    });
+            });
+        }
+
+        return $query->orderByDesc('updated_at')->get();
+    }
+
+    /**
+     * Obtener estadísticas de deals.
+     *
+     * @param  array<string>|null  $openPhaseIds  IDs de fases abiertas (no cerradas)
+     * @return array{total: int, open: int, total_value: float}
+     */
+    public function getStats(?array $openPhaseIds = null): array
+    {
+        $total = DealModel::count();
+
+        if ($openPhaseIds === null || empty($openPhaseIds)) {
+            return [
+                'total' => $total,
+                'open' => 0,
+                'total_value' => 0,
+            ];
+        }
+
+        $openDeals = DealModel::whereIn('sale_phase_id', $openPhaseIds)->count();
+        $totalValue = DealModel::whereIn('sale_phase_id', $openPhaseIds)->sum('value') ?? 0;
+
+        return [
+            'total' => $total,
+            'open' => $openDeals,
+            'total_value' => (float) $totalValue,
+        ];
+    }
+
+    /**
+     * Obtener deal con relaciones cargadas para cambio de fase.
+     */
+    public function findWithRelations(string $dealId): ?DealModel
+    {
+        return DealModel::with(['salePhase', 'lead'])->find($dealId);
+    }
 }

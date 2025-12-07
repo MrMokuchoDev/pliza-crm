@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Livewire\Deals;
 
 use App\Application\Deal\Services\DealService;
+use App\Application\SalePhase\Services\SalePhaseService;
 use App\Domain\Deal\Services\DealPhaseService;
 use App\Domain\Lead\ValueObjects\SourceType;
-use App\Infrastructure\Persistence\Eloquent\DealModel;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -106,8 +105,11 @@ class DealIndex extends Component
 
     public function updatePhase(string $dealId, string $phaseId): void
     {
-        $deal = DealModel::with(['salePhase', 'lead'])->find($dealId);
-        $newPhase = SalePhaseModel::find($phaseId);
+        $dealService = app(DealService::class);
+        $phaseService = app(SalePhaseService::class);
+
+        $deal = $dealService->findWithRelations($dealId);
+        $newPhase = $phaseService->find($phaseId);
 
         if (! $deal || ! $newPhase) {
             return;
@@ -146,8 +148,11 @@ class DealIndex extends Component
         $validationRules = DealPhaseService::getWonValueValidationRules();
         $this->validate($validationRules['rules'], $validationRules['messages']);
 
-        $deal = DealModel::find($this->pendingWonDealId);
-        $newPhase = SalePhaseModel::find($this->pendingWonPhaseId);
+        $dealService = app(DealService::class);
+        $phaseService = app(SalePhaseService::class);
+
+        $deal = $dealService->find($this->pendingWonDealId);
+        $newPhase = $phaseService->find($this->pendingWonPhaseId);
 
         if (! $deal || ! $newPhase) {
             $this->cancelWonPhase();
@@ -192,40 +197,32 @@ class DealIndex extends Component
 
     public function render()
     {
-        $query = DealModel::with(['lead', 'salePhase'])
-            ->when($this->search, function ($q) {
-                $q->where(function ($sq) {
-                    $sq->where('name', 'like', "%{$this->search}%")
-                        ->orWhereHas('lead', function ($lq) {
-                            $lq->where('name', 'like', "%{$this->search}%")
-                                ->orWhere('email', 'like', "%{$this->search}%")
-                                ->orWhere('phone', 'like', "%{$this->search}%");
-                        });
-                });
-            })
-            ->when($this->filterPhase, fn ($q) => $q->where('sale_phase_id', $this->filterPhase))
-            ->when($this->filterSource, function ($q) {
-                $q->whereHas('lead', fn ($lq) => $lq->where('source_type', $this->filterSource));
-            })
-            ->orderByDesc('created_at');
+        $dealService = app(DealService::class);
+        $phaseService = app(SalePhaseService::class);
 
-        $deals = $query->paginate(10);
+        // Obtener deals paginados usando el servicio
+        $filters = array_filter([
+            'search' => $this->search,
+            'phase_id' => $this->filterPhase,
+            'source_type' => $this->filterSource,
+        ]);
+        $deals = $dealService->getPaginated($filters);
 
-        $phases = SalePhaseModel::orderBy('order')->get();
+        // Obtener fases y tipos de origen
+        $phases = $phaseService->getAllOrdered();
         $sourceTypes = SourceType::cases();
 
-        // Stats
-        $totalDeals = DealModel::count();
-        $openDeals = DealModel::whereHas('salePhase', fn ($q) => $q->where('is_closed', false))->count();
-        $totalValue = DealModel::whereHas('salePhase', fn ($q) => $q->where('is_closed', false))->sum('value');
+        // Stats usando el servicio
+        $openPhaseIds = $phases->where('is_closed', false)->pluck('id')->toArray();
+        $stats = $dealService->getStats($openPhaseIds);
 
         return view('livewire.deals.index', [
             'deals' => $deals,
             'phases' => $phases,
             'sourceTypes' => $sourceTypes,
-            'totalDeals' => $totalDeals,
-            'openDeals' => $openDeals,
-            'totalValue' => $totalValue,
+            'totalDeals' => $stats['total'],
+            'openDeals' => $stats['open'],
+            'totalValue' => $stats['total_value'],
         ])->layout('components.layouts.app', ['title' => 'Negocios']);
     }
 }

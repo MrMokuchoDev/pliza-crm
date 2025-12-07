@@ -141,4 +141,28 @@ class SalePhaseService
     {
         return SalePhaseModel::where('is_closed', false)->count();
     }
+
+    /**
+     * Obtener fases cerradas ordenadas.
+     *
+     * @return Collection<int, SalePhaseModel>
+     */
+    public function getClosedPhases(): Collection
+    {
+        return SalePhaseModel::where('is_closed', true)
+            ->orderBy('order')
+            ->get();
+    }
+
+    /**
+     * Obtener IDs de fases abiertas (no cerradas).
+     *
+     * @return array<string>
+     */
+    public function getOpenPhaseIds(): array
+    {
+        return SalePhaseModel::where('is_closed', false)
+            ->pluck('id')
+            ->toArray();
+    }
 }
