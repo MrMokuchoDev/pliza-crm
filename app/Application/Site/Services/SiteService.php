@@ -12,9 +12,11 @@ use App\Application\Site\Commands\UpdateSiteCommand;
 use App\Application\Site\DTOs\SiteData;
 use App\Application\Site\Handlers\CreateSiteHandler;
 use App\Application\Site\Handlers\DeleteSiteHandler;
+use App\Application\Site\Handlers\FindActiveSiteHandler;
 use App\Application\Site\Handlers\RegenerateApiKeyHandler;
 use App\Application\Site\Handlers\ToggleSiteActiveHandler;
 use App\Application\Site\Handlers\UpdateSiteHandler;
+use App\Application\Site\Queries\FindActiveSiteQuery;
 use App\Infrastructure\Persistence\Eloquent\SiteModel;
 use Illuminate\Support\Collection;
 
@@ -30,6 +32,7 @@ class SiteService
         private readonly DeleteSiteHandler $deleteHandler,
         private readonly ToggleSiteActiveHandler $toggleActiveHandler,
         private readonly RegenerateApiKeyHandler $regenerateApiKeyHandler,
+        private readonly FindActiveSiteHandler $findActiveSiteHandler,
     ) {}
 
     /**
@@ -94,6 +97,16 @@ class SiteService
     public function find(string $siteId): ?SiteModel
     {
         return SiteModel::find($siteId);
+    }
+
+    /**
+     * Buscar un sitio activo por ID.
+     */
+    public function findActive(string $siteId): ?SiteModel
+    {
+        $query = new FindActiveSiteQuery($siteId);
+
+        return $this->findActiveSiteHandler->handle($query);
     }
 
     /**

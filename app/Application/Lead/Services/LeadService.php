@@ -4,23 +4,28 @@ declare(strict_types=1);
 
 namespace App\Application\Lead\Services;
 
+use App\Application\Lead\Commands\CaptureLeadCommand;
 use App\Application\Lead\Commands\CreateLeadCommand;
 use App\Application\Lead\Commands\DeleteLeadCommand;
 use App\Application\Lead\Commands\UpdateLeadCommand;
 use App\Application\Lead\DTOs\LeadData;
+use App\Application\Lead\Handlers\CaptureLeadHandler;
 use App\Application\Lead\Handlers\CreateLeadHandler;
 use App\Application\Lead\Handlers\DeleteLeadHandler;
+use App\Application\Lead\Handlers\FindLeadByContactHandler;
 use App\Application\Lead\Handlers\FindLeadHandler;
 use App\Application\Lead\Handlers\GetLeadRelatedCountsHandler;
 use App\Application\Lead\Handlers\GetLeadStatsHandler;
 use App\Application\Lead\Handlers\GetPaginatedLeadsHandler;
 use App\Application\Lead\Handlers\SearchLeadsHandler;
 use App\Application\Lead\Handlers\UpdateLeadHandler;
+use App\Application\Lead\Queries\FindLeadByContactQuery;
 use App\Application\Lead\Queries\FindLeadQuery;
 use App\Application\Lead\Queries\GetLeadRelatedCountsQuery;
 use App\Application\Lead\Queries\GetLeadStatsQuery;
 use App\Application\Lead\Queries\GetPaginatedLeadsQuery;
 use App\Application\Lead\Queries\SearchLeadsQuery;
+use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
@@ -40,6 +45,8 @@ class LeadService
         private readonly GetPaginatedLeadsHandler $paginatedHandler,
         private readonly GetLeadStatsHandler $statsHandler,
         private readonly GetLeadRelatedCountsHandler $relatedCountsHandler,
+        private readonly FindLeadByContactHandler $findByContactHandler,
+        private readonly CaptureLeadHandler $captureHandler,
     ) {}
 
     /**
@@ -177,5 +184,48 @@ class LeadService
         $query = new GetLeadStatsQuery();
 
         return $this->statsHandler->handle($query);
+    }
+
+    /**
+     * Buscar un Lead por email o teléfono.
+     */
+    public function findByContact(?string $email = null, ?string $phone = null, bool $lockForUpdate = false): ?LeadModel
+    {
+        $query = new FindLeadByContactQuery($email, $phone, $lockForUpdate);
+
+        return $this->findByContactHandler->handle($query);
+    }
+
+    /**
+     * Capturar un Lead desde un widget externo.
+     *
+     * @return array{success: bool, message: string, data: array, status_code: int}
+     */
+    public function capture(
+        string $siteId,
+        SourceType $sourceType,
+        ?string $name = null,
+        ?string $email = null,
+        ?string $phone = null,
+        ?string $message = null,
+        ?string $sourceUrl = null,
+        ?string $userAgent = null,
+        ?string $ipAddress = null,
+        ?string $pageUrl = null,
+    ): array {
+        $command = new CaptureLeadCommand(
+            siteId: $siteId,
+            sourceType: $sourceType,
+            name: $name,
+            email: $email,
+            phone: $phone,
+            message: $message,
+            sourceUrl: $sourceUrl,
+            userAgent: $userAgent,
+            ipAddress: $ipAddress,
+            pageUrl: $pageUrl,
+        );
+
+        return $this->captureHandler->handle($command);
     }
 }
