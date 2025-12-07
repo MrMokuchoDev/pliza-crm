@@ -133,6 +133,7 @@ class LeadIndex extends Component
     public function render()
     {
         $query = LeadModel::withCount(['deals', 'activeDeals'])
+            ->with(['activeDeals' => fn ($q) => $q->with('salePhase')->limit(1)])
             ->when($this->search, function ($q) {
                 $q->where(function ($sq) {
                     $sq->where('name', 'like', "%{$this->search}%")
