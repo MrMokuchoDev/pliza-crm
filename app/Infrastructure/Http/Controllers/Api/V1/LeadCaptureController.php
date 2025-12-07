@@ -4,19 +4,21 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Controllers\Api\V1;
 
+use App\Application\Lead\Services\LeadService;
+use App\Application\Site\Services\SiteService;
 use App\Domain\Lead\ValueObjects\SourceType;
-use App\Infrastructure\Persistence\Eloquent\DealModel;
-use App\Infrastructure\Persistence\Eloquent\LeadModel;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
-use App\Infrastructure\Persistence\Eloquent\SiteModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
 class LeadCaptureController extends Controller
 {
+    public function __construct(
+        private readonly LeadService $leadService,
+        private readonly SiteService $siteService,
+    ) {}
+
     public function capture(Request $request): JsonResponse
     {
         // Validar datos - teléfono validado en frontend con intl-tel-input
@@ -57,9 +59,7 @@ class LeadCaptureController extends Controller
         }
 
         // Verificar que el sitio existe y está activo
-        $site = SiteModel::where('id', $request->input('site_id'))
-            ->where('is_active', true)
-            ->first();
+        $site = $this->siteService->findActive($request->input('site_id'));
 
         if (! $site) {
             return response()->json([
@@ -69,6 +69,40 @@ class LeadCaptureController extends Controller
         }
 
         // Validar que la petición viene del dominio registrado
+        $originValidation = $this->validateOrigin($request, $site->domain);
+        if ($originValidation !== true) {
+            return $originValidation;
+        }
+
+        // Determinar el source_type
+        $sourceType = $this->parseSourceType($request->input('source_type'));
+
+        // Capturar lead usando el servicio
+        $result = $this->leadService->capture(
+            siteId: $site->id,
+            sourceType: $sourceType,
+            name: $request->input('name'),
+            email: $request->input('email'),
+            phone: $request->input('phone'),
+            message: $request->input('message'),
+            sourceUrl: $request->input('source_url') ?? $request->input('page_url'),
+            userAgent: $request->input('user_agent'),
+            ipAddress: $request->ip(),
+            pageUrl: $request->input('page_url'),
+        );
+
+        return response()->json([
+            'success' => $result['success'],
+            'message' => $result['message'],
+            'data' => $result['data'],
+        ], $result['status_code']);
+    }
+
+    /**
+     * Validar que la petición viene del dominio registrado.
+     */
+    private function validateOrigin(Request $request, string $siteDomain): true|JsonResponse
+    {
         $origin = $request->header('Origin') ?? $request->header('Referer');
         if (! $origin) {
             return response()->json([
@@ -78,7 +112,7 @@ class LeadCaptureController extends Controller
         }
 
         $originHost = parse_url($origin, PHP_URL_HOST);
-        $siteHost = parse_url($site->domain, PHP_URL_HOST) ?? $site->domain;
+        $siteHost = parse_url($siteDomain, PHP_URL_HOST) ?? $siteDomain;
 
         // Limpiar www. para comparación
         $originHost = preg_replace('/^www\./', '', $originHost ?? '');
@@ -103,159 +137,19 @@ class LeadCaptureController extends Controller
             ], 403);
         }
 
-        // Obtener fase por defecto
-        $defaultPhase = SalePhaseModel::where('is_default', true)->first();
-        if (! $defaultPhase) {
-            $defaultPhase = SalePhaseModel::orderBy('order')->first();
-        }
+        return true;
+    }
 
-        if (! $defaultPhase) {
-            return response()->json([
-                'success' => false,
-                'message' => 'No hay fases de venta configuradas',
-            ], 500);
-        }
-
-        // Determinar el source_type
-        $sourceTypeValue = $request->input('source_type');
-        $sourceType = match ($sourceTypeValue) {
+    /**
+     * Parsear el tipo de origen.
+     */
+    private function parseSourceType(string $sourceTypeValue): SourceType
+    {
+        return match ($sourceTypeValue) {
             'whatsapp_button' => SourceType::WHATSAPP_BUTTON,
             'phone_button' => SourceType::PHONE_BUTTON,
             'contact_form' => SourceType::CONTACT_FORM,
             default => SourceType::CONTACT_FORM,
         };
-
-        $email = $request->input('email');
-        $phone = $request->input('phone');
-        $message = $request->input('message');
-        $name = $request->input('name');
-
-        // Normalizar teléfono (remover espacios, guiones, paréntesis y +)
-        $normalizedPhone = $phone ? $this->normalizePhone($phone) : null;
-
-        // Toda la lógica de búsqueda y creación dentro de transacción para evitar race conditions
-        return DB::transaction(function () use ($request, $site, $sourceType, $defaultPhase, $name, $email, $phone, $message, $normalizedPhone) {
-            // Buscar contacto existente por email o teléfono normalizado (con lock para evitar duplicados)
-            $existingLead = null;
-            if ($email) {
-                $existingLead = LeadModel::where('email', $email)->lockForUpdate()->first();
-            }
-            if (! $existingLead && $normalizedPhone && strlen($normalizedPhone) >= 7) {
-                // Buscar por teléfono normalizado - usar los últimos 7 dígitos para filtro inicial
-                $lastDigits = substr($normalizedPhone, -7);
-                $existingLead = LeadModel::whereNotNull('phone')
-                    ->where('phone', 'like', '%' . $lastDigits . '%')
-                    ->lockForUpdate()
-                    ->get()
-                    ->first(fn ($lead) => $this->normalizePhone($lead->phone) === $normalizedPhone);
-            }
-
-            // Si el contacto existe
-            if ($existingLead) {
-                // Verificar si tiene negocio abierto
-                if ($existingLead->hasOpenDeal()) {
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Contacto ya registrado con negocio activo',
-                        'data' => [
-                            'id' => $existingLead->id,
-                            'existing' => true,
-                            'has_open_deal' => true,
-                        ],
-                    ], 200);
-                }
-
-                // No tiene negocio abierto, crear uno nuevo
-                $deal = $this->createDeal(
-                    $existingLead,
-                    $defaultPhase,
-                    $name,
-                    $message,
-                    $sourceType
-                );
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Nuevo negocio creado para contacto existente',
-                    'data' => [
-                        'id' => $existingLead->id,
-                        'deal_id' => $deal->id,
-                        'existing' => true,
-                        'has_open_deal' => false,
-                    ],
-                ], 201);
-            }
-
-            // Contacto no existe, crear nuevo contacto y negocio
-            $lead = LeadModel::create([
-                'name' => $name,
-                'email' => $email,
-                'phone' => $phone,
-                'message' => $message,
-                'source_type' => $sourceType->value,
-                'source_site_id' => $site->id,
-                'source_url' => $request->input('source_url') ?? $request->input('page_url'),
-                'metadata' => [
-                    'user_agent' => $request->input('user_agent'),
-                    'ip_address' => $request->ip(),
-                    'page_url' => $request->input('page_url'),
-                    'captured_at' => now()->toIso8601String(),
-                ],
-            ]);
-
-            // Crear el negocio asociado
-            $deal = $this->createDeal(
-                $lead,
-                $defaultPhase,
-                $name,
-                $message,
-                $sourceType
-            );
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Contacto y negocio creados exitosamente',
-                'data' => [
-                    'id' => $lead->id,
-                    'deal_id' => $deal->id,
-                    'existing' => false,
-                ],
-            ], 201);
-        });
-    }
-
-    /**
-     * Crear un negocio para un contacto
-     */
-    private function createDeal(
-        LeadModel $lead,
-        SalePhaseModel $defaultPhase,
-        ?string $name,
-        ?string $message,
-        SourceType $sourceType
-    ): DealModel {
-        // Generar nombre del negocio basado en el tipo de origen
-        $dealName = match ($sourceType) {
-            SourceType::WHATSAPP_BUTTON => 'WhatsApp - ' . ($name ?: 'Sin nombre'),
-            SourceType::PHONE_BUTTON => 'Llamada - ' . ($name ?: 'Sin nombre'),
-            SourceType::CONTACT_FORM => 'Formulario - ' . ($name ?: 'Sin nombre'),
-            default => 'Nuevo negocio - ' . ($name ?: 'Sin nombre'),
-        };
-
-        return DealModel::create([
-            'lead_id' => $lead->id,
-            'sale_phase_id' => $defaultPhase->id,
-            'name' => $dealName,
-            'description' => $message,
-            'estimated_close_date' => now()->addMonth()->format('Y-m-d'),
-        ]);
-    }
-
-    /**
-     * Normalizar teléfono removiendo espacios, guiones, paréntesis y +
-     */
-    private function normalizePhone(string $phone): string
-    {
-        return preg_replace('/[\s\-\(\)\+]/', '', $phone);
     }
 }
