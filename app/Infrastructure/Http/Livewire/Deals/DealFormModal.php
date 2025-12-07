@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Deals;
 
+use App\Domain\Deal\Services\DealPhaseService;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
@@ -186,10 +187,11 @@ class DealFormModal extends Component
     {
         // Verificar PRIMERO si se quiere cerrar como GANADO sin valor
         $phase = SalePhaseModel::find($this->salePhaseId);
-        if ($phase?->is_closed && $phase?->is_won) {
-            if (empty($this->value) || ! is_numeric($this->value)) {
-                $this->addError('value', 'El valor del negocio es obligatorio para cerrarlo como ganado.');
-                $this->dispatch('notify', type: 'error', message: 'Debes ingresar el valor del negocio para cerrarlo como ganado.');
+        if ($phase) {
+            $valueValidation = DealPhaseService::validateValueForWonPhase($phase, $this->value);
+            if (! $valueValidation['valid']) {
+                $this->addError('value', $valueValidation['error']);
+                $this->dispatch('notify', type: 'error', message: $valueValidation['error']);
 
                 return;
             }
@@ -217,13 +219,14 @@ class DealFormModal extends Component
             ]);
         }
 
-        // Si estamos editando un negocio cerrado y se quiere mover a fase abierta,
-        // verificar que el contacto no tenga otro negocio abierto
-        if ($this->dealId) {
+        // Si estamos editando un negocio, usar el servicio para validar cambio de fase
+        if ($this->dealId && $phase) {
             $deal = DealModel::with(['salePhase', 'lead'])->find($this->dealId);
-            if ($deal && $deal->salePhase?->is_closed && ! $phase?->is_closed) {
-                if ($deal->lead && $deal->lead->hasOpenDeal($this->dealId)) {
-                    $this->dispatch('notify', type: 'error', message: 'Este contacto ya tiene un negocio abierto. Cierra o elimina el otro negocio antes de reabrir este.');
+            if ($deal && $deal->sale_phase_id !== $phase->id) {
+                $service = new DealPhaseService();
+                $validation = $service->canChangePhase($deal, $phase);
+                if (! $validation['can_change'] && $validation['reason'] === DealPhaseService::RESULT_LEAD_HAS_OPEN_DEAL) {
+                    $this->dispatch('notify', type: 'error', message: $service->getErrorMessage($validation['reason']));
 
                     return;
                 }

@@ -132,9 +132,9 @@ class SalePhaseIndex extends Component
             return;
         }
 
-        // Transferir leads si hay fase destino
+        // Transferir negocios (deals) si hay fase destino
         if ($this->transferToPhaseId) {
-            \App\Infrastructure\Persistence\Eloquent\LeadModel::where('sale_phase_id', $this->deletingId)
+            \App\Infrastructure\Persistence\Eloquent\DealModel::where('sale_phase_id', $this->deletingId)
                 ->update(['sale_phase_id' => $this->transferToPhaseId]);
         }
 
