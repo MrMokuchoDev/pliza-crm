@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Infrastructure\Http\Livewire\Dashboard\DashboardIndex;
 use App\Infrastructure\Http\Livewire\Deals\DealIndex;
 use App\Infrastructure\Http\Livewire\Deals\DealKanban;
 use App\Infrastructure\Http\Livewire\Deals\DealShow;
@@ -19,9 +20,7 @@ Route::get('/', function () {
 // Rutas protegidas del panel administrativo
 Route::middleware(['auth'])->group(function () {
     // Dashboard
-    Route::get('/dashboard', function () {
-        return redirect()->route('deals.kanban');
-    })->name('dashboard');
+    Route::get('/dashboard', DashboardIndex::class)->name('dashboard');
 
     // Contactos (Leads)
     Route::get('/contactos', LeadIndex::class)->name('leads.index');
