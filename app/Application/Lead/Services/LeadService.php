@@ -89,4 +89,20 @@ class LeadService
 
         return $lead->name ?? $lead->email ?? $lead->phone ?? 'Sin nombre';
     }
+
+    /**
+     * Buscar un Lead por ID.
+     */
+    public function find(string $leadId): ?LeadModel
+    {
+        return LeadModel::find($leadId);
+    }
+
+    /**
+     * Verificar si un Lead existe.
+     */
+    public function exists(string $leadId): bool
+    {
+        return LeadModel::where('id', $leadId)->exists();
+    }
 }

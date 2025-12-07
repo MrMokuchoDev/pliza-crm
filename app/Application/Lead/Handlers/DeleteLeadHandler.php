@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Application\Lead\Handlers;
 
+use App\Application\Deal\Services\DealService;
+use App\Application\DealComment\Services\DealCommentService;
 use App\Application\Lead\Commands\DeleteLeadCommand;
 use App\Application\Note\Services\NoteService;
-use App\Infrastructure\Persistence\Eloquent\DealCommentModel;
-use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Illuminate\Support\Facades\DB;
 
@@ -24,6 +24,8 @@ class DeleteLeadHandler
 {
     public function __construct(
         private readonly NoteService $noteService,
+        private readonly DealCommentService $dealCommentService,
+        private readonly DealService $dealService,
     ) {}
 
     /**
@@ -48,17 +50,15 @@ class DeleteLeadHandler
 
         DB::transaction(function () use ($command, &$deletedCounts) {
             // Obtener IDs de negocios para eliminar sus comentarios
-            $dealIds = DealModel::where('lead_id', $command->leadId)->pluck('id');
+            $dealIds = $this->dealService->getDealIdsByLeadId($command->leadId);
 
-            // Eliminar comentarios de negocios
+            // Eliminar comentarios de negocios usando el servicio
             if ($dealIds->isNotEmpty()) {
-                $deletedCounts['comments'] = DealCommentModel::whereIn('deal_id', $dealIds)->count();
-                DealCommentModel::whereIn('deal_id', $dealIds)->delete();
+                $deletedCounts['comments'] = $this->dealCommentService->deleteByDealIds($dealIds);
             }
 
-            // Eliminar negocios asociados
-            $deletedCounts['deals'] = DealModel::where('lead_id', $command->leadId)->count();
-            DealModel::where('lead_id', $command->leadId)->delete();
+            // Eliminar negocios asociados usando DealService
+            $deletedCounts['deals'] = $this->dealService->deleteByLeadId($command->leadId);
 
             // Eliminar notas asociadas usando NoteService
             $deletedCounts['notes'] = $this->noteService->deleteByLeadId($command->leadId);

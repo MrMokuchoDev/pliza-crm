@@ -2,23 +2,23 @@
 
 namespace Database\Seeders;
 
+use App\Application\Lead\DTOs\LeadData;
+use App\Application\Lead\Services\LeadService;
+use App\Application\Note\DTOs\NoteData;
+use App\Application\Note\Services\NoteService;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
-use App\Infrastructure\Persistence\Eloquent\NoteModel;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Illuminate\Database\Seeder;
 
 class LeadSeeder extends Seeder
 {
+    public function __construct(
+        private readonly LeadService $leadService,
+        private readonly NoteService $noteService,
+    ) {}
+
     public function run(): void
     {
-        $phases = SalePhaseModel::orderBy('order')->get();
-
-        if ($phases->isEmpty()) {
-            $this->command->warn('No hay fases de venta. Ejecuta SalePhaseSeeder primero.');
-            return;
-        }
-
         $leads = [
             ['name' => 'Carlos Mendoza', 'email' => 'carlos.mendoza@gmail.com', 'phone' => '+573001234567', 'message' => 'Interesado en el plan empresarial', 'source' => SourceType::CONTACT_FORM],
             ['name' => 'María García', 'email' => 'maria.garcia@hotmail.com', 'phone' => '+573109876543', 'message' => 'Quiero más información sobre precios', 'source' => SourceType::WHATSAPP_BUTTON],
@@ -60,27 +60,21 @@ class LeadSeeder extends Seeder
             'Necesita funcionalidad que no tenemos aún.',
         ];
 
-        foreach ($leads as $index => $leadData) {
-            // Distribuir leads en diferentes fases
-            $phaseIndex = $index % $phases->count();
-            $phase = $phases[$phaseIndex];
+        foreach ($leads as $leadInfo) {
+            // Buscar si ya existe
+            $lead = LeadModel::where('email', $leadInfo['email'])->first();
 
-            // Crear lead con fechas variadas (últimos 30 días)
-            $daysAgo = rand(0, 30);
-            $createdAt = now()->subDays($daysAgo)->subHours(rand(0, 23));
-
-            $lead = LeadModel::updateOrCreate(
-                ['email' => $leadData['email']],
-                [
-                    'name' => $leadData['name'],
-                    'phone' => $leadData['phone'],
-                    'message' => $leadData['message'],
-                    'source_type' => $leadData['source']->value,
-                    'sale_phase_id' => $phase->id,
-                    'created_at' => $createdAt,
-                    'updated_at' => $createdAt->addDays(rand(0, min($daysAgo, 5))),
-                ]
-            );
+            if (! $lead) {
+                // Crear lead usando el servicio
+                $leadData = new LeadData(
+                    name: $leadInfo['name'],
+                    email: $leadInfo['email'],
+                    phone: $leadInfo['phone'],
+                    message: $leadInfo['message'],
+                    sourceType: $leadInfo['source'],
+                );
+                $lead = $this->leadService->create($leadData);
+            }
 
             // Agregar 1-3 notas aleatorias a algunos leads
             if (rand(0, 1) === 1) {
@@ -89,15 +83,16 @@ class LeadSeeder extends Seeder
                 $usedNotes = is_array($usedNotes) ? $usedNotes : [$usedNotes];
 
                 foreach ($usedNotes as $noteIndex) {
-                    NoteModel::updateOrCreate(
-                        [
-                            'lead_id' => $lead->id,
-                            'content' => $notes[$noteIndex],
-                        ],
-                        [
-                            'created_at' => $lead->created_at->addHours(rand(1, 48)),
-                        ]
-                    );
+                    // Verificar si ya existe la nota
+                    $existingNote = $lead->notes()->where('content', $notes[$noteIndex])->first();
+
+                    if (! $existingNote) {
+                        $noteData = new NoteData(
+                            leadId: $lead->id,
+                            content: $notes[$noteIndex],
+                        );
+                        $this->noteService->create($noteData);
+                    }
                 }
             }
         }

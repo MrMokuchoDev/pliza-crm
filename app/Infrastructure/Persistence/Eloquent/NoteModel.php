@@ -7,10 +7,12 @@ namespace App\Infrastructure\Persistence\Eloquent;
 use App\Domain\Shared\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class NoteModel extends Model
 {
     use HasUuid;
+    use SoftDeletes;
 
     protected $table = 'notes';
 
