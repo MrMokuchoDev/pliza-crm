@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Deals;
 
+use App\Application\Deal\DTOs\DealData;
+use App\Application\Deal\Services\DealService;
+use App\Application\Lead\DTOs\LeadData;
+use App\Application\Lead\Services\LeadService;
 use App\Domain\Deal\Services\DealPhaseService;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
@@ -216,25 +220,30 @@ class DealFormModal extends Component
 
         // Envolver operaciones de BD en transacción para garantizar consistencia
         $isUpdate = (bool) $this->dealId;
-        DB::transaction(function () use ($phase) {
+        $leadService = app(LeadService::class);
+        $dealService = app(DealService::class);
+
+        DB::transaction(function () use ($phase, $leadService, $dealService) {
             // If creating new lead
             if ($this->createNewLead && ! $this->leadId) {
-                $newLead = LeadModel::create([
-                    'name' => $this->leadName ?: null,
-                    'email' => $this->leadEmail ?: null,
-                    'phone' => $this->leadPhone ?: null,
-                    'source_type' => SourceType::MANUAL,
-                ]);
+                $leadData = new LeadData(
+                    name: $this->leadName ?: null,
+                    email: $this->leadEmail ?: null,
+                    phone: $this->leadPhone ?: null,
+                    sourceType: SourceType::MANUAL,
+                );
+                $newLead = $leadService->create($leadData);
                 $this->leadId = $newLead->id;
             }
 
             // Update lead data if we have a lead
             if ($this->leadId && ! $this->createNewLead) {
-                LeadModel::where('id', $this->leadId)->update([
-                    'name' => $this->leadName ?: null,
-                    'email' => $this->leadEmail ?: null,
-                    'phone' => $this->leadPhone ?: null,
-                ]);
+                $leadData = new LeadData(
+                    name: $this->leadName ?: null,
+                    email: $this->leadEmail ?: null,
+                    phone: $this->leadPhone ?: null,
+                );
+                $leadService->update($this->leadId, $leadData);
             }
 
             // Si se mueve a fase abierta, limpiar fecha de cierre
@@ -242,25 +251,20 @@ class DealFormModal extends Component
                 ? ($this->closeDate ?: now()->format('Y-m-d'))
                 : null;
 
+            $dealData = DealData::fromArray([
+                'lead_id' => $this->leadId,
+                'name' => $this->name,
+                'value' => $this->value ?: null,
+                'description' => $this->description ?: null,
+                'sale_phase_id' => $this->salePhaseId,
+                'estimated_close_date' => $this->estimatedCloseDate ?: null,
+                'close_date' => $closeDate,
+            ]);
+
             if ($this->dealId) {
-                DealModel::where('id', $this->dealId)->update([
-                    'name' => $this->name,
-                    'value' => $this->value ?: null,
-                    'description' => $this->description ?: null,
-                    'sale_phase_id' => $this->salePhaseId,
-                    'estimated_close_date' => $this->estimatedCloseDate ?: null,
-                    'close_date' => $closeDate,
-                ]);
+                $dealService->update($this->dealId, $dealData);
             } else {
-                DealModel::create([
-                    'lead_id' => $this->leadId,
-                    'name' => $this->name,
-                    'value' => $this->value ?: null,
-                    'description' => $this->description ?: null,
-                    'sale_phase_id' => $this->salePhaseId,
-                    'estimated_close_date' => $this->estimatedCloseDate ?: null,
-                    'close_date' => $closeDate,
-                ]);
+                $dealService->create($dealData);
             }
         });
 

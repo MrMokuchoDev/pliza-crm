@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Deals;
 
+use App\Application\Deal\Services\DealService;
 use App\Domain\Deal\Services\DealPhaseService;
 use App\Infrastructure\Persistence\Eloquent\DealCommentModel;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
@@ -210,8 +211,17 @@ class DealShow extends Component
     public function deleteDeal(): void
     {
         if ($this->deal) {
-            $this->deal->delete();
-            $this->dispatch('notify', type: 'success', message: 'Negocio eliminado');
+            $dealService = app(DealService::class);
+            $result = $dealService->delete($this->dealId);
+
+            if ($result['success']) {
+                $message = 'Negocio eliminado';
+                if ($result['deleted_comments'] > 0) {
+                    $message .= " ({$result['deleted_comments']} comentarios eliminados)";
+                }
+                $this->dispatch('notify', type: 'success', message: $message);
+            }
+
             $this->redirect(route('deals.index'), navigate: true);
         }
     }

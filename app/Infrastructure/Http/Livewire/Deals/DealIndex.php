@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Deals;
 
+use App\Application\Deal\Services\DealService;
 use App\Domain\Deal\Services\DealPhaseService;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
@@ -87,8 +88,19 @@ class DealIndex extends Component
             return;
         }
 
-        DealModel::destroy($this->deletingId);
-        $this->dispatch('notify', type: 'success', message: 'Negocio eliminado correctamente');
+        $dealService = app(DealService::class);
+        $result = $dealService->delete($this->deletingId);
+
+        if ($result['success']) {
+            $message = 'Negocio eliminado correctamente';
+            if ($result['deleted_comments'] > 0) {
+                $message .= " ({$result['deleted_comments']} comentarios eliminados)";
+            }
+            $this->dispatch('notify', type: 'success', message: $message);
+        } else {
+            $this->dispatch('notify', type: 'error', message: 'Error al eliminar el negocio');
+        }
+
         $this->closeDeleteModal();
     }
 

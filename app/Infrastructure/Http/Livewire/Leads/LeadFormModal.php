@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Leads;
 
+use App\Application\Lead\DTOs\LeadData;
+use App\Application\Lead\Services\LeadService;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Livewire\Attributes\On;
@@ -79,22 +81,20 @@ class LeadFormModal extends Component
 
         $this->validate();
 
+        $leadService = app(LeadService::class);
+        $leadData = new LeadData(
+            name: $this->name ?: null,
+            email: $this->email ?: null,
+            phone: $this->phone ?: null,
+            message: $this->message ?: null,
+            sourceType: $this->leadId ? null : SourceType::MANUAL,
+        );
+
         if ($this->leadId) {
-            LeadModel::where('id', $this->leadId)->update([
-                'name' => $this->name ?: null,
-                'email' => $this->email ?: null,
-                'phone' => $this->phone ?: null,
-                'message' => $this->message ?: null,
-            ]);
+            $leadService->update($this->leadId, $leadData);
             $this->dispatch('notify', type: 'success', message: 'Contacto actualizado');
         } else {
-            LeadModel::create([
-                'name' => $this->name ?: null,
-                'email' => $this->email ?: null,
-                'phone' => $this->phone ?: null,
-                'message' => $this->message ?: null,
-                'source_type' => SourceType::MANUAL->value,
-            ]);
+            $leadService->create($leadData);
             $this->dispatch('notify', type: 'success', message: 'Contacto creado');
         }
 
