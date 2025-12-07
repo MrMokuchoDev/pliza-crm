@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Deals;
 
+use App\Application\Deal\Services\DealService;
+use App\Application\SalePhase\Services\SalePhaseService;
 use App\Domain\Deal\Services\DealPhaseService;
-use App\Infrastructure\Persistence\Eloquent\DealModel;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -41,8 +41,11 @@ class DealKanban extends Component
 
     public function moveToPhase(string $dealId, string $phaseId): void
     {
-        $deal = DealModel::with(['salePhase', 'lead'])->find($dealId);
-        $newPhase = SalePhaseModel::find($phaseId);
+        $dealService = app(DealService::class);
+        $phaseService = app(SalePhaseService::class);
+
+        $deal = $dealService->findWithRelations($dealId);
+        $newPhase = $phaseService->find($phaseId);
 
         if (! $deal || ! $newPhase) {
             return;
@@ -79,8 +82,11 @@ class DealKanban extends Component
         $validationRules = DealPhaseService::getWonValueValidationRules();
         $this->validate($validationRules['rules'], $validationRules['messages']);
 
-        $deal = DealModel::find($this->pendingWonDealId);
-        $newPhase = SalePhaseModel::find($this->pendingWonPhaseId);
+        $dealService = app(DealService::class);
+        $phaseService = app(SalePhaseService::class);
+
+        $deal = $dealService->find($this->pendingWonDealId);
+        $newPhase = $phaseService->find($this->pendingWonPhaseId);
 
         if (! $deal || ! $newPhase) {
             $this->cancelWonPhase();
@@ -110,36 +116,33 @@ class DealKanban extends Component
 
     public function render()
     {
-        $openPhases = SalePhaseModel::where('is_closed', false)
-            ->orderBy('order')
-            ->get();
+        $dealService = app(DealService::class);
+        $phaseService = app(SalePhaseService::class);
 
-        $closedPhases = SalePhaseModel::where('is_closed', true)
-            ->orderBy('order')
-            ->get();
+        // Obtener fases usando el servicio
+        $openPhases = $phaseService->getActivePhases();
+        $closedPhases = $phaseService->getClosedPhases();
 
-        $dealsByPhase = [];
-        foreach ($openPhases as $phase) {
-            $query = DealModel::with('lead')
-                ->where('sale_phase_id', $phase->id)
-                ->when($this->search, function ($q) {
-                    $q->where(function ($sq) {
-                        $sq->where('name', 'like', "%{$this->search}%")
-                            ->orWhereHas('lead', function ($lq) {
-                                $lq->where('name', 'like', "%{$this->search}%")
-                                    ->orWhere('email', 'like', "%{$this->search}%")
-                                    ->orWhere('phone', 'like', "%{$this->search}%");
-                            });
-                    });
-                })
-                ->orderByDesc('updated_at')
-                ->get();
+        // Obtener IDs de fases abiertas
+        $openPhaseIds = $openPhases->pluck('id')->toArray();
 
-            $dealsByPhase[$phase->id] = $query;
+        // Obtener todos los deals de fases abiertas usando el servicio
+        $searchTerm = $this->search ?: null;
+        $allDeals = $dealService->getByPhaseIds($openPhaseIds, $searchTerm);
+
+        // Agrupar en memoria por fase
+        $dealsByPhase = $allDeals->groupBy('sale_phase_id');
+
+        // Asegurar que todas las fases tengan una colección (aunque esté vacía)
+        foreach ($openPhaseIds as $phaseId) {
+            if (! isset($dealsByPhase[$phaseId])) {
+                $dealsByPhase[$phaseId] = collect();
+            }
         }
 
-        $totalDeals = DealModel::whereIn('sale_phase_id', $openPhases->pluck('id'))->count();
-        $totalValue = DealModel::whereIn('sale_phase_id', $openPhases->pluck('id'))->sum('value');
+        // Stats calculados desde la colección ya cargada (sin queries adicionales)
+        $totalDeals = $allDeals->count();
+        $totalValue = $allDeals->sum('value') ?? 0;
 
         return view('livewire.deals.kanban', [
             'openPhases' => $openPhases,
