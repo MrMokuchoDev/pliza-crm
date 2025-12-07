@@ -69,6 +69,8 @@
     const widgetType = currentScript.getAttribute('data-type') || 'whatsapp';
     const customColor = currentScript.getAttribute('data-color');
 
+    const baseUrl = currentScript.src.replace('/widget.js', '');
+
     const config = {
         id: widgetId,
         siteId: currentScript.getAttribute('data-site-id'),
@@ -78,7 +80,8 @@
         color: customColor || typeColors[widgetType] || '#3B82F6',
         title: currentScript.getAttribute('data-title') || 'Contáctanos',
         buttonText: currentScript.getAttribute('data-button-text') || 'Enviar',
-        apiUrl: currentScript.src.replace('/widget.js', '/api/v1/leads/capture')
+        apiUrl: baseUrl + '/api/v1/leads/capture',
+        statusUrl: baseUrl + '/api/v1/sites/'
     };
 
     if (!config.siteId) {
@@ -95,8 +98,52 @@
         phone: '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>',
         contact_form: '<svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>',
         close: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18L18 6M6 6l12 12"/></svg>',
-        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+        check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        error: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+        warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>'
     };
+
+    // Mostrar notificación toast
+    function showToast(type, title, message, duration = 5000) {
+        // Crear contenedor si no existe
+        let container = document.getElementById('mcw-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'mcw-toast-container';
+            container.className = 'mcw-toast-container';
+            document.body.appendChild(container);
+        }
+
+        const toast = document.createElement('div');
+        toast.className = 'mcw-toast';
+        toast.innerHTML = `
+            <div class="mcw-toast-icon mcw-toast-${type}">
+                ${icons[type] || icons.error}
+            </div>
+            <div class="mcw-toast-content">
+                <p class="mcw-toast-title">${title}</p>
+                <p class="mcw-toast-message">${message}</p>
+            </div>
+            <button class="mcw-toast-close">${icons.close}</button>
+        `;
+
+        container.appendChild(toast);
+
+        // Cerrar al hacer click
+        const closeBtn = toast.querySelector('.mcw-toast-close');
+        const closeToast = () => {
+            toast.classList.add('mcw-toast-out');
+            setTimeout(() => toast.remove(), 300);
+        };
+        closeBtn.addEventListener('click', closeToast);
+
+        // Auto-cerrar después de duration
+        if (duration > 0) {
+            setTimeout(closeToast, duration);
+        }
+
+        return toast;
+    }
 
     // Descripciones por tipo
     const descriptions = {
@@ -333,6 +380,102 @@
             .mcw-success p {
                 color: #6B7280;
                 margin: 0;
+            }
+            /* Toast notifications */
+            .mcw-toast-container {
+                position: fixed;
+                top: 20px;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 100000;
+                display: flex;
+                flex-direction: column;
+                gap: 10px;
+            }
+            .mcw-toast {
+                background: #1F2937;
+                border-radius: 12px;
+                padding: 16px 20px;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                min-width: 320px;
+                max-width: 420px;
+                animation: mcw-toastIn 0.3s ease;
+            }
+            .mcw-toast.mcw-toast-out {
+                animation: mcw-toastOut 0.3s ease forwards;
+            }
+            @keyframes mcw-toastIn {
+                from { opacity: 0; transform: translateY(-20px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            @keyframes mcw-toastOut {
+                from { opacity: 1; transform: translateY(0); }
+                to { opacity: 0; transform: translateY(-20px); }
+            }
+            .mcw-toast-icon {
+                width: 40px;
+                height: 40px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            .mcw-toast-icon svg {
+                width: 22px;
+                height: 22px;
+            }
+            .mcw-toast-icon.mcw-toast-error {
+                background: #FEE2E2;
+            }
+            .mcw-toast-icon.mcw-toast-error svg {
+                stroke: #DC2626;
+            }
+            .mcw-toast-icon.mcw-toast-success {
+                background: #D1FAE5;
+            }
+            .mcw-toast-icon.mcw-toast-success svg {
+                stroke: #059669;
+            }
+            .mcw-toast-icon.mcw-toast-warning {
+                background: #FEF3C7;
+            }
+            .mcw-toast-icon.mcw-toast-warning svg {
+                stroke: #D97706;
+            }
+            .mcw-toast-content {
+                flex: 1;
+            }
+            .mcw-toast-title {
+                font-weight: 600;
+                color: #FFFFFF;
+                margin: 0 0 2px;
+                font-size: 15px;
+            }
+            .mcw-toast-message {
+                color: #9CA3AF;
+                margin: 0;
+                font-size: 13px;
+                line-height: 1.4;
+            }
+            .mcw-toast-close {
+                background: none;
+                border: none;
+                padding: 4px;
+                cursor: pointer;
+                color: #6B7280;
+                transition: color 0.2s;
+                align-self: flex-start;
+            }
+            .mcw-toast-close:hover {
+                color: #9CA3AF;
+            }
+            .mcw-toast-close svg {
+                width: 18px;
+                height: 18px;
             }
         `;
         document.head.appendChild(styles);
@@ -640,11 +783,11 @@
                 submitBtn.disabled = false;
                 submitBtn.textContent = cfg.buttonText;
 
-                // Mostrar error más específico si está disponible
+                // Mostrar error con toast
                 const errorMessage = error.message && error.message !== 'Error al enviar'
                     ? error.message
-                    : 'Error al enviar el mensaje. Por favor verifica los datos e intenta de nuevo.';
-                alert(errorMessage);
+                    : 'Por favor verifica los datos e intenta de nuevo.';
+                showToast('error', 'Error al enviar', errorMessage);
             }
         });
     }
@@ -665,8 +808,27 @@
         return fab;
     }
 
+    // Verificar si el sitio está activo
+    async function checkSiteStatus() {
+        try {
+            const response = await fetch(config.statusUrl + config.siteId + '/status');
+            const data = await response.json();
+            return data.active === true;
+        } catch (error) {
+            console.error('MiniCRM Widget: Error verificando estado del sitio', error);
+            return false;
+        }
+    }
+
     // Inicializar widget
-    function init() {
+    async function init() {
+        // Verificar si el sitio está activo antes de mostrar el widget
+        const isActive = await checkSiteStatus();
+        if (!isActive) {
+            console.log('MiniCRM Widget: Sitio inactivo, widget no se mostrará');
+            return;
+        }
+
         initStyles();
 
         const container = getOrCreateContainer(config.position);
