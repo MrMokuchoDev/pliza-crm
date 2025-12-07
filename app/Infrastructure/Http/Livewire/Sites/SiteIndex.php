@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Sites;
 
+use App\Application\Site\DTOs\SiteData;
+use App\Application\Site\Services\SiteService;
 use App\Infrastructure\Persistence\Eloquent\SiteModel;
-use Illuminate\Support\Str;
 use Livewire\Component;
 
 class SiteIndex extends Component
@@ -68,7 +69,9 @@ class SiteIndex extends Component
 
     public function openEditModal(string $id): void
     {
-        $site = SiteModel::find($id);
+        $service = app(SiteService::class);
+        $site = $service->find($id);
+
         if ($site) {
             $this->siteId = $id;
             $this->name = $site->name;
@@ -91,6 +94,8 @@ class SiteIndex extends Component
     {
         $this->validate();
 
+        $service = app(SiteService::class);
+
         $settings = [
             'type' => $this->widgetType,
             'phone' => $this->widgetPhone,
@@ -100,23 +105,18 @@ class SiteIndex extends Component
             'button_text' => $this->widgetButtonText,
         ];
 
+        $data = new SiteData(
+            name: $this->name,
+            domain: $this->domain,
+            isActive: $this->isActive,
+            settings: $settings,
+        );
+
         if ($this->siteId) {
-            SiteModel::where('id', $this->siteId)->update([
-                'name' => $this->name,
-                'domain' => $this->domain,
-                'is_active' => $this->isActive,
-                'settings' => $settings,
-            ]);
+            $service->update($this->siteId, $data);
             $this->dispatch('notify', type: 'success', message: 'Sitio actualizado');
         } else {
-            SiteModel::create([
-                'name' => $this->name,
-                'domain' => $this->domain,
-                'api_key' => $this->generateApiKey(),
-                'is_active' => $this->isActive,
-                'settings' => $settings,
-                'created_at' => now(),
-            ]);
+            $service->create($data);
             $this->dispatch('notify', type: 'success', message: 'Sitio creado');
         }
 
@@ -131,18 +131,21 @@ class SiteIndex extends Component
 
     public function toggleActive(string $id): void
     {
-        $site = SiteModel::find($id);
-        if ($site) {
-            $site->update(['is_active' => ! $site->is_active]);
-            $this->dispatch('notify', type: 'success', message: $site->is_active ? 'Sitio activado' : 'Sitio desactivado');
+        $service = app(SiteService::class);
+        $result = $service->toggleActive($id);
+
+        if ($result['success']) {
+            $message = $result['is_active'] ? 'Sitio activado' : 'Sitio desactivado';
+            $this->dispatch('notify', type: 'success', message: $message);
         }
     }
 
     public function regenerateApiKey(string $id): void
     {
-        $site = SiteModel::find($id);
-        if ($site) {
-            $site->update(['api_key' => $this->generateApiKey()]);
+        $service = app(SiteService::class);
+        $result = $service->regenerateApiKey($id);
+
+        if ($result['success']) {
             $this->dispatch('notify', type: 'success', message: 'API Key regenerada');
         }
     }
@@ -155,28 +158,32 @@ class SiteIndex extends Component
 
     public function deleteSite(): void
     {
-        if ($this->deletingSiteId) {
-            $site = SiteModel::find($this->deletingSiteId);
-            if ($site) {
-                $leadsCount = $site->leads()->count();
-                if ($leadsCount > 0) {
-                    $this->dispatch('notify', type: 'error', message: "No se puede eliminar: tiene {$leadsCount} leads asociados");
-                } else {
-                    $site->delete();
-                    $this->dispatch('notify', type: 'success', message: 'Sitio eliminado');
-                }
-            }
-            $this->showDeleteModal = false;
-            $this->deletingSiteId = null;
+        if (! $this->deletingSiteId) {
+            return;
         }
+
+        $service = app(SiteService::class);
+        $result = $service->delete($this->deletingSiteId);
+
+        if ($result['success']) {
+            $this->dispatch('notify', type: 'success', message: 'Sitio eliminado');
+        } else {
+            $this->dispatch('notify', type: 'error', message: $result['error'] ?? 'Error al eliminar');
+        }
+
+        $this->showDeleteModal = false;
+        $this->deletingSiteId = null;
     }
 
     public function openEmbedModal(string $id): void
     {
-        $this->embedSite = SiteModel::find($id);
-        // Usar el tipo guardado en el sitio por defecto
-        $this->selectedWidgetType = $this->embedSite->settings['type'] ?? 'whatsapp';
-        $this->showEmbedModal = true;
+        $service = app(SiteService::class);
+        $this->embedSite = $service->find($id);
+
+        if ($this->embedSite) {
+            $this->selectedWidgetType = $this->embedSite->settings['type'] ?? 'whatsapp';
+            $this->showEmbedModal = true;
+        }
     }
 
     public function closeEmbedModal(): void
@@ -239,14 +246,10 @@ class SiteIndex extends Component
         $this->resetValidation();
     }
 
-    private function generateApiKey(): string
-    {
-        return 'sk_' . Str::random(32);
-    }
-
     public function render()
     {
-        $sites = SiteModel::orderBy('created_at', 'desc')->get();
+        $service = app(SiteService::class);
+        $sites = $service->getAllOrdered();
 
         return view('livewire.sites.index', [
             'sites' => $sites,
