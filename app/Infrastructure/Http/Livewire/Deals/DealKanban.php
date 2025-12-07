@@ -6,22 +6,15 @@ namespace App\Infrastructure\Http\Livewire\Deals;
 
 use App\Application\Deal\Services\DealService;
 use App\Application\SalePhase\Services\SalePhaseService;
-use App\Domain\Deal\Services\DealPhaseService;
+use App\Infrastructure\Http\Livewire\Traits\HasWonPhaseValue;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class DealKanban extends Component
 {
+    use HasWonPhaseValue;
+
     public string $search = '';
-
-    // Value modal for closing as won
-    public bool $showValueModal = false;
-
-    public ?string $pendingWonDealId = null;
-
-    public ?string $pendingWonPhaseId = null;
-
-    public ?string $dealValue = null;
 
     #[On('dealSaved')]
     public function refreshBoard(): void
@@ -41,77 +34,14 @@ class DealKanban extends Component
 
     public function moveToPhase(string $dealId, string $phaseId): void
     {
-        $dealService = app(DealService::class);
-        $phaseService = app(SalePhaseService::class);
+        $result = $this->handlePhaseChange($dealId, $phaseId);
 
-        $deal = $dealService->findWithRelations($dealId);
-        $newPhase = $phaseService->find($phaseId);
-
-        if (! $deal || ! $newPhase) {
+        if ($result === null) {
+            // Se abrió el modal de valor o no hubo cambio
             return;
         }
-
-        $service = new DealPhaseService();
-        $validation = $service->canChangePhase($deal, $newPhase);
-
-        if (! $validation['can_change']) {
-            if ($validation['reason'] === DealPhaseService::RESULT_NO_CHANGE) {
-                return;
-            }
-
-            if ($validation['reason'] === DealPhaseService::RESULT_REQUIRES_VALUE) {
-                $this->pendingWonDealId = $dealId;
-                $this->pendingWonPhaseId = $phaseId;
-                $this->dealValue = $deal->value ? (string) $deal->value : null;
-                $this->showValueModal = true;
-
-                return;
-            }
-
-            $this->dispatch('notify', type: 'error', message: $service->getErrorMessage($validation['reason']));
-
-            return;
-        }
-
-        $result = $service->applyPhaseChange($deal, $newPhase);
-        $this->dispatch('notify', type: 'success', message: $result['message']);
-    }
-
-    public function confirmWonWithValue(): void
-    {
-        $validationRules = DealPhaseService::getWonValueValidationRules();
-        $this->validate($validationRules['rules'], $validationRules['messages']);
-
-        $dealService = app(DealService::class);
-        $phaseService = app(SalePhaseService::class);
-
-        $deal = $dealService->find($this->pendingWonDealId);
-        $newPhase = $phaseService->find($this->pendingWonPhaseId);
-
-        if (! $deal || ! $newPhase) {
-            $this->cancelWonPhase();
-
-            return;
-        }
-
-        $service = new DealPhaseService();
-        $result = $service->changePhaseWithValue($deal, $newPhase, (float) $this->dealValue);
 
         $this->dispatch('notify', type: $result['success'] ? 'success' : 'error', message: $result['message']);
-
-        // Cerrar modal y limpiar
-        $this->showValueModal = false;
-        $this->pendingWonDealId = null;
-        $this->pendingWonPhaseId = null;
-        $this->dealValue = null;
-    }
-
-    public function cancelWonPhase(): void
-    {
-        $this->showValueModal = false;
-        $this->pendingWonDealId = null;
-        $this->pendingWonPhaseId = null;
-        $this->dealValue = null;
     }
 
     public function render()

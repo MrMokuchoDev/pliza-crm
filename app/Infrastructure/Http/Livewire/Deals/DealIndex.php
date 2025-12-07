@@ -6,30 +6,20 @@ namespace App\Infrastructure\Http\Livewire\Deals;
 
 use App\Application\Deal\Services\DealService;
 use App\Application\SalePhase\Services\SalePhaseService;
-use App\Domain\Deal\Services\DealPhaseService;
 use App\Domain\Lead\ValueObjects\SourceType;
+use App\Infrastructure\Http\Livewire\Traits\HasDeleteConfirmation;
+use App\Infrastructure\Http\Livewire\Traits\HasWonPhaseValue;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
 
 class DealIndex extends Component
 {
+    use HasDeleteConfirmation;
+    use HasWonPhaseValue;
     use WithPagination;
 
-    public bool $showDeleteModal = false;
-
-    public ?string $deletingId = null;
-
     public int $refreshKey = 0;
-
-    // Value modal for closing as won
-    public bool $showValueModal = false;
-
-    public ?string $pendingWonDealId = null;
-
-    public ?string $pendingWonPhaseId = null;
-
-    public ?string $dealValue = null;
 
     // Filters
     public string $search = '';
@@ -75,103 +65,48 @@ class DealIndex extends Component
         // La lista se refresca automáticamente
     }
 
-    public function openDeleteModal(string $id): void
+    /**
+     * Implementación del método abstracto del trait HasDeleteConfirmation.
+     */
+    protected function performDelete(string $id): bool
     {
-        $this->deletingId = $id;
-        $this->showDeleteModal = true;
+        $dealService = app(DealService::class);
+        $result = $dealService->delete($id);
+
+        return $result['success'];
     }
 
-    public function delete(): void
+    protected function getDeleteSuccessMessage(): string
     {
-        if (! $this->deletingId) {
-            return;
-        }
+        return 'Negocio eliminado correctamente';
+    }
 
-        $dealService = app(DealService::class);
-        $result = $dealService->delete($this->deletingId);
-
-        if ($result['success']) {
-            $message = 'Negocio eliminado correctamente';
-            if ($result['deleted_comments'] > 0) {
-                $message .= " ({$result['deleted_comments']} comentarios eliminados)";
-            }
-            $this->dispatch('notify', type: 'success', message: $message);
-        } else {
-            $this->dispatch('notify', type: 'error', message: 'Error al eliminar el negocio');
-        }
-
-        $this->closeDeleteModal();
+    protected function getDeleteErrorMessage(): string
+    {
+        return 'Error al eliminar el negocio';
     }
 
     public function updatePhase(string $dealId, string $phaseId): void
     {
-        $dealService = app(DealService::class);
-        $phaseService = app(SalePhaseService::class);
+        $result = $this->handlePhaseChange($dealId, $phaseId);
 
-        $deal = $dealService->findWithRelations($dealId);
-        $newPhase = $phaseService->find($phaseId);
-
-        if (! $deal || ! $newPhase) {
-            return;
-        }
-
-        $service = new DealPhaseService();
-        $validation = $service->canChangePhase($deal, $newPhase);
-
-        if (! $validation['can_change']) {
-            if ($validation['reason'] === DealPhaseService::RESULT_NO_CHANGE) {
-                return;
-            }
-
-            if ($validation['reason'] === DealPhaseService::RESULT_REQUIRES_VALUE) {
-                $this->pendingWonDealId = $dealId;
-                $this->pendingWonPhaseId = $phaseId;
-                $this->dealValue = $deal->value ? (string) $deal->value : null;
-                $this->showValueModal = true;
-                $this->refreshKey++;
-
-                return;
-            }
-
+        if ($result === null) {
+            // Se abrió el modal de valor o no hubo cambio
             $this->refreshKey++;
-            $this->dispatch('notify', type: 'error', message: $service->getErrorMessage($validation['reason']));
 
             return;
         }
 
-        $result = $service->applyPhaseChange($deal, $newPhase);
-        $this->dispatch('notify', type: 'success', message: $result['message']);
-    }
-
-    public function confirmWonWithValue(): void
-    {
-        $validationRules = DealPhaseService::getWonValueValidationRules();
-        $this->validate($validationRules['rules'], $validationRules['messages']);
-
-        $dealService = app(DealService::class);
-        $phaseService = app(SalePhaseService::class);
-
-        $deal = $dealService->find($this->pendingWonDealId);
-        $newPhase = $phaseService->find($this->pendingWonPhaseId);
-
-        if (! $deal || ! $newPhase) {
-            $this->cancelWonPhase();
-
-            return;
+        if (! $result['success']) {
+            $this->refreshKey++;
         }
-
-        $service = new DealPhaseService();
-        $result = $service->changePhaseWithValue($deal, $newPhase, (float) $this->dealValue);
 
         $this->dispatch('notify', type: $result['success'] ? 'success' : 'error', message: $result['message']);
-
-        // Cerrar modal y limpiar
-        $this->showValueModal = false;
-        $this->pendingWonDealId = null;
-        $this->pendingWonPhaseId = null;
-        $this->dealValue = null;
     }
 
+    /**
+     * Sobrescribir cancelWonPhase para incrementar refreshKey.
+     */
     public function cancelWonPhase(): void
     {
         $this->showValueModal = false;
@@ -179,12 +114,6 @@ class DealIndex extends Component
         $this->pendingWonPhaseId = null;
         $this->dealValue = null;
         $this->refreshKey++;
-    }
-
-    public function closeDeleteModal(): void
-    {
-        $this->showDeleteModal = false;
-        $this->deletingId = null;
     }
 
     public function clearFilters(): void
