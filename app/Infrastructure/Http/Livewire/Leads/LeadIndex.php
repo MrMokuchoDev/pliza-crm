@@ -4,12 +4,9 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Leads;
 
+use App\Application\Lead\Services\LeadService;
 use App\Domain\Lead\ValueObjects\SourceType;
-use App\Infrastructure\Persistence\Eloquent\DealCommentModel;
-use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
-use App\Infrastructure\Persistence\Eloquent\NoteModel;
-use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -72,15 +69,14 @@ class LeadIndex extends Component
 
     public function openDeleteModal(string $id): void
     {
+        $leadService = app(LeadService::class);
+
         $this->deletingId = $id;
+        $this->deletingName = $leadService->getDisplayName($id);
 
-        // Obtener nombre del contacto
-        $lead = LeadModel::find($id);
-        $this->deletingName = $lead?->name ?? $lead?->email ?? $lead?->phone ?? 'Sin nombre';
-
-        // Contar negocios y notas asociados para mostrar en la confirmación
-        $this->deletingDealsCount = DealModel::where('lead_id', $id)->count();
-        $this->deletingNotesCount = NoteModel::where('lead_id', $id)->count();
+        $counts = $leadService->getRelatedCounts($id);
+        $this->deletingDealsCount = $counts['deals'];
+        $this->deletingNotesCount = $counts['notes'];
 
         $this->showDeleteModal = true;
     }
@@ -91,26 +87,15 @@ class LeadIndex extends Component
             return;
         }
 
-        DB::transaction(function () {
-            // Obtener IDs de negocios para eliminar sus comentarios
-            $dealIds = DealModel::where('lead_id', $this->deletingId)->pluck('id');
+        $leadService = app(LeadService::class);
+        $result = $leadService->delete($this->deletingId);
 
-            // Eliminar comentarios de negocios
-            if ($dealIds->isNotEmpty()) {
-                DealCommentModel::whereIn('deal_id', $dealIds)->delete();
-            }
+        if ($result['success']) {
+            $this->dispatch('notify', type: 'success', message: 'Contacto y sus negocios eliminados correctamente');
+        } else {
+            $this->dispatch('notify', type: 'error', message: 'Error al eliminar el contacto');
+        }
 
-            // Eliminar negocios asociados
-            DealModel::where('lead_id', $this->deletingId)->delete();
-
-            // Eliminar notas asociadas
-            NoteModel::where('lead_id', $this->deletingId)->delete();
-
-            // Eliminar el contacto
-            LeadModel::destroy($this->deletingId);
-        });
-
-        $this->dispatch('notify', type: 'success', message: 'Contacto y sus negocios eliminados correctamente');
         $this->closeDeleteModal();
     }
 
