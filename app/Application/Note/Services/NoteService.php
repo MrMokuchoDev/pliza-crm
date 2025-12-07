@@ -67,4 +67,12 @@ class NoteService
 
         return $this->deleteByLeadHandler->handle($command);
     }
+
+    /**
+     * Buscar una nota por ID.
+     */
+    public function find(string $noteId): ?NoteModel
+    {
+        return NoteModel::find($noteId);
+    }
 }

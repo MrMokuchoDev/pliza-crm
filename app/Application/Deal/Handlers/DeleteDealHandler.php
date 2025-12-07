@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Deal\Handlers;
 
 use App\Application\Deal\Commands\DeleteDealCommand;
-use App\Infrastructure\Persistence\Eloquent\DealCommentModel;
+use App\Application\DealComment\Services\DealCommentService;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 use Illuminate\Support\Facades\DB;
 
@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\DB;
  */
 class DeleteDealHandler
 {
+    public function __construct(
+        private readonly DealCommentService $dealCommentService,
+    ) {}
+
     /**
      * @return array{success: bool, deleted_comments: int}
      */
@@ -31,9 +35,8 @@ class DeleteDealHandler
         $deletedComments = 0;
 
         DB::transaction(function () use ($command, &$deletedComments) {
-            // Eliminar comentarios del deal
-            $deletedComments = DealCommentModel::where('deal_id', $command->dealId)->count();
-            DealCommentModel::where('deal_id', $command->dealId)->delete();
+            // Eliminar comentarios del deal usando el servicio
+            $deletedComments = $this->dealCommentService->deleteByDealId($command->dealId);
 
             // Eliminar el deal
             DealModel::destroy($command->dealId);

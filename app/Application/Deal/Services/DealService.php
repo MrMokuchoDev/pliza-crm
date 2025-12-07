@@ -97,4 +97,41 @@ class DealService
 
         return $this->update($dealId, $data);
     }
+
+    /**
+     * Buscar un Deal por ID.
+     */
+    public function find(string $dealId): ?DealModel
+    {
+        return DealModel::find($dealId);
+    }
+
+    /**
+     * Obtener IDs de deals de un Lead.
+     *
+     * @return \Illuminate\Support\Collection<int, string>
+     */
+    public function getDealIdsByLeadId(string $leadId): \Illuminate\Support\Collection
+    {
+        return DealModel::where('lead_id', $leadId)->pluck('id');
+    }
+
+    /**
+     * Contar deals de un Lead.
+     */
+    public function countByLeadId(string $leadId): int
+    {
+        return DealModel::where('lead_id', $leadId)->count();
+    }
+
+    /**
+     * Eliminar todos los deals de un Lead.
+     */
+    public function deleteByLeadId(string $leadId): int
+    {
+        $count = $this->countByLeadId($leadId);
+        DealModel::where('lead_id', $leadId)->delete();
+
+        return $count;
+    }
 }

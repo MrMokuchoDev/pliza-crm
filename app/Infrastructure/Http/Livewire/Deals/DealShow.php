@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Http\Livewire\Deals;
 
 use App\Application\Deal\Services\DealService;
+use App\Application\DealComment\DTOs\DealCommentData;
+use App\Application\DealComment\Services\DealCommentService;
 use App\Domain\Deal\Services\DealPhaseService;
-use App\Infrastructure\Persistence\Eloquent\DealCommentModel;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Livewire\Attributes\On;
@@ -136,18 +137,22 @@ class DealShow extends Component
     {
         $this->validate();
 
+        $commentService = app(DealCommentService::class);
+
         if ($this->editingCommentId) {
-            DealCommentModel::where('id', $this->editingCommentId)->update([
-                'content' => $this->commentContent,
-                'type' => $this->commentType,
-            ]);
+            $data = new DealCommentData(
+                content: $this->commentContent,
+                type: $this->commentType,
+            );
+            $commentService->update($this->editingCommentId, $data);
             $this->dispatch('notify', type: 'success', message: 'Comentario actualizado');
         } else {
-            DealCommentModel::create([
-                'deal_id' => $this->dealId,
-                'content' => $this->commentContent,
-                'type' => $this->commentType,
-            ]);
+            $data = new DealCommentData(
+                dealId: $this->dealId,
+                content: $this->commentContent,
+                type: $this->commentType,
+            );
+            $commentService->create($data);
             $this->dispatch('notify', type: 'success', message: 'Comentario agregado');
         }
 
@@ -162,7 +167,8 @@ class DealShow extends Component
 
     public function editComment(string $commentId): void
     {
-        $comment = DealCommentModel::find($commentId);
+        $commentService = app(DealCommentService::class);
+        $comment = $commentService->find($commentId);
         if ($comment) {
             $this->editingCommentId = $commentId;
             $this->commentContent = $comment->content;
@@ -184,7 +190,8 @@ class DealShow extends Component
     public function deleteComment(): void
     {
         if ($this->deletingCommentId) {
-            DealCommentModel::destroy($this->deletingCommentId);
+            $commentService = app(DealCommentService::class);
+            $commentService->delete($this->deletingCommentId);
             $this->dispatch('notify', type: 'success', message: 'Comentario eliminado');
             $this->showDeleteCommentModal = false;
             $this->deletingCommentId = null;

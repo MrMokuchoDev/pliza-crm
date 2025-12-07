@@ -8,7 +8,6 @@ use App\Application\Lead\Services\LeadService;
 use App\Application\Note\DTOs\NoteData;
 use App\Application\Note\Services\NoteService;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
-use App\Infrastructure\Persistence\Eloquent\NoteModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -81,7 +80,8 @@ class LeadShow extends Component
 
     public function editNote(string $noteId): void
     {
-        $note = NoteModel::find($noteId);
+        $noteService = app(NoteService::class);
+        $note = $noteService->find($noteId);
         if ($note) {
             $this->editingNoteId = $noteId;
             $this->noteContent = $note->content;
