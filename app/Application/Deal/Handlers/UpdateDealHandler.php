@@ -20,7 +20,7 @@ class UpdateDealHandler
             return null;
         }
 
-        $deal->update($command->data->toArray());
+        $deal->update($command->data->toArrayForUpdate());
 
         return $deal->fresh();
     }

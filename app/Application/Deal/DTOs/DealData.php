@@ -38,7 +38,8 @@ readonly class DealData
     }
 
     /**
-     * Convertir a array para persistencia.
+     * Convertir a array para persistencia (solo campos con valor).
+     * Usar toArrayForUpdate() cuando se necesite poder limpiar campos.
      */
     public function toArray(): array
     {
@@ -52,5 +53,30 @@ readonly class DealData
             'estimated_close_date' => $this->estimatedCloseDate,
             'close_date' => $this->closeDate,
         ], fn ($value) => $value !== null);
+    }
+
+    /**
+     * Convertir a array para actualizaciones.
+     * Incluye campos nullables que pueden ser limpiados por el usuario.
+     */
+    public function toArrayForUpdate(): array
+    {
+        $data = [
+            'name' => $this->name,
+            'value' => $this->value,
+            'description' => $this->description,
+            'estimated_close_date' => $this->estimatedCloseDate,
+            'close_date' => $this->closeDate,
+        ];
+
+        // Solo incluir campos de relación si tienen valor
+        if ($this->leadId !== null) {
+            $data['lead_id'] = $this->leadId;
+        }
+        if ($this->salePhaseId !== null) {
+            $data['sale_phase_id'] = $this->salePhaseId;
+        }
+
+        return $data;
     }
 }

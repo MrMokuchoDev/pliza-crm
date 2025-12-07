@@ -205,7 +205,7 @@ class DealService
 
         if ($search) {
             $query->where(function ($sq) use ($search) {
-                $sq->where('name', 'like', "%{$search}%")
+                $sq->where('deals.name', 'like', "%{$search}%")
                     ->orWhereHas('lead', function ($lq) use ($search) {
                         $lq->where('name', 'like', "%{$search}%")
                             ->orWhere('email', 'like', "%{$search}%")

@@ -6,6 +6,7 @@ namespace App\Infrastructure\Http\Livewire\Leads;
 
 use App\Application\Lead\Services\LeadService;
 use App\Domain\Lead\ValueObjects\SourceType;
+use App\Infrastructure\Http\Livewire\Traits\HasNotifications;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -13,6 +14,7 @@ use Livewire\WithPagination;
 
 class LeadIndex extends Component
 {
+    use HasNotifications;
     use WithPagination;
 
     public bool $showDeleteModal = false;
@@ -91,9 +93,9 @@ class LeadIndex extends Component
         $result = $leadService->delete($this->deletingId);
 
         if ($result['success']) {
-            $this->dispatch('notify', type: 'success', message: 'Contacto y sus negocios eliminados correctamente');
+            $this->notifySuccess('Contacto y sus negocios eliminados correctamente');
         } else {
-            $this->dispatch('notify', type: 'error', message: 'Error al eliminar el contacto');
+            $this->notifyError('Error al eliminar el contacto');
         }
 
         $this->closeDeleteModal();

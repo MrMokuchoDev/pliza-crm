@@ -310,11 +310,12 @@
                 event.preventDefault();
                 event.dataTransfer.dropEffect = 'move';
             },
-            onDrop(event, phaseId) {
+            async onDrop(event, phaseId) {
                 event.preventDefault();
                 const dealId = event.dataTransfer.getData('text/plain');
                 if (dealId && phaseId) {
-                    $wire.moveToPhase(dealId, phaseId);
+                    // Wait for Livewire to process the move before resetting drag state
+                    await $wire.moveToPhase(dealId, phaseId);
                 }
                 this.dragging = false;
                 this.draggedDealId = null;
