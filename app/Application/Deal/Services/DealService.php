@@ -8,14 +8,29 @@ use App\Application\Deal\Commands\CreateDealCommand;
 use App\Application\Deal\Commands\DeleteDealCommand;
 use App\Application\Deal\Commands\UpdateDealCommand;
 use App\Application\Deal\DTOs\DealData;
+use App\Application\Deal\Handlers\CountDealsByLeadHandler;
+use App\Application\Deal\Handlers\CountDealsByPhaseHandler;
 use App\Application\Deal\Handlers\CreateDealHandler;
 use App\Application\Deal\Handlers\DeleteDealHandler;
+use App\Application\Deal\Handlers\FindDealHandler;
+use App\Application\Deal\Handlers\GetDealsByPhaseHandler;
+use App\Application\Deal\Handlers\GetDealStatsHandler;
+use App\Application\Deal\Handlers\GetPaginatedDealsHandler;
 use App\Application\Deal\Handlers\UpdateDealHandler;
+use App\Application\Deal\Queries\CountDealsByLeadQuery;
+use App\Application\Deal\Queries\CountDealsByPhaseQuery;
+use App\Application\Deal\Queries\FindDealQuery;
+use App\Application\Deal\Queries\GetDealsByPhaseQuery;
+use App\Application\Deal\Queries\GetDealStatsQuery;
+use App\Application\Deal\Queries\GetPaginatedDealsQuery;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection as SupportCollection;
 
 /**
  * Servicio de aplicación para gestionar Deals.
- * Orquesta los comandos y handlers.
+ * Orquesta los comandos, queries y handlers.
  */
 class DealService
 {
@@ -23,6 +38,12 @@ class DealService
         private readonly CreateDealHandler $createHandler,
         private readonly UpdateDealHandler $updateHandler,
         private readonly DeleteDealHandler $deleteHandler,
+        private readonly FindDealHandler $findHandler,
+        private readonly GetDealsByPhaseHandler $dealsByPhaseHandler,
+        private readonly GetPaginatedDealsHandler $paginatedHandler,
+        private readonly GetDealStatsHandler $statsHandler,
+        private readonly CountDealsByLeadHandler $countByLeadHandler,
+        private readonly CountDealsByPhaseHandler $countByPhaseHandler,
     ) {}
 
     /**
@@ -61,6 +82,46 @@ class DealService
     }
 
     /**
+     * Buscar un Deal por ID.
+     */
+    public function find(string $dealId): ?DealModel
+    {
+        $query = new FindDealQuery($dealId);
+
+        return $this->findHandler->handle($query);
+    }
+
+    /**
+     * Obtener deal con lead cargado (para formularios).
+     */
+    public function findWithLead(string $dealId): ?DealModel
+    {
+        $query = new FindDealQuery($dealId, FindDealQuery::WITH_LEAD);
+
+        return $this->findHandler->handle($query);
+    }
+
+    /**
+     * Obtener deal con relaciones cargadas para cambio de fase.
+     */
+    public function findWithRelations(string $dealId): ?DealModel
+    {
+        $query = new FindDealQuery($dealId, FindDealQuery::WITH_ALL);
+
+        return $this->findHandler->handle($query);
+    }
+
+    /**
+     * Obtener deal con todas las relaciones (para vista detalle).
+     */
+    public function findForShow(string $dealId): ?DealModel
+    {
+        $query = new FindDealQuery($dealId, FindDealQuery::WITH_ALL);
+
+        return $this->findHandler->handle($query);
+    }
+
+    /**
      * Obtener conteo de comentarios para mostrar en confirmación de eliminación.
      */
     public function getCommentsCount(string $dealId): int
@@ -75,7 +136,7 @@ class DealService
      */
     public function getDisplayName(string $dealId): string
     {
-        $deal = DealModel::find($dealId);
+        $deal = $this->find($dealId);
 
         if (! $deal) {
             return 'Sin nombre';
@@ -99,19 +160,11 @@ class DealService
     }
 
     /**
-     * Buscar un Deal por ID.
-     */
-    public function find(string $dealId): ?DealModel
-    {
-        return DealModel::find($dealId);
-    }
-
-    /**
      * Obtener IDs de deals de un Lead.
      *
-     * @return \Illuminate\Support\Collection<int, string>
+     * @return SupportCollection<int, string>
      */
-    public function getDealIdsByLeadId(string $leadId): \Illuminate\Support\Collection
+    public function getDealIdsByLeadId(string $leadId): SupportCollection
     {
         return DealModel::where('lead_id', $leadId)->pluck('id');
     }
@@ -121,7 +174,9 @@ class DealService
      */
     public function countByLeadId(string $leadId): int
     {
-        return DealModel::where('lead_id', $leadId)->count();
+        $query = new CountDealsByLeadQuery($leadId);
+
+        return $this->countByLeadHandler->handle($query);
     }
 
     /**
@@ -140,7 +195,9 @@ class DealService
      */
     public function countByPhaseId(string $phaseId): int
     {
-        return DealModel::where('sale_phase_id', $phaseId)->count();
+        $query = new CountDealsByPhaseQuery($phaseId);
+
+        return $this->countByPhaseHandler->handle($query);
     }
 
     /**
@@ -162,59 +219,25 @@ class DealService
      * Obtener deals paginados con filtros.
      *
      * @param  array{search?: string, phase_id?: string, source_type?: string}  $filters
-     * @return \Illuminate\Contracts\Pagination\LengthAwarePaginator
      */
-    public function getPaginated(array $filters = [], int $perPage = 10)
+    public function getPaginated(array $filters = [], int $perPage = 10): LengthAwarePaginator
     {
-        $query = DealModel::with(['lead', 'salePhase']);
+        $query = new GetPaginatedDealsQuery($filters, $perPage);
 
-        if (! empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhereHas('lead', function ($lq) use ($search) {
-                        $lq->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%")
-                            ->orWhere('phone', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        if (! empty($filters['phase_id'])) {
-            $query->where('sale_phase_id', $filters['phase_id']);
-        }
-
-        if (! empty($filters['source_type'])) {
-            $query->whereHas('lead', fn ($lq) => $lq->where('source_type', $filters['source_type']));
-        }
-
-        return $query->orderByDesc('created_at')->paginate($perPage);
+        return $this->paginatedHandler->handle($query);
     }
 
     /**
      * Obtener deals por fase con filtros (para Kanban).
      *
      * @param  array<string>  $phaseIds
-     * @param  string|null  $search
-     * @return \Illuminate\Database\Eloquent\Collection
+     * @return Collection<int, DealModel>
      */
-    public function getByPhaseIds(array $phaseIds, ?string $search = null)
+    public function getByPhaseIds(array $phaseIds, ?string $search = null): Collection
     {
-        $query = DealModel::with('lead')
-            ->whereIn('sale_phase_id', $phaseIds);
+        $query = new GetDealsByPhaseQuery($phaseIds, $search);
 
-        if ($search) {
-            $query->where(function ($sq) use ($search) {
-                $sq->where('deals.name', 'like', "%{$search}%")
-                    ->orWhereHas('lead', function ($lq) use ($search) {
-                        $lq->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%")
-                            ->orWhere('phone', 'like', "%{$search}%");
-                    });
-            });
-        }
-
-        return $query->orderByDesc('updated_at')->get();
+        return $this->dealsByPhaseHandler->handle($query);
     }
 
     /**
@@ -225,31 +248,8 @@ class DealService
      */
     public function getStats(?array $openPhaseIds = null): array
     {
-        $total = DealModel::count();
+        $query = new GetDealStatsQuery($openPhaseIds);
 
-        if ($openPhaseIds === null || empty($openPhaseIds)) {
-            return [
-                'total' => $total,
-                'open' => 0,
-                'total_value' => 0,
-            ];
-        }
-
-        $openDeals = DealModel::whereIn('sale_phase_id', $openPhaseIds)->count();
-        $totalValue = DealModel::whereIn('sale_phase_id', $openPhaseIds)->sum('value') ?? 0;
-
-        return [
-            'total' => $total,
-            'open' => $openDeals,
-            'total_value' => (float) $totalValue,
-        ];
-    }
-
-    /**
-     * Obtener deal con relaciones cargadas para cambio de fase.
-     */
-    public function findWithRelations(string $dealId): ?DealModel
-    {
-        return DealModel::with(['salePhase', 'lead'])->find($dealId);
+        return $this->statsHandler->handle($query);
     }
 }

@@ -7,15 +7,14 @@ namespace App\Infrastructure\Http\Livewire\Deals;
 use App\Application\Deal\Services\DealService;
 use App\Application\DealComment\DTOs\DealCommentData;
 use App\Application\DealComment\Services\DealCommentService;
+use App\Application\SalePhase\Services\SalePhaseService;
 use App\Domain\Deal\Services\DealPhaseService;
-use App\Infrastructure\Persistence\Eloquent\DealModel;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
 class DealShow extends Component
 {
-    public ?DealModel $deal = null;
+    public $deal = null;
 
     public string $dealId;
 
@@ -59,7 +58,8 @@ class DealShow extends Component
 
     public function loadDeal(): void
     {
-        $this->deal = DealModel::with(['lead', 'salePhase', 'comments'])->find($this->dealId);
+        $dealService = app(DealService::class);
+        $this->deal = $dealService->findForShow($this->dealId);
         if ($this->deal) {
             $this->salePhaseId = $this->deal->sale_phase_id;
         }
@@ -71,7 +71,8 @@ class DealShow extends Component
             return;
         }
 
-        $newPhase = SalePhaseModel::find($this->salePhaseId);
+        $phaseService = app(SalePhaseService::class);
+        $newPhase = $phaseService->find($this->salePhaseId);
         if (! $newPhase) {
             return;
         }
@@ -105,7 +106,8 @@ class DealShow extends Component
         $validationRules = DealPhaseService::getWonValueValidationRules();
         $this->validate($validationRules['rules'], $validationRules['messages']);
 
-        $newPhase = SalePhaseModel::find($this->pendingWonPhaseId);
+        $phaseService = app(SalePhaseService::class);
+        $newPhase = $phaseService->find($this->pendingWonPhaseId);
         if (! $newPhase) {
             $this->cancelWonPhase();
 
@@ -247,7 +249,8 @@ class DealShow extends Component
                 ->layout('components.layouts.app', ['title' => 'Negocio no encontrado']);
         }
 
-        $phases = SalePhaseModel::orderBy('order')->get();
+        $phaseService = app(SalePhaseService::class);
+        $phases = $phaseService->getAllOrdered();
 
         return view('livewire.deals.show', [
             'phases' => $phases,

@@ -7,7 +7,6 @@ namespace App\Infrastructure\Http\Livewire\Leads;
 use App\Application\Lead\DTOs\LeadData;
 use App\Application\Lead\Services\LeadService;
 use App\Domain\Lead\ValueObjects\SourceType;
-use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -56,7 +55,8 @@ class LeadFormModal extends Component
         $this->resetForm();
 
         if ($leadId) {
-            $lead = LeadModel::find($leadId);
+            $leadService = app(LeadService::class);
+            $lead = $leadService->find($leadId);
             if ($lead) {
                 $this->leadId = $leadId;
                 $this->name = $lead->name ?? '';
