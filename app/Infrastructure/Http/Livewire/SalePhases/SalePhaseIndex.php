@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\SalePhases;
 
-use App\Domain\SalePhase\Repositories\SalePhaseRepositoryInterface;
-use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
+use App\Application\SalePhase\DTOs\SalePhaseData;
+use App\Application\SalePhase\Services\SalePhaseService;
 use Livewire\Component;
 
 class SalePhaseIndex extends Component
@@ -30,8 +30,6 @@ class SalePhaseIndex extends Component
 
     public ?string $transferToPhaseId = null;
 
-    protected SalePhaseRepositoryInterface $repository;
-
     protected $listeners = ['refreshPhases' => 'loadPhases', 'phasesReordered' => 'updateOrder'];
 
     protected function rules(): array
@@ -44,11 +42,6 @@ class SalePhaseIndex extends Component
         ];
     }
 
-    public function boot(SalePhaseRepositoryInterface $repository): void
-    {
-        $this->repository = $repository;
-    }
-
     public function mount(): void
     {
         $this->loadPhases();
@@ -56,7 +49,8 @@ class SalePhaseIndex extends Component
 
     public function loadPhases(): void
     {
-        $this->phases = SalePhaseModel::orderBy('order')->get()->toArray();
+        $service = app(SalePhaseService::class);
+        $this->phases = $service->getAllOrdered()->toArray();
     }
 
     public function openCreateModal(): void
@@ -67,7 +61,9 @@ class SalePhaseIndex extends Component
 
     public function openEditModal(string $id): void
     {
-        $phase = SalePhaseModel::find($id);
+        $service = app(SalePhaseService::class);
+        $phase = $service->find($id);
+
         if ($phase) {
             $this->editingId = $id;
             $this->name = $phase->name;
@@ -82,24 +78,20 @@ class SalePhaseIndex extends Component
     {
         $this->validate();
 
+        $service = app(SalePhaseService::class);
+
+        $data = new SalePhaseData(
+            name: $this->name,
+            color: $this->color,
+            isClosed: $this->isClosed,
+            isWon: $this->isClosed ? $this->isWon : false,
+        );
+
         if ($this->editingId) {
-            SalePhaseModel::where('id', $this->editingId)->update([
-                'name' => $this->name,
-                'color' => $this->color,
-                'is_closed' => $this->isClosed,
-                'is_won' => $this->isClosed ? $this->isWon : false,
-            ]);
+            $service->update($this->editingId, $data);
             $this->dispatch('notify', type: 'success', message: 'Fase actualizada correctamente');
         } else {
-            $maxOrder = SalePhaseModel::max('order') ?? 0;
-            SalePhaseModel::create([
-                'name' => $this->name,
-                'color' => $this->color,
-                'is_closed' => $this->isClosed,
-                'is_won' => $this->isClosed ? $this->isWon : false,
-                'is_default' => false,
-                'order' => $maxOrder + 1,
-            ]);
+            $service->create($data);
             $this->dispatch('notify', type: 'success', message: 'Fase creada correctamente');
         }
 
@@ -120,81 +112,38 @@ class SalePhaseIndex extends Component
             return;
         }
 
-        $phase = SalePhaseModel::find($this->deletingId);
-        if (! $phase) {
-            return;
+        $service = app(SalePhaseService::class);
+
+        $result = $service->delete($this->deletingId, $this->transferToPhaseId);
+
+        if ($result['success']) {
+            $this->dispatch('notify', type: 'success', message: 'Fase eliminada correctamente');
+            $this->closeDeleteModal();
+            $this->loadPhases();
+        } else {
+            $this->dispatch('notify', type: 'error', message: $result['error'] ?? 'Error al eliminar la fase');
         }
-
-        // Verificar que no sea la única fase activa
-        $activeCount = SalePhaseModel::where('is_closed', false)->count();
-        if (! $phase->is_closed && $activeCount <= 1) {
-            $this->dispatch('notify', type: 'error', message: 'No puedes eliminar la única fase activa');
-
-            return;
-        }
-
-        // Contar negocios en esta fase
-        $dealsCount = \App\Infrastructure\Persistence\Eloquent\DealModel::where('sale_phase_id', $this->deletingId)->count();
-
-        // Si hay negocios, validar fase destino
-        if ($dealsCount > 0) {
-            if (! $this->transferToPhaseId) {
-                $this->dispatch('notify', type: 'error', message: 'Debes seleccionar una fase destino para transferir los ' . $dealsCount . ' negocio(s).');
-
-                return;
-            }
-
-            // Validar que la fase destino exista y sea diferente
-            $targetPhase = SalePhaseModel::find($this->transferToPhaseId);
-            if (! $targetPhase) {
-                $this->dispatch('notify', type: 'error', message: 'La fase destino seleccionada no existe.');
-
-                return;
-            }
-
-            if ($this->transferToPhaseId === $this->deletingId) {
-                $this->dispatch('notify', type: 'error', message: 'La fase destino no puede ser la misma que se está eliminando.');
-
-                return;
-            }
-
-            // Transferir negocios
-            \App\Infrastructure\Persistence\Eloquent\DealModel::where('sale_phase_id', $this->deletingId)
-                ->update(['sale_phase_id' => $this->transferToPhaseId]);
-        }
-
-        // Si era default, asignar a otra fase
-        if ($phase->is_default) {
-            $newDefault = SalePhaseModel::where('id', '!=', $this->deletingId)
-                ->where('is_closed', false)
-                ->first();
-            if ($newDefault) {
-                $newDefault->update(['is_default' => true]);
-            }
-        }
-
-        $phase->delete();
-
-        $this->dispatch('notify', type: 'success', message: 'Fase eliminada correctamente');
-        $this->closeDeleteModal();
-        $this->loadPhases();
     }
 
     public function updateOrder(array $orderedIds): void
     {
-        foreach ($orderedIds as $index => $id) {
-            SalePhaseModel::where('id', $id)->update(['order' => $index + 1]);
-        }
+        $service = app(SalePhaseService::class);
+        $service->reorder($orderedIds);
+
         $this->loadPhases();
         $this->dispatch('notify', type: 'success', message: 'Orden actualizado');
     }
 
     public function setAsDefault(string $id): void
     {
-        SalePhaseModel::where('is_default', true)->update(['is_default' => false]);
-        SalePhaseModel::where('id', $id)->update(['is_default' => true]);
-        $this->loadPhases();
-        $this->dispatch('notify', type: 'success', message: 'Fase por defecto actualizada');
+        $service = app(SalePhaseService::class);
+
+        if ($service->setAsDefault($id)) {
+            $this->loadPhases();
+            $this->dispatch('notify', type: 'success', message: 'Fase por defecto actualizada');
+        } else {
+            $this->dispatch('notify', type: 'error', message: 'No se puede establecer una fase cerrada como default');
+        }
     }
 
     public function closeModal(): void

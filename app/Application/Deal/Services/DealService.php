@@ -134,4 +134,27 @@ class DealService
 
         return $count;
     }
+
+    /**
+     * Contar deals en una fase.
+     */
+    public function countByPhaseId(string $phaseId): int
+    {
+        return DealModel::where('sale_phase_id', $phaseId)->count();
+    }
+
+    /**
+     * Transferir todos los deals de una fase a otra.
+     *
+     * @return int Cantidad de deals transferidos
+     */
+    public function transferToPhase(string $fromPhaseId, string $toPhaseId): int
+    {
+        $count = $this->countByPhaseId($fromPhaseId);
+
+        DealModel::where('sale_phase_id', $fromPhaseId)
+            ->update(['sale_phase_id' => $toPhaseId]);
+
+        return $count;
+    }
 }
