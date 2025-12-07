@@ -22,6 +22,8 @@ class LeadIndex extends Component
 
     public ?string $deletingId = null;
 
+    public string $deletingName = '';
+
     public int $deletingDealsCount = 0;
 
     public int $deletingNotesCount = 0;
@@ -72,6 +74,10 @@ class LeadIndex extends Component
     {
         $this->deletingId = $id;
 
+        // Obtener nombre del contacto
+        $lead = LeadModel::find($id);
+        $this->deletingName = $lead?->name ?? $lead?->email ?? $lead?->phone ?? 'Sin nombre';
+
         // Contar negocios y notas asociados para mostrar en la confirmación
         $this->deletingDealsCount = DealModel::where('lead_id', $id)->count();
         $this->deletingNotesCount = NoteModel::where('lead_id', $id)->count();
@@ -112,6 +118,7 @@ class LeadIndex extends Component
     {
         $this->showDeleteModal = false;
         $this->deletingId = null;
+        $this->deletingName = '';
         $this->deletingDealsCount = 0;
         $this->deletingNotesCount = 0;
     }
