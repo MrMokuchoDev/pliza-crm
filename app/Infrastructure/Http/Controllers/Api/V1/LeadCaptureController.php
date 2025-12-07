@@ -104,61 +104,60 @@ class LeadCaptureController extends Controller
         // Normalizar teléfono (remover espacios, guiones, paréntesis y +)
         $normalizedPhone = $phone ? $this->normalizePhone($phone) : null;
 
-        // Buscar contacto existente por email o teléfono normalizado
-        $existingLead = null;
-        if ($email) {
-            $existingLead = LeadModel::where('email', $email)->first();
-        }
-        if (! $existingLead && $normalizedPhone && strlen($normalizedPhone) >= 7) {
-            // Buscar por teléfono normalizado - usar los últimos 7 dígitos para filtro inicial
-            // y luego verificar coincidencia exacta normalizada
-            $lastDigits = substr($normalizedPhone, -7);
-            $existingLead = LeadModel::whereNotNull('phone')
-                ->where('phone', 'like', '%' . $lastDigits . '%')
-                ->get()
-                ->first(fn ($lead) => $this->normalizePhone($lead->phone) === $normalizedPhone);
-        }
-
-        // Si el contacto existe
-        if ($existingLead) {
-            // Verificar si tiene negocio abierto
-            if ($existingLead->hasOpenDeal()) {
-                // Ya tiene negocio abierto, no hacer nada
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Contacto ya registrado con negocio activo',
-                    'data' => [
-                        'id' => $existingLead->id,
-                        'existing' => true,
-                        'has_open_deal' => true,
-                    ],
-                ], 200);
+        // Toda la lógica de búsqueda y creación dentro de transacción para evitar race conditions
+        return DB::transaction(function () use ($request, $site, $sourceType, $defaultPhase, $name, $email, $phone, $message, $normalizedPhone) {
+            // Buscar contacto existente por email o teléfono normalizado (con lock para evitar duplicados)
+            $existingLead = null;
+            if ($email) {
+                $existingLead = LeadModel::where('email', $email)->lockForUpdate()->first();
+            }
+            if (! $existingLead && $normalizedPhone && strlen($normalizedPhone) >= 7) {
+                // Buscar por teléfono normalizado - usar los últimos 7 dígitos para filtro inicial
+                $lastDigits = substr($normalizedPhone, -7);
+                $existingLead = LeadModel::whereNotNull('phone')
+                    ->where('phone', 'like', '%' . $lastDigits . '%')
+                    ->lockForUpdate()
+                    ->get()
+                    ->first(fn ($lead) => $this->normalizePhone($lead->phone) === $normalizedPhone);
             }
 
-            // No tiene negocio abierto, crear uno nuevo
-            $deal = $this->createDeal(
-                $existingLead,
-                $defaultPhase,
-                $name,
-                $message,
-                $sourceType
-            );
+            // Si el contacto existe
+            if ($existingLead) {
+                // Verificar si tiene negocio abierto
+                if ($existingLead->hasOpenDeal()) {
+                    return response()->json([
+                        'success' => true,
+                        'message' => 'Contacto ya registrado con negocio activo',
+                        'data' => [
+                            'id' => $existingLead->id,
+                            'existing' => true,
+                            'has_open_deal' => true,
+                        ],
+                    ], 200);
+                }
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Nuevo negocio creado para contacto existente',
-                'data' => [
-                    'id' => $existingLead->id,
-                    'deal_id' => $deal->id,
-                    'existing' => true,
-                    'has_open_deal' => false,
-                ],
-            ], 201);
-        }
+                // No tiene negocio abierto, crear uno nuevo
+                $deal = $this->createDeal(
+                    $existingLead,
+                    $defaultPhase,
+                    $name,
+                    $message,
+                    $sourceType
+                );
 
-        // Contacto no existe, crear nuevo contacto y negocio
-        return DB::transaction(function () use ($request, $site, $sourceType, $defaultPhase, $name, $email, $phone, $message) {
-            // Crear el contacto
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Nuevo negocio creado para contacto existente',
+                    'data' => [
+                        'id' => $existingLead->id,
+                        'deal_id' => $deal->id,
+                        'existing' => true,
+                        'has_open_deal' => false,
+                    ],
+                ], 201);
+            }
+
+            // Contacto no existe, crear nuevo contacto y negocio
             $lead = LeadModel::create([
                 'name' => $name,
                 'email' => $email,

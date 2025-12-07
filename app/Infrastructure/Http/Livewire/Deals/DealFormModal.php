@@ -9,6 +9,7 @@ use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
+use Illuminate\Support\Facades\DB;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -199,27 +200,7 @@ class DealFormModal extends Component
 
         $this->validate();
 
-        // If creating new lead
-        if ($this->createNewLead && ! $this->leadId) {
-            $newLead = LeadModel::create([
-                'name' => $this->leadName ?: null,
-                'email' => $this->leadEmail ?: null,
-                'phone' => $this->leadPhone ?: null,
-                'source_type' => SourceType::MANUAL,
-            ]);
-            $this->leadId = $newLead->id;
-        }
-
-        // Update lead data if we have a lead
-        if ($this->leadId && ! $this->createNewLead) {
-            LeadModel::where('id', $this->leadId)->update([
-                'name' => $this->leadName ?: null,
-                'email' => $this->leadEmail ?: null,
-                'phone' => $this->leadPhone ?: null,
-            ]);
-        }
-
-        // Si estamos editando un negocio, usar el servicio para validar cambio de fase
+        // Si estamos editando un negocio, validar cambio de fase ANTES de la transacción
         if ($this->dealId && $phase) {
             $deal = DealModel::with(['salePhase', 'lead'])->find($this->dealId);
             if ($deal && $deal->sale_phase_id !== $phase->id) {
@@ -233,34 +214,57 @@ class DealFormModal extends Component
             }
         }
 
-        // Si se mueve a fase abierta, limpiar fecha de cierre
-        $closeDate = $phase?->is_closed
-            ? ($this->closeDate ?: now()->format('Y-m-d'))
-            : null;
+        // Envolver operaciones de BD en transacción para garantizar consistencia
+        $isUpdate = (bool) $this->dealId;
+        DB::transaction(function () use ($phase) {
+            // If creating new lead
+            if ($this->createNewLead && ! $this->leadId) {
+                $newLead = LeadModel::create([
+                    'name' => $this->leadName ?: null,
+                    'email' => $this->leadEmail ?: null,
+                    'phone' => $this->leadPhone ?: null,
+                    'source_type' => SourceType::MANUAL,
+                ]);
+                $this->leadId = $newLead->id;
+            }
 
-        if ($this->dealId) {
-            DealModel::where('id', $this->dealId)->update([
-                'name' => $this->name,
-                'value' => $this->value ?: null,
-                'description' => $this->description ?: null,
-                'sale_phase_id' => $this->salePhaseId,
-                'estimated_close_date' => $this->estimatedCloseDate ?: null,
-                'close_date' => $closeDate,
-            ]);
-            $this->dispatch('notify', type: 'success', message: 'Negocio actualizado');
-        } else {
-            DealModel::create([
-                'lead_id' => $this->leadId,
-                'name' => $this->name,
-                'value' => $this->value ?: null,
-                'description' => $this->description ?: null,
-                'sale_phase_id' => $this->salePhaseId,
-                'estimated_close_date' => $this->estimatedCloseDate ?: null,
-                'close_date' => $closeDate,
-            ]);
-            $this->dispatch('notify', type: 'success', message: 'Negocio creado');
-        }
+            // Update lead data if we have a lead
+            if ($this->leadId && ! $this->createNewLead) {
+                LeadModel::where('id', $this->leadId)->update([
+                    'name' => $this->leadName ?: null,
+                    'email' => $this->leadEmail ?: null,
+                    'phone' => $this->leadPhone ?: null,
+                ]);
+            }
 
+            // Si se mueve a fase abierta, limpiar fecha de cierre
+            $closeDate = $phase?->is_closed
+                ? ($this->closeDate ?: now()->format('Y-m-d'))
+                : null;
+
+            if ($this->dealId) {
+                DealModel::where('id', $this->dealId)->update([
+                    'name' => $this->name,
+                    'value' => $this->value ?: null,
+                    'description' => $this->description ?: null,
+                    'sale_phase_id' => $this->salePhaseId,
+                    'estimated_close_date' => $this->estimatedCloseDate ?: null,
+                    'close_date' => $closeDate,
+                ]);
+            } else {
+                DealModel::create([
+                    'lead_id' => $this->leadId,
+                    'name' => $this->name,
+                    'value' => $this->value ?: null,
+                    'description' => $this->description ?: null,
+                    'sale_phase_id' => $this->salePhaseId,
+                    'estimated_close_date' => $this->estimatedCloseDate ?: null,
+                    'close_date' => $closeDate,
+                ]);
+            }
+        });
+
+        $this->dispatch('notify', type: 'success', message: $isUpdate ? 'Negocio actualizado' : 'Negocio creado');
         $this->close();
         $this->dispatch('dealSaved');
     }
