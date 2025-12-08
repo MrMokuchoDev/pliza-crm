@@ -254,6 +254,6 @@ class DealShow extends Component
 
         return view('livewire.deals.show', [
             'phases' => $phases,
-        ])->layout('components.layouts.app', ['title' => $this->deal->name ?? 'Detalle del Negocio']);
+        ])->layout('components.layouts.app', ['title' => 'Detalle del Negocio']);
     }
 }

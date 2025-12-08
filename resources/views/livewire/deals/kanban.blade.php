@@ -1,8 +1,8 @@
-<div class="h-full flex flex-col" x-data="kanbanBoard()">
+<div class="h-full flex flex-col overflow-x-hidden" x-data="kanbanBoard()">
     <!-- Header -->
     <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div>
-            <h1 class="text-2xl font-bold text-gray-900">Pipeline de Ventas</h1>
+            <h1 class="text-xl lg:text-2xl font-bold text-gray-900">Pipeline de Ventas</h1>
             <p class="text-gray-500 text-sm mt-1">
                 {{ $totalDeals }} negocios activos
                 @if($totalValue > 0)
@@ -24,43 +24,46 @@
                        class="pl-10 pr-4 py-2.5 w-full sm:w-64 bg-white border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent transition">
             </div>
 
-            <!-- View Toggle -->
-            <div class="flex items-center bg-gray-100 rounded-xl p-1">
-                <a href="{{ route('deals.index') }}"
-                   class="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg transition">
-                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
-                    </svg>
-                    Lista
-                </a>
-                <span class="px-4 py-2 text-sm font-medium bg-white text-gray-900 rounded-lg shadow-sm">
-                    <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
-                    </svg>
-                    Kanban
-                </span>
-            </div>
+            <!-- View Toggle + New Deal -->
+            <div class="flex items-center gap-2">
+                <div class="flex items-center bg-gray-100 rounded-xl p-1">
+                    <a href="{{ route('deals.index') }}"
+                       class="px-3 py-1.5 text-sm font-medium text-gray-600 hover:text-gray-900 rounded-lg transition">
+                        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/>
+                        </svg>
+                        <span class="hidden sm:inline">Lista</span>
+                    </a>
+                    <span class="px-3 py-1.5 text-sm font-medium bg-white text-gray-900 rounded-lg shadow-sm">
+                        <svg class="w-4 h-4 inline-block mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2"/>
+                        </svg>
+                        <span class="hidden sm:inline">Kanban</span>
+                    </span>
+                </div>
 
-            <!-- New Deal -->
-            <button wire:click="openCreateModal"
-                    class="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-xl shadow-lg shadow-blue-500/25 transition">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
-                </svg>
-                Nuevo Negocio
-            </button>
+                <!-- New Deal -->
+                <button wire:click="openCreateModal"
+                        class="inline-flex items-center justify-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-sm font-medium rounded-xl shadow-lg shadow-blue-500/25 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                    </svg>
+                    <span class="hidden sm:inline">Nuevo Negocio</span>
+                    <span class="sm:hidden">Nuevo</span>
+                </button>
+            </div>
         </div>
     </div>
 
     <!-- Kanban Board -->
-    <div class="flex-1 overflow-x-auto pb-4">
-        <div class="flex gap-5 min-h-[500px]" style="min-width: max-content;">
+    <div class="flex-1 overflow-x-auto pb-4 -mx-4 px-4 lg:mx-0 lg:px-0 kanban-scroll-container">
+        <div class="flex gap-4 lg:gap-5 min-h-[500px]" style="min-width: max-content;">
             @foreach($openPhases as $phase)
                 @php
                     $phaseDeals = $dealsByPhase[$phase->id] ?? collect();
                     $phaseValue = $phaseDeals->sum('value');
                 @endphp
-                <div class="w-80 flex-shrink-0">
+                <div class="w-72 lg:w-80 flex-shrink-0">
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                         <div class="px-4 py-3 border-b border-gray-100"
                              style="background: linear-gradient(135deg, {{ $phase->color }}15, {{ $phase->color }}05);">
@@ -85,11 +88,15 @@
                              @drop="onDrop($event, '{{ $phase->id }}')">
 
                             @forelse($phaseDeals as $deal)
-                                <div class="bg-white border border-gray-100 rounded-xl p-4 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-gray-200 transition-all duration-200 group"
+                                <div class="bg-white border border-gray-100 rounded-xl p-4 cursor-grab active:cursor-grabbing hover:shadow-md hover:border-gray-200 transition-all duration-200 group deal-card"
                                      draggable="true"
                                      data-deal-id="{{ $deal->id }}"
                                      @dragstart="onDragStart($event, '{{ $deal->id }}')"
-                                     @dragend="onDragEnd($event)">
+                                     @dragend="onDragEnd($event)"
+                                     @touchstart.passive="onTouchStart($event, '{{ $deal->id }}')"
+                                     @touchmove.prevent="onTouchMove($event)"
+                                     @touchend="onTouchEnd($event)"
+                                     @touchcancel="onTouchEnd($event)">
 
                                     <div class="flex items-start justify-between mb-2">
                                         <div class="flex-1 min-w-0">
@@ -204,30 +211,35 @@
              x-transition:leave="transition ease-in duration-150"
              x-transition:leave-start="opacity-100 translate-y-0"
              x-transition:leave-end="opacity-0 translate-y-4"
-             class="fixed bottom-6 z-50 flex justify-center gap-6"
-             style="left: 256px; right: 0;">
-            @foreach($closedPhases as $phase)
-                <div class="rounded-xl px-20 py-4 text-center transition-all duration-200 drop-zone cursor-pointer"
-                     style="background: {{ $phase->color }}15; border: 3px dashed {{ $phase->color }};"
-                     data-phase-id="{{ $phase->id }}"
-                     @dragover.prevent="onDragOver($event)"
-                     @drop="onDrop($event, '{{ $phase->id }}')"
-                     @dragenter="$el.style.background = '{{ $phase->color }}30'; $el.style.borderStyle = 'solid'; $el.style.transform = 'scale(1.05)'"
-                     @dragleave="$el.style.background = '{{ $phase->color }}15'; $el.style.borderStyle = 'dashed'; $el.style.transform = 'scale(1)'">
-                    <div class="flex items-center justify-center gap-3">
-                        @if($phase->is_won)
-                            <svg class="w-6 h-6" style="color: {{ $phase->color }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        @else
-                            <svg class="w-6 h-6" style="color: {{ $phase->color }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                        @endif
-                        <span class="font-bold" style="color: {{ $phase->color }}">{{ $phase->name }}</span>
+             class="fixed bottom-0 left-0 right-0 lg:left-64 z-50 bg-gray-100 border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+            <div class="flex justify-center gap-3 lg:gap-6 p-4 lg:p-6">
+                @foreach($closedPhases as $phase)
+                    @php
+                        $bgColor = $phase->is_won ? '#dcfce7' : '#fee2e2';
+                        $bgColorHover = $phase->is_won ? '#bbf7d0' : '#fecaca';
+                    @endphp
+                    <div class="rounded-xl px-6 lg:px-20 py-3 lg:py-4 text-center transition-all duration-200 drop-zone cursor-pointer flex-1 lg:flex-none"
+                         style="background: {{ $bgColor }}; border: 3px dashed {{ $phase->color }};"
+                         data-phase-id="{{ $phase->id }}"
+                         @dragover.prevent="onDragOver($event)"
+                         @drop="onDrop($event, '{{ $phase->id }}')"
+                         @dragenter="$el.style.background = '{{ $bgColorHover }}'; $el.style.borderStyle = 'solid'; $el.style.transform = 'scale(1.05)'"
+                         @dragleave="$el.style.background = '{{ $bgColor }}'; $el.style.borderStyle = 'dashed'; $el.style.transform = 'scale(1)'">
+                        <div class="flex items-center justify-center gap-2 lg:gap-3">
+                            @if($phase->is_won)
+                                <svg class="w-5 h-5 lg:w-6 lg:h-6" style="color: {{ $phase->color }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            @else
+                                <svg class="w-5 h-5 lg:w-6 lg:h-6" style="color: {{ $phase->color }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            @endif
+                            <span class="font-bold text-sm lg:text-base" style="color: {{ $phase->color }}">{{ $phase->name }}</span>
+                        </div>
                     </div>
-                </div>
-            @endforeach
+                @endforeach
+            </div>
         </div>
     @endif
 
@@ -294,6 +306,12 @@
         Alpine.data('kanbanBoard', () => ({
             dragging: false,
             draggedDealId: null,
+            touchDragElement: null,
+            touchStartX: 0,
+            touchStartY: 0,
+            autoScrollInterval: null,
+
+            // Mouse/Desktop drag events
             onDragStart(event, dealId) {
                 this.dragging = true;
                 this.draggedDealId = dealId;
@@ -314,11 +332,225 @@
                 event.preventDefault();
                 const dealId = event.dataTransfer.getData('text/plain');
                 if (dealId && phaseId) {
-                    // Wait for Livewire to process the move before resetting drag state
                     await $wire.moveToPhase(dealId, phaseId);
                 }
                 this.dragging = false;
                 this.draggedDealId = null;
+            },
+
+            // Touch events for mobile
+            touchGhost: null,
+            lastHoveredColumn: null,
+
+            onTouchStart(event, dealId) {
+                const touch = event.touches[0];
+                this.touchStartX = touch.clientX;
+                this.touchStartY = touch.clientY;
+                this.touchDragElement = event.target.closest('.deal-card');
+                this.draggedDealId = dealId;
+
+                // Delay before starting drag to differentiate from scroll
+                this.touchTimeout = setTimeout(() => {
+                    this.startTouchDrag(touch);
+                }, 150);
+            },
+
+            startTouchDrag(touch) {
+                if (!this.touchDragElement) return;
+
+                this.dragging = true;
+                this.touchDragElement.classList.add('opacity-30');
+
+                // Create ghost element that follows finger
+                const rect = this.touchDragElement.getBoundingClientRect();
+                this.touchGhost = this.touchDragElement.cloneNode(true);
+                this.touchGhost.classList.add('touch-ghost');
+                this.touchGhost.style.cssText = `
+                    position: fixed;
+                    top: ${rect.top}px;
+                    left: ${rect.left}px;
+                    width: ${rect.width}px;
+                    height: ${rect.height}px;
+                    z-index: 9999;
+                    pointer-events: none;
+                    opacity: 0.9;
+                    transform: rotate(2deg) scale(1.02);
+                    box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);
+                    transition: none;
+                `;
+                document.body.appendChild(this.touchGhost);
+
+                // Store offset for positioning
+                this.touchOffsetX = touch.clientX - rect.left;
+                this.touchOffsetY = touch.clientY - rect.top;
+            },
+
+            onTouchMove(event) {
+                const touch = event.touches[0];
+                const deltaX = Math.abs(touch.clientX - this.touchStartX);
+                const deltaY = Math.abs(touch.clientY - this.touchStartY);
+
+                // Cancel if scrolling vertically before drag started
+                if (!this.dragging && deltaY > deltaX && deltaY > 10) {
+                    clearTimeout(this.touchTimeout);
+                    return;
+                }
+
+                // Start drag mode if moved horizontally
+                if (!this.dragging && deltaX > 10) {
+                    clearTimeout(this.touchTimeout);
+                    this.startTouchDrag(touch);
+                }
+
+                if (!this.dragging || !this.touchGhost) return;
+
+                // Move ghost with finger
+                this.touchGhost.style.left = (touch.clientX - this.touchOffsetX) + 'px';
+                this.touchGhost.style.top = (touch.clientY - this.touchOffsetY) + 'px';
+
+                // Auto-scroll: scroll por columna, no continuo
+                const scrollContainer = document.querySelector('.kanban-scroll-container');
+                if (scrollContainer) {
+                    const containerRect = scrollContainer.getBoundingClientRect();
+                    const edgeThreshold = 60;
+
+                    // Detectar columna actual bajo el dedo
+                    if (this.touchGhost) this.touchGhost.style.display = 'none';
+                    const elementUnder = document.elementFromPoint(touch.clientX, touch.clientY);
+                    if (this.touchGhost) this.touchGhost.style.display = '';
+
+                    const currentColumn = elementUnder?.closest('.kanban-column');
+
+                    // Guardar la columna actual para detectar cambios
+                    if (currentColumn && currentColumn !== this.lastHoveredColumn) {
+                        this.lastHoveredColumn = currentColumn;
+                        // Parar scroll cuando entramos a una nueva columna
+                        clearInterval(this.autoScrollInterval);
+                        this.autoScrollInterval = null;
+                    }
+
+                    // Solo activar scroll si el dedo está en el borde extremo
+                    if (touch.clientX < containerRect.left + edgeThreshold) {
+                        if (!this.autoScrollInterval) {
+                            // Scroll a la columna anterior
+                            const columns = Array.from(document.querySelectorAll('.kanban-column'));
+                            const currentIdx = columns.indexOf(currentColumn);
+                            if (currentIdx > 0) {
+                                const prevColumn = columns[currentIdx - 1];
+                                prevColumn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                                this.autoScrollInterval = true; // Flag para no repetir
+                            }
+                        }
+                    } else if (touch.clientX > containerRect.right - edgeThreshold) {
+                        if (!this.autoScrollInterval) {
+                            // Scroll a la columna siguiente
+                            const columns = Array.from(document.querySelectorAll('.kanban-column'));
+                            const currentIdx = columns.indexOf(currentColumn);
+                            if (currentIdx < columns.length - 1 && currentIdx >= 0) {
+                                const nextColumn = columns[currentIdx + 1];
+                                nextColumn.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+                                this.autoScrollInterval = true; // Flag para no repetir
+                            }
+                        }
+                    } else {
+                        // Dedo en el centro, resetear flag
+                        this.autoScrollInterval = null;
+                    }
+                }
+
+                // Highlight column under finger
+                this.highlightDropTarget(touch.clientX, touch.clientY);
+            },
+
+            highlightDropTarget(x, y) {
+                // Remove previous highlights
+                document.querySelectorAll('.kanban-column').forEach(col => {
+                    col.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-50');
+                });
+                document.querySelectorAll('.drop-zone').forEach(zone => {
+                    zone.style.transform = 'scale(1)';
+                    zone.style.borderStyle = 'dashed';
+                });
+
+                // Hide ghost temporarily to find element under it
+                if (this.touchGhost) this.touchGhost.style.display = 'none';
+                const elementUnder = document.elementFromPoint(x, y);
+                if (this.touchGhost) this.touchGhost.style.display = '';
+
+                if (elementUnder) {
+                    const column = elementUnder.closest('.kanban-column');
+                    if (column) {
+                        column.classList.add('ring-2', 'ring-blue-400', 'bg-blue-50');
+                    }
+                    const dropZone = elementUnder.closest('.drop-zone');
+                    if (dropZone) {
+                        dropZone.style.transform = 'scale(1.05)';
+                        dropZone.style.borderStyle = 'solid';
+                    }
+                }
+            },
+
+            async onTouchEnd(event) {
+                clearTimeout(this.touchTimeout);
+                clearInterval(this.autoScrollInterval);
+
+                // Remove highlights
+                document.querySelectorAll('.kanban-column').forEach(col => {
+                    col.classList.remove('ring-2', 'ring-blue-400', 'bg-blue-50');
+                });
+
+                if (!this.dragging || !this.draggedDealId) {
+                    this.resetTouchState();
+                    return;
+                }
+
+                // Find drop target (hide ghost first)
+                const touch = event.changedTouches[0];
+                if (this.touchGhost) this.touchGhost.style.display = 'none';
+                const dropTarget = document.elementFromPoint(touch.clientX, touch.clientY);
+
+                if (dropTarget) {
+                    const column = dropTarget.closest('.kanban-column');
+                    if (column) {
+                        const phaseId = column.dataset.phaseId;
+                        if (phaseId && phaseId !== this.getOriginalPhase()) {
+                            await $wire.moveToPhase(this.draggedDealId, phaseId);
+                        }
+                    }
+
+                    const dropZone = dropTarget.closest('.drop-zone');
+                    if (dropZone) {
+                        const phaseId = dropZone.dataset.phaseId;
+                        if (phaseId) {
+                            await $wire.moveToPhase(this.draggedDealId, phaseId);
+                        }
+                    }
+                }
+
+                this.resetTouchState();
+            },
+
+            resetTouchState() {
+                if (this.touchDragElement) {
+                    this.touchDragElement.classList.remove('opacity-30');
+                }
+                if (this.touchGhost && this.touchGhost.parentNode) {
+                    this.touchGhost.parentNode.removeChild(this.touchGhost);
+                }
+                this.touchGhost = null;
+                this.dragging = false;
+                this.draggedDealId = null;
+                this.touchDragElement = null;
+                this.lastHoveredColumn = null;
+                this.autoScrollInterval = null;
+            },
+
+            getOriginalPhase() {
+                if (this.touchDragElement) {
+                    const column = this.touchDragElement.closest('.kanban-column');
+                    return column ? column.dataset.phaseId : null;
+                }
+                return null;
             }
         }));
     </script>
@@ -330,5 +562,29 @@
         .kanban-column::-webkit-scrollbar-track { background: transparent; }
         .kanban-column::-webkit-scrollbar-thumb { background-color: #e5e7eb; border-radius: 3px; }
         .kanban-column::-webkit-scrollbar-thumb:hover { background-color: #d1d5db; }
+
+        /* Mobile touch drag */
+        @media (max-width: 1023px) {
+            .kanban-column { max-height: calc(100vh - 320px); }
+            .kanban-scroll-container {
+                -webkit-overflow-scrolling: touch;
+            }
+            .deal-card {
+                touch-action: pan-y;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+        }
+
+        /* Touch ghost element */
+        .touch-ghost {
+            border-radius: 0.75rem;
+            background: white;
+        }
+
+        /* Highlight effect on columns */
+        .kanban-column.ring-2 {
+            transition: all 0.15s ease;
+        }
     </style>
 </div>
