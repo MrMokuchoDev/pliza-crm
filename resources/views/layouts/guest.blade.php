@@ -42,7 +42,7 @@
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold text-white">MiniCRM</h1>
+                    <h1 class="text-2xl font-bold text-white">{{ config('app.name', 'MiniCRM') }}</h1>
                     <p class="text-blue-200 text-xs">Sistema de Gestión de Leads</p>
                 </div>
             </div>
@@ -55,7 +55,7 @@
 
         <!-- Footer -->
         <p class="relative z-10 mt-8 text-center text-blue-200 text-sm">
-            &copy; {{ date('Y') }} MiniCRM. Todos los derechos reservados.
+            &copy; {{ date('Y') }} {{ config('app.name', 'MiniCRM') }}. Todos los derechos reservados.
         </p>
     </div>
 

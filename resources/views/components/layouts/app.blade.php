@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $title ?? 'MiniCRM' }}</title>
+    <title>{{ $title ?? config('app.name', 'MiniCRM') }}</title>
 
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -45,7 +45,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>
                     </div>
-                    <span class="text-xl font-bold text-white">MiniCRM</span>
+                    <span class="text-xl font-bold text-white">{{ config('app.name', 'MiniCRM') }}</span>
                 </a>
                 <button @click="sidebarOpen = false" class="lg:hidden text-gray-400 hover:text-white">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
