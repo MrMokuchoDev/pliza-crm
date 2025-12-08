@@ -173,23 +173,22 @@
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              @click="sidebarOpen = false"
-             class="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+             class="fixed inset-0 z-30 bg-black bg-opacity-50 lg:hidden"
              x-cloak>
         </div>
 
         <!-- Main Content Area -->
-        <div class="flex-1 flex flex-col min-h-screen lg:ml-0">
+        <div class="flex-1 flex flex-col min-h-screen lg:ml-0 overflow-x-hidden">
             <!-- Top Header -->
-            <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6">
-                <!-- Mobile menu button -->
-                <button @click="sidebarOpen = true" class="lg:hidden text-gray-500 hover:text-gray-700">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                    </svg>
-                </button>
-
-                <!-- Page Title (hidden on mobile, shown on desktop) -->
-                <div class="hidden lg:block">
+            <header class="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-4 lg:px-6">
+                <!-- Mobile: Menu button + Title -->
+                <div class="flex items-center gap-3">
+                    <button @click="sidebarOpen = true" class="lg:hidden p-2 -ml-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                        </svg>
+                    </button>
+                    <!-- Page Title -->
                     <h1 class="text-lg font-semibold text-gray-900">{{ $title ?? 'Dashboard' }}</h1>
                 </div>
 
@@ -248,7 +247,7 @@
             </header>
 
             <!-- Page Content -->
-            <main class="flex-1 px-6 pt-1 pb-6">
+            <main class="flex-1 px-4 lg:px-6 py-4 lg:py-6 min-w-0">
                 {{ $slot }}
             </main>
         </div>

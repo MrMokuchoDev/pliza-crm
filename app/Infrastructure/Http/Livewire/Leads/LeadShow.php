@@ -157,6 +157,6 @@ class LeadShow extends Component
         }
 
         return view('livewire.leads.show')
-            ->layout('components.layouts.app', ['title' => $this->lead->name ?? 'Detalle del Contacto']);
+            ->layout('components.layouts.app', ['title' => 'Detalle del Contacto']);
     }
 }
