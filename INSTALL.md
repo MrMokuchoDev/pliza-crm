@@ -15,7 +15,7 @@ Para entornos con acceso SSH:
 ```bash
 # 1. Clonar repositorio
 cd /var/www
-git clone https://github.com/tu-usuario/mini-crm.git
+git clone https://github.com/MrMokuchoDev/pliza-crm.git
 cd mini-crm
 
 # 2. Instalar dependencias
@@ -92,7 +92,7 @@ server {
 Para desarrollo con `artisan serve`:
 
 ```bash
-git clone https://github.com/tu-usuario/mini-crm.git
+git clone https://github.com/MrMokuchoDev/pliza-crm.git
 cd mini-crm
 composer install
 cp .env.example .env
@@ -114,7 +114,7 @@ Primero necesitas preparar el proyecto en tu computadora:
 
 ```bash
 # 1. Clonar el repositorio
-git clone https://github.com/tu-usuario/mini-crm.git
+git clone https://github.com/MrMokuchoDev/pliza-crm.git
 cd mini-crm
 
 # 2. Instalar dependencias de PHP

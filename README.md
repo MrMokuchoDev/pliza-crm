@@ -24,7 +24,7 @@ Ver [INSTALL.md](INSTALL.md) para instrucciones detalladas.
 ### Instalación rápida (desarrollo)
 
 ```bash
-git clone https://github.com/tu-usuario/pliza-crm.git
+git clone https://github.com/MrMokuchoDev/pliza-crm.git
 cd pliza-crm
 composer install
 cp .env.example .env
