@@ -1,4 +1,4 @@
-# MiniCRM - Guía de Instalación
+# Pliza CRM - Guía de Instalación
 
 ## Requisitos
 
@@ -16,7 +16,7 @@ Para entornos con acceso SSH:
 # 1. Clonar repositorio
 cd /var/www
 git clone https://github.com/MrMokuchoDev/pliza-crm.git
-cd mini-crm
+cd pliza-crm
 
 # 2. Instalar dependencias
 composer install --optimize-autoloader --no-dev
@@ -51,7 +51,7 @@ php artisan storage:link
 server {
     listen 80;
     server_name tudominio.com;
-    root /var/www/mini-crm/public;
+    root /var/www/pliza-crm/public;
 
     index index.php;
 
@@ -76,9 +76,9 @@ server {
 ```apache
 <VirtualHost *:80>
     ServerName tudominio.com
-    DocumentRoot /var/www/mini-crm/public
+    DocumentRoot /var/www/pliza-crm/public
 
-    <Directory /var/www/mini-crm/public>
+    <Directory /var/www/pliza-crm/public>
         AllowOverride All
         Require all granted
     </Directory>
@@ -93,7 +93,7 @@ Para desarrollo con `artisan serve`:
 
 ```bash
 git clone https://github.com/MrMokuchoDev/pliza-crm.git
-cd mini-crm
+cd pliza-crm
 composer install
 cp .env.example .env
 php artisan key:generate
@@ -108,32 +108,54 @@ php artisan serve  # http://localhost:8000
 
 Para hostings sin acceso SSH (cPanel, Plesk, etc.):
 
-### Paso 1: Preparar el proyecto en tu máquina local
+### Paso 1: Crear la Base de Datos
+
+**IMPORTANTE:** Debes crear la base de datos ANTES de subir los archivos.
+
+#### En cPanel:
+
+1. Ir a **MySQL Databases**
+2. Crear nueva base de datos (ej: `tuusuario_plizacrm`)
+3. Crear nuevo usuario con contraseña segura
+4. Asignar usuario a la base de datos con **ALL PRIVILEGES**
+
+#### En Plesk:
+
+1. Ir a **Databases** > **Add Database**
+2. Completar nombre de BD y credenciales
+
+> **Guarda estos datos**, los necesitarás en el instalador:
+> - Host (generalmente `localhost`)
+> - Nombre de la base de datos
+> - Usuario
+> - Contraseña
+
+### Paso 2: Preparar el proyecto en tu máquina local
 
 Primero necesitas preparar el proyecto en tu computadora:
 
 ```bash
 # 1. Clonar el repositorio
 git clone https://github.com/MrMokuchoDev/pliza-crm.git
-cd mini-crm
+cd pliza-crm
 
 # 2. Instalar dependencias de PHP
 composer install --optimize-autoloader --no-dev
 
 # 3. Comprimir para subir (excluir archivos innecesarios)
-zip -r ../minicrm.zip . -x "*.git*" -x "node_modules/*" -x ".env" -x "tests/*" -x "phpunit.xml"
+zip -r ../plizacrm.zip . -x "*.git*" -x "node_modules/*" -x ".env" -x "tests/*" -x "phpunit.xml"
 ```
 
 > **Nota:** Necesitas tener instalado [Composer](https://getcomposer.org/) en tu máquina local.
 
-### Paso 2: Subir archivos
+### Paso 3: Subir archivos
 
 1. Accede al **File Manager** de tu hosting
 2. Navega a `public_html` (o el directorio de tu dominio)
-3. Sube el archivo `minicrm.zip`
+3. Sube el archivo `plizacrm.zip`
 4. Extrae/descomprime el ZIP
 
-### Paso 3: Preparar estructura (pre-instalación)
+### Paso 4: Preparar estructura (pre-instalación)
 
 Si tu dominio apunta directamente a `public_html/` (sin subcarpeta `public/`):
 
@@ -141,36 +163,20 @@ Si tu dominio apunta directamente a `public_html/` (sin subcarpeta `public/`):
 2. Espera a que se complete el proceso
 3. El archivo se eliminará automáticamente
 
-### Paso 4: Ejecutar el instalador
+### Paso 5: Ejecutar el instalador
 
 1. Abre en tu navegador: `https://tudominio.com/install.php`
 2. Sigue los pasos del asistente:
    - **Requisitos**: Verifica que tu servidor cumple los requisitos
-   - **Base de datos**: Ingresa los datos de conexión MySQL
+   - **Base de datos**: Ingresa los datos que guardaste en el Paso 1
    - **Aplicación**: Configura URL, nombre y zona horaria
    - **Administrador**: Crea tu usuario de acceso
    - **Instalar**: Ejecuta la instalación
 
-### Paso 5: Acceder al sistema
+### Paso 6: Acceder al sistema
 
 1. Ve a `https://tudominio.com/login`
 2. Ingresa con el email y contraseña que configuraste
-
----
-
-## Crear la Base de Datos (antes de instalar)
-
-### En cPanel:
-
-1. Ir a **MySQL Databases**
-2. Crear nueva base de datos (ej: `tuusuario_minicrm`)
-3. Crear nuevo usuario con contraseña segura
-4. Asignar usuario a la base de datos con **ALL PRIVILEGES**
-
-### En Plesk:
-
-1. Ir a **Databases** > **Add Database**
-2. Completar nombre de BD y credenciales
 
 ---
 
