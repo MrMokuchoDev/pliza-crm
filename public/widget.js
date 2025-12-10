@@ -69,7 +69,13 @@
     const widgetType = currentScript.getAttribute('data-type') || 'whatsapp';
     const customColor = currentScript.getAttribute('data-color');
 
-    const baseUrl = currentScript.src.replace('/widget.js', '');
+    // Detectar baseUrl: soporta widget.js directo o via widget-serve.php
+    let baseUrl = currentScript.src;
+    if (baseUrl.includes('widget-serve.php')) {
+        baseUrl = baseUrl.replace('/widget-serve.php', '');
+    } else {
+        baseUrl = baseUrl.replace('/widget.js', '');
+    }
 
     const config = {
         id: widgetId,
@@ -80,8 +86,8 @@
         color: customColor || typeColors[widgetType] || '#3B82F6',
         title: currentScript.getAttribute('data-title') || 'Contáctanos',
         buttonText: currentScript.getAttribute('data-button-text') || 'Enviar',
-        apiUrl: baseUrl + '/api/v1/leads/capture',
-        statusUrl: baseUrl + '/api/v1/sites/'
+        // Usar proxy para evitar bloqueos de CORS/WAF
+        apiUrl: baseUrl + '/api-proxy.php?endpoint=leads/capture'
     };
 
     if (!config.siteId) {
@@ -147,8 +153,8 @@
 
     // Descripciones por tipo
     const descriptions = {
-        whatsapp: 'Déjanos tus datos y te contactamos por WhatsApp',
-        phone: 'Déjanos tus datos y te llamamos',
+        whatsapp: 'D\u00e9janos tus datos y te contactamos por WhatsApp',
+        phone: 'D\u00e9janos tus datos y te llamamos',
         contact_form: 'Completa el formulario y nos pondremos en contacto'
     };
 
@@ -811,12 +817,22 @@
     // Verificar si el sitio está activo
     async function checkSiteStatus() {
         try {
-            const response = await fetch(config.statusUrl + config.siteId + '/status');
+            // Construir URL correctamente para el proxy
+            // baseUrl + '/api-proxy.php?endpoint=sites/' + siteId + '/status'
+            const statusFullUrl = baseUrl + '/api-proxy.php?endpoint=sites/' + config.siteId + '/status';
+            const response = await fetch(statusFullUrl, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
             const data = await response.json();
             return data.active === true;
         } catch (error) {
             console.error('MiniCRM Widget: Error verificando estado del sitio', error);
-            return false;
+            // En caso de error de red/CORS, intentar mostrar el widget de todos modos
+            // para no bloquear funcionalidad por problemas de conectividad
+            return true;
         }
     }
 

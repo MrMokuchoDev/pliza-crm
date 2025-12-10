@@ -204,6 +204,10 @@ class SiteIndex extends Component
         $title = $settings['title'] ?? 'Contáctanos';
         $buttonText = $settings['button_text'] ?? 'Enviar';
 
+        // Convertir caracteres especiales a entidades numéricas para evitar problemas de encoding
+        $title = mb_encode_numericentity($title, [0x80, 0xFFFF, 0, 0xFFFF], 'UTF-8');
+        $buttonText = mb_encode_numericentity($buttonText, [0x80, 0xFFFF, 0, 0xFFFF], 'UTF-8');
+
         $attributes = [
             "data-site-id=\"{$this->embedSite->id}\"",
             "data-type=\"{$this->selectedWidgetType}\"",
@@ -219,7 +223,8 @@ class SiteIndex extends Component
 
         $attributesStr = implode("\n       ", $attributes);
 
-        return "<script defer src=\"{$baseUrl}/widget.js\"\n       {$attributesStr}>\n</script>";
+        // Usar widget-serve.php para compatibilidad con WAF/ModSecurity en hosting compartido
+        return "<script defer src=\"{$baseUrl}/widget-serve.php\"\n       {$attributesStr}>\n</script>";
     }
 
     private function resetForm(): void
