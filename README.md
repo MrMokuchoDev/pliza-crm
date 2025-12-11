@@ -21,6 +21,10 @@ Sistema ligero de gestión de leads con widgets embebibles para captura desde m�
 
 Ver [INSTALL.md](INSTALL.md) para instrucciones detalladas.
 
+## Actualización
+
+Ver [UPDATE.md](UPDATE.md) para instrucciones de actualización.
+
 ### Instalación rápida (desarrollo)
 
 ```bash
