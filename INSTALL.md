@@ -180,6 +180,61 @@ Si tu dominio apunta directamente a `public_html/` (sin subcarpeta `public/`):
 
 ---
 
+## Configuración de Correo (Opcional)
+
+Para habilitar funciones como recuperación de contraseña, debes configurar un servidor de correo SMTP.
+
+### Variables de entorno
+
+Edita tu archivo `.env` con los datos de tu proveedor SMTP:
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.tuproveedor.com
+MAIL_PORT=587
+MAIL_USERNAME=tu@correo.com
+MAIL_PASSWORD=tu_contraseña
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=tu@correo.com
+MAIL_FROM_NAME="Pliza CRM"
+```
+
+### Ejemplos por proveedor
+
+**Gmail (requiere App Password):**
+```env
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=tucorreo@gmail.com
+MAIL_PASSWORD=xxxx xxxx xxxx xxxx
+MAIL_ENCRYPTION=tls
+```
+> Para Gmail debes habilitar 2FA y crear una [App Password](https://myaccount.google.com/apppasswords)
+
+**Hosting compartido (cPanel):**
+```env
+MAIL_HOST=mail.tudominio.com
+MAIL_PORT=465
+MAIL_USERNAME=noreply@tudominio.com
+MAIL_PASSWORD=tu_contraseña
+MAIL_ENCRYPTION=ssl
+```
+
+**Mailgun:**
+```env
+MAIL_MAILER=mailgun
+MAILGUN_DOMAIN=tu-dominio.mailgun.org
+MAILGUN_SECRET=key-xxxxxxxxxx
+```
+
+**Sin configurar (solo desarrollo):**
+```env
+MAIL_MAILER=log
+```
+> Los correos se guardan en `storage/logs/laravel.log` en lugar de enviarse.
+
+---
+
 ## Solución de Problemas
 
 ### Error 500 después de instalar
