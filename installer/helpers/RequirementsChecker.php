@@ -27,6 +27,7 @@ class RequirementsChecker
             'pdo_mysql' => 'PDO MySQL',
             'tokenizer' => 'Tokenizer',
             'xml' => 'XML',
+            'zip' => 'Zip',
         ],
     ];
 
