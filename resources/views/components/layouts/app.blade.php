@@ -152,13 +152,24 @@
                         </div>
                         Mantenimiento
                     </a>
+
+                    <!-- Actualizaciones -->
+                    <a href="{{ route('updates') }}"
+                       class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('updates') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
+                        <div class="w-8 h-8 rounded-lg {{ request()->routeIs('updates') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
+                            <svg class="w-4 h-4 {{ request()->routeIs('updates') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                            </svg>
+                        </div>
+                        Actualizaciones
+                    </a>
                 </div>
             </nav>
 
             <!-- Sidebar Footer -->
             <div class="p-4 mt-auto">
                 <div class="p-3 bg-gradient-to-r from-blue-600/20 to-indigo-600/20 rounded-xl border border-blue-500/20">
-                    <p class="text-xs text-gray-400 mb-2">Versi&oacute;n 1.0</p>
+                    <p class="text-xs text-gray-400 mb-2">Versi&oacute;n {{ config('version.current', '1.0.0') }}</p>
                     <p class="text-xs text-gray-500">Sistema de gesti&oacute;n de leads</p>
                 </div>
             </div>

@@ -13,6 +13,7 @@ use App\Infrastructure\Http\Livewire\Leads\LeadShow;
 use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
 use App\Infrastructure\Http\Livewire\Sites\SiteIndex;
+use App\Infrastructure\Http\Livewire\Updates\UpdatesPanel;
 use Illuminate\Support\ServiceProvider;
 use Livewire\Livewire;
 
@@ -43,5 +44,6 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.infrastructure.http.livewire.deals.deal-kanban', DealKanban::class);
         Livewire::component('app.infrastructure.http.livewire.maintenance.maintenance-panel', MaintenancePanel::class);
         Livewire::component('app.infrastructure.http.livewire.sites.site-index', SiteIndex::class);
+        Livewire::component('app.infrastructure.http.livewire.updates.updates-panel', UpdatesPanel::class);
     }
 }

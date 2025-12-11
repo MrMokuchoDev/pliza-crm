@@ -10,6 +10,7 @@ use App\Infrastructure\Http\Livewire\Leads\LeadShow;
 use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
 use App\Infrastructure\Http\Livewire\Sites\SiteIndex;
+use App\Infrastructure\Http\Livewire\Updates\UpdatesPanel;
 use Illuminate\Support\Facades\Route;
 
 // Ruta pública - redirige a login
@@ -39,6 +40,9 @@ Route::middleware(['auth'])->group(function () {
 
     // Maintenance Panel
     Route::get('/admin/maintenance', MaintenancePanel::class)->name('maintenance');
+
+    // Updates Panel
+    Route::get('/admin/updates', UpdatesPanel::class)->name('updates');
 
     // Profile (de Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
