@@ -120,15 +120,37 @@ class GitHubReleasesClient
     public function downloadAsset(string $downloadUrl, string $destinationPath): bool
     {
         try {
-            $response = Http::withHeaders([
-                'Accept' => 'application/octet-stream',
-                'User-Agent' => 'Pliza-CRM-Updater',
-            ])->timeout(300)->get($downloadUrl);
+            // Use cURL directly for better redirect handling
+            $ch = curl_init();
 
-            if ($response->failed()) {
+            // GitHub zipball URLs need specific Accept header
+            $acceptHeader = str_contains($downloadUrl, 'zipball')
+                ? 'Accept: application/vnd.github+json'
+                : 'Accept: application/octet-stream';
+
+            curl_setopt_array($ch, [
+                CURLOPT_URL => $downloadUrl,
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 10,
+                CURLOPT_TIMEOUT => 300,
+                CURLOPT_HTTPHEADER => [
+                    $acceptHeader,
+                    'User-Agent: Pliza-CRM-Updater',
+                ],
+                CURLOPT_SSL_VERIFYPEER => true,
+            ]);
+
+            $content = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $error = curl_error($ch);
+            curl_close($ch);
+
+            if ($httpCode !== 200 || $content === false) {
                 Log::error('Failed to download asset', [
                     'url' => $downloadUrl,
-                    'status' => $response->status(),
+                    'status' => $httpCode,
+                    'error' => $error,
                 ]);
                 return false;
             }
@@ -138,7 +160,7 @@ class GitHubReleasesClient
                 mkdir($directory, 0755, true);
             }
 
-            file_put_contents($destinationPath, $response->body());
+            file_put_contents($destinationPath, $content);
 
             return true;
         } catch (\Exception $e) {
