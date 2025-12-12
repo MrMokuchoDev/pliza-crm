@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Eloquent;
 
 use App\Domain\Shared\Traits\HasUuid;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class SiteModel extends Model
@@ -26,6 +28,8 @@ class SiteModel extends Model
         'domain',
         'api_key',
         'is_active',
+        'default_user_id',
+        'round_robin_index',
         'settings',
         'created_at',
     ];
@@ -36,11 +40,28 @@ class SiteModel extends Model
             'is_active' => 'boolean',
             'settings' => 'array',
             'created_at' => 'datetime',
+            'round_robin_index' => 'integer',
         ];
+    }
+
+    /**
+     * Usuario por defecto para asignar leads.
+     */
+    public function defaultUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'default_user_id', 'uuid');
     }
 
     public function leads(): HasMany
     {
         return $this->hasMany(LeadModel::class, 'source_site_id');
+    }
+
+    /**
+     * Verifica si tiene un usuario por defecto configurado.
+     */
+    public function hasDefaultUser(): bool
+    {
+        return $this->default_user_id !== null;
     }
 }

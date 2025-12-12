@@ -11,6 +11,7 @@ use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
 use App\Infrastructure\Http\Livewire\Sites\SiteIndex;
 use App\Infrastructure\Http\Livewire\Updates\UpdatesPanel;
+use App\Infrastructure\Http\Livewire\Users\UserIndex;
 use Illuminate\Support\Facades\Route;
 
 // Ruta pública - redirige a login
@@ -32,17 +33,25 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/negocios/{id}', DealShow::class)->name('deals.show');
     Route::get('/pipeline', DealKanban::class)->name('deals.kanban');
 
-    // Sale Phases
-    Route::get('/sale-phases', SalePhaseIndex::class)->name('sale-phases.index');
+    // =========================================
+    // Rutas de Configuración - Solo Admin
+    // =========================================
+    Route::middleware(['role:admin'])->group(function () {
+        // Sale Phases
+        Route::get('/sale-phases', SalePhaseIndex::class)->name('sale-phases.index');
 
-    // Sites
-    Route::get('/sites', SiteIndex::class)->name('sites.index');
+        // Sites
+        Route::get('/sites', SiteIndex::class)->name('sites.index');
 
-    // Maintenance Panel
-    Route::get('/admin/maintenance', MaintenancePanel::class)->name('maintenance');
+        // Users
+        Route::get('/usuarios', UserIndex::class)->name('users.index');
 
-    // Updates Panel
-    Route::get('/admin/updates', UpdatesPanel::class)->name('updates');
+        // Maintenance Panel
+        Route::get('/admin/maintenance', MaintenancePanel::class)->name('maintenance');
+
+        // Updates Panel
+        Route::get('/admin/updates', UpdatesPanel::class)->name('updates');
+    });
 
     // Profile (de Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

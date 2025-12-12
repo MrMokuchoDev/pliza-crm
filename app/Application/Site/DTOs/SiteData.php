@@ -15,6 +15,8 @@ readonly class SiteData
         public ?string $domain = null,
         public ?string $apiKey = null,
         public ?bool $isActive = null,
+        public ?string $defaultUserId = null,
+        public bool $clearDefaultUser = false,
         public ?array $settings = null,
     ) {}
 
@@ -29,6 +31,8 @@ readonly class SiteData
             domain: $data['domain'] ?? null,
             apiKey: $data['api_key'] ?? null,
             isActive: isset($data['is_active']) ? (bool) $data['is_active'] : null,
+            defaultUserId: $data['default_user_id'] ?? null,
+            clearDefaultUser: $data['clear_default_user'] ?? false,
             settings: $data['settings'] ?? null,
         );
     }
@@ -38,7 +42,7 @@ readonly class SiteData
      */
     public function toArray(): array
     {
-        return array_filter([
+        $data = array_filter([
             'id' => $this->id,
             'name' => $this->name,
             'domain' => $this->domain,
@@ -46,5 +50,14 @@ readonly class SiteData
             'is_active' => $this->isActive,
             'settings' => $this->settings,
         ], fn ($value) => $value !== null);
+
+        // Para default_user_id, incluir explícitamente (puede ser null para quitar el usuario)
+        if ($this->defaultUserId !== null) {
+            $data['default_user_id'] = $this->defaultUserId;
+        } elseif ($this->clearDefaultUser) {
+            $data['default_user_id'] = null;
+        }
+
+        return $data;
     }
 }

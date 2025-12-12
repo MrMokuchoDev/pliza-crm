@@ -18,6 +18,8 @@ readonly class DealData
         public ?string $description = null,
         public ?string $estimatedCloseDate = null,
         public ?string $closeDate = null,
+        public ?string $assignedTo = null,
+        public ?string $createdBy = null,
     ) {}
 
     /**
@@ -34,6 +36,8 @@ readonly class DealData
             description: $data['description'] ?? null,
             estimatedCloseDate: $data['estimated_close_date'] ?? null,
             closeDate: $data['close_date'] ?? null,
+            assignedTo: $data['assigned_to'] ?? null,
+            createdBy: $data['created_by'] ?? null,
         );
     }
 
@@ -52,6 +56,8 @@ readonly class DealData
             'description' => $this->description,
             'estimated_close_date' => $this->estimatedCloseDate,
             'close_date' => $this->closeDate,
+            'assigned_to' => $this->assignedTo,
+            'created_by' => $this->createdBy,
         ], fn ($value) => $value !== null);
     }
 
@@ -75,6 +81,9 @@ readonly class DealData
         }
         if ($this->salePhaseId !== null) {
             $data['sale_phase_id'] = $this->salePhaseId;
+        }
+        if ($this->assignedTo !== null) {
+            $data['assigned_to'] = $this->assignedTo;
         }
 
         return $data;

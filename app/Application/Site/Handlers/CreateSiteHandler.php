@@ -22,6 +22,8 @@ class CreateSiteHandler
             'domain' => $data->domain,
             'api_key' => $this->generateApiKey(),
             'is_active' => $data->isActive ?? true,
+            'default_user_id' => $data->defaultUserId,
+            'round_robin_index' => 0,
             'settings' => $data->settings ?? [],
             'created_at' => now(),
         ]);

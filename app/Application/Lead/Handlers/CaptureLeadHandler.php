@@ -10,6 +10,7 @@ use App\Application\Lead\Commands\CaptureLeadCommand;
 use App\Application\Lead\DTOs\LeadData;
 use App\Application\Lead\Queries\FindLeadByContactQuery;
 use App\Application\SalePhase\Services\SalePhaseService;
+use App\Domain\Lead\Services\LeadAssignmentService;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ class CaptureLeadHandler
         private readonly CreateLeadHandler $createLeadHandler,
         private readonly SalePhaseService $salePhaseService,
         private readonly DealService $dealService,
+        private readonly LeadAssignmentService $leadAssignmentService,
     ) {}
 
     /**
@@ -82,8 +84,13 @@ class CaptureLeadHandler
             ];
         }
 
+        // Obtener usuario asignado según la configuración del sitio
+        $assignedUserId = $command->siteId
+            ? $this->leadAssignmentService->getAssignedUserForSite($command->siteId)
+            : null;
+
         // No tiene negocio abierto, crear uno nuevo
-        $deal = $this->createDealForLead($lead->id, $command, $defaultPhase);
+        $deal = $this->createDealForLead($lead->id, $command, $defaultPhase, $assignedUserId);
 
         return [
             'success' => true,
@@ -93,6 +100,7 @@ class CaptureLeadHandler
                 'deal_id' => $deal->id,
                 'existing' => true,
                 'has_open_deal' => false,
+                'assigned_to' => $assignedUserId,
             ],
             'status_code' => 201,
         ];
@@ -103,6 +111,11 @@ class CaptureLeadHandler
      */
     private function handleNewLead(CaptureLeadCommand $command, $defaultPhase): array
     {
+        // Obtener usuario asignado según la configuración del sitio
+        $assignedUserId = $command->siteId
+            ? $this->leadAssignmentService->getAssignedUserForSite($command->siteId)
+            : null;
+
         // Crear lead
         $leadData = new LeadData(
             name: $command->name,
@@ -118,13 +131,14 @@ class CaptureLeadHandler
                 'page_url' => $command->pageUrl,
                 'captured_at' => now()->toIso8601String(),
             ],
+            assignedTo: $assignedUserId,
         );
 
         $createCommand = new \App\Application\Lead\Commands\CreateLeadCommand($leadData);
         $lead = $this->createLeadHandler->handle($createCommand);
 
-        // Crear negocio asociado
-        $deal = $this->createDealForLead($lead->id, $command, $defaultPhase);
+        // Crear negocio asociado (con el mismo usuario asignado)
+        $deal = $this->createDealForLead($lead->id, $command, $defaultPhase, $assignedUserId);
 
         return [
             'success' => true,
@@ -133,6 +147,7 @@ class CaptureLeadHandler
                 'id' => $lead->id,
                 'deal_id' => $deal->id,
                 'existing' => false,
+                'assigned_to' => $assignedUserId,
             ],
             'status_code' => 201,
         ];
@@ -141,7 +156,7 @@ class CaptureLeadHandler
     /**
      * Crear un negocio para un lead.
      */
-    private function createDealForLead(string $leadId, CaptureLeadCommand $command, $defaultPhase): \App\Infrastructure\Persistence\Eloquent\DealModel
+    private function createDealForLead(string $leadId, CaptureLeadCommand $command, $defaultPhase, ?string $assignedUserId = null): \App\Infrastructure\Persistence\Eloquent\DealModel
     {
         $dealName = $this->generateDealName($command->sourceType, $command->name);
         $dealData = DealData::fromArray([
@@ -150,6 +165,7 @@ class CaptureLeadHandler
             'name' => $dealName,
             'description' => $command->message,
             'estimated_close_date' => now()->addMonth()->format('Y-m-d'),
+            'assigned_to' => $assignedUserId,
         ]);
 
         $result = $this->dealService->create($dealData);

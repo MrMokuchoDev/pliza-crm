@@ -173,6 +173,21 @@
                                                       placeholder="Detalles del negocio..."></textarea>
                                             @error('description') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                                         </div>
+
+                                        <!-- Assigned To -->
+                                        @if($canAssign)
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Asignado a</label>
+                                            <select wire:model="assigned_to"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                <option value="">Sin asignar</option>
+                                                @foreach($assignableUsers as $user)
+                                                    <option value="{{ $user->uuid }}">{{ $user->name }} ({{ $user->email }})</option>
+                                                @endforeach
+                                            </select>
+                                            @error('assigned_to') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                        </div>
+                                        @endif
                                     </div>
 
                                     <!-- Columna derecha: Datos del Contacto -->
@@ -181,7 +196,7 @@
                                             <h4 class="text-sm font-medium text-gray-500 uppercase tracking-wide">
                                                 {{ $createNewLead ? 'Nuevo Contacto' : 'Datos del Contacto' }}
                                             </h4>
-                                            @if(!$dealId && ($leadId || $createNewLead))
+                                            @if(!$dealId && ($leadId || $createNewLead) && $canEditLead)
                                                 <button type="button"
                                                         wire:click="{{ $createNewLead ? 'backToSearch' : 'clearSelectedLead' }}"
                                                         class="text-xs text-blue-600 hover:text-blue-800 font-medium">
@@ -199,6 +214,15 @@
                                                     Se creara un nuevo contacto junto con el negocio
                                                 </p>
                                             </div>
+                                        @elseif(!$canEditLead && $leadId)
+                                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-2">
+                                                <p class="text-sm text-amber-700 flex items-center gap-2">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H8m13 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                    </svg>
+                                                    Solo lectura - No tienes permiso para editar este contacto
+                                                </p>
+                                            </div>
                                         @endif
 
                                         <!-- Lead Name -->
@@ -206,7 +230,8 @@
                                             <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
                                             <input type="text"
                                                    wire:model="leadName"
-                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                   @if(!$canEditLead && !$createNewLead) readonly @endif
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {{ !$canEditLead && !$createNewLead ? 'bg-gray-100 cursor-not-allowed' : '' }}"
                                                    placeholder="Nombre del contacto">
                                             @error('leadName') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                                         </div>
@@ -216,7 +241,8 @@
                                             <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                             <input type="email"
                                                    wire:model="leadEmail"
-                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                   @if(!$canEditLead && !$createNewLead) readonly @endif
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {{ !$canEditLead && !$createNewLead ? 'bg-gray-100 cursor-not-allowed' : '' }}"
                                                    placeholder="email@ejemplo.com">
                                             @error('leadEmail') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                                         </div>
@@ -226,7 +252,8 @@
                                             <label class="block text-sm font-medium text-gray-700 mb-1">Telefono</label>
                                             <input type="text"
                                                    wire:model="leadPhone"
-                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                   @if(!$canEditLead && !$createNewLead) readonly @endif
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent {{ !$canEditLead && !$createNewLead ? 'bg-gray-100 cursor-not-allowed' : '' }}"
                                                    placeholder="+57 300 123 4567">
                                             @error('leadPhone') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                                         </div>

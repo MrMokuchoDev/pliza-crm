@@ -17,7 +17,7 @@ class FindLeadHandler
         $builder = LeadModel::query();
 
         if ($query->withRelations) {
-            $builder->with(['notes', 'sourceSite', 'deals.salePhase']);
+            $builder->with(['notes', 'sourceSite', 'deals.salePhase', 'assignedTo']);
         }
 
         return $builder->find($query->leadId);

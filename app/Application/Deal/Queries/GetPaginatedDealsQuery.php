@@ -10,10 +10,14 @@ namespace App\Application\Deal\Queries;
 readonly class GetPaginatedDealsQuery
 {
     /**
-     * @param  array{search?: string, phase_id?: string, source_type?: string}  $filters
+     * @param  array{search?: string, phase_id?: string, source_type?: string, assigned_to?: string}  $filters
+     * @param  string|null  $userUuid  UUID del usuario para filtrar por asignación
+     * @param  bool  $onlyOwn  Si true, solo muestra deals asignados al usuario
      */
     public function __construct(
         public array $filters = [],
         public int $perPage = 10,
+        public ?string $userUuid = null,
+        public bool $onlyOwn = false,
     ) {}
 }

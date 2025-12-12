@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persistence\Eloquent;
 
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Domain\Shared\Traits\HasUuid;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -32,6 +33,7 @@ class LeadModel extends Model
         'source_site_id',
         'source_url',
         'metadata',
+        'assigned_to',
     ];
 
     protected function casts(): array
@@ -76,5 +78,13 @@ class LeadModel extends Model
         }
 
         return $query->exists();
+    }
+
+    /**
+     * Relación con el usuario asignado.
+     */
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to', 'uuid');
     }
 }

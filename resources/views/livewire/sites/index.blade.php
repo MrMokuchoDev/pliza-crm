@@ -55,6 +55,23 @@
                                 </div>
                             </div>
 
+                            <!-- Assignment Mode -->
+                            <div class="mb-4 p-3 rounded-lg {{ $site->hasDefaultUser() ? 'bg-blue-50' : 'bg-amber-50' }}">
+                                <div class="flex items-center gap-2">
+                                    @if($site->hasDefaultUser())
+                                        <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                        </svg>
+                                        <span class="text-xs font-medium text-blue-700">Usuario fijo: {{ $site->defaultUser?->name ?? 'Usuario eliminado' }}</span>
+                                    @else
+                                        <svg class="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                        </svg>
+                                        <span class="text-xs font-medium text-amber-700">Round Robin (distribuci&oacute;n equitativa)</span>
+                                    @endif
+                                </div>
+                            </div>
+
                             <!-- API Key -->
                             <div class="bg-gray-50 rounded-lg p-3 mb-4">
                                 <div class="flex items-center justify-between mb-1">
@@ -176,63 +193,62 @@
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" wire:click="closeModal"></div>
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
-                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-3xl sm:w-full">
                     <form wire:submit="save">
                         <div class="bg-white px-6 pt-6 pb-4">
-                            <h3 class="text-lg font-semibold text-gray-900 mb-4">
+                            <h3 class="text-lg font-semibold text-gray-900 mb-5">
                                 {{ $siteId ? 'Editar Sitio' : 'Nuevo Sitio' }}
                             </h3>
 
                             <div class="space-y-4">
-                                <!-- Name -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Sitio</label>
-                                    <input type="text"
-                                           wire:model="name"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="Mi Sitio Web">
-                                    @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                                </div>
-
-                                <!-- Domain -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 mb-1">Dominio</label>
-                                    <input type="text"
-                                           wire:model="domain"
-                                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                           placeholder="ejemplo.com">
-                                    @error('domain') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                <!-- Name & Domain en una fila -->
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre del Sitio</label>
+                                        <input type="text"
+                                               wire:model="name"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                               placeholder="Mi Sitio Web">
+                                        @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                    </div>
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Dominio</label>
+                                        <input type="text"
+                                               wire:model="domain"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                               placeholder="ejemplo.com">
+                                        @error('domain') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                    </div>
                                 </div>
 
                                 <!-- Widget Settings -->
-                                <div class="border-t border-gray-200 pt-4 mt-4">
+                                <div class="border-t border-gray-200 pt-4">
                                     <h4 class="text-sm font-medium text-gray-900 mb-3">Configuraci&oacute;n del Widget</h4>
 
-                                    <!-- Type -->
-                                    <div class="mb-3">
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Widget</label>
-                                        <select wire:model="widgetType"
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                            <option value="whatsapp">Bot&oacute;n WhatsApp</option>
-                                            <option value="phone">Bot&oacute;n Llamada</option>
-                                            <option value="contact_form">Formulario de Contacto</option>
-                                        </select>
-                                    </div>
-
-                                    <!-- Phone -->
-                                    <div class="mb-3">
-                                        <label class="block text-sm font-medium text-gray-700 mb-1">Tel&eacute;fono del Negocio</label>
-                                        <input type="text"
-                                               wire:model="widgetPhone"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                               placeholder="+57 300 123 4567">
-                                        <p class="text-xs text-gray-500 mt-1">Para WhatsApp y llamadas</p>
-                                    </div>
-
-                                    <!-- Position & Color -->
-                                    <div class="grid grid-cols-2 gap-3 mb-3">
+                                    <!-- Type & Phone en una fila -->
+                                    <div class="grid grid-cols-2 gap-4 mb-4">
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Posici&oacute;n</label>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Tipo de Widget</label>
+                                            <select wire:model="widgetType"
+                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                                <option value="whatsapp">Bot&oacute;n WhatsApp</option>
+                                                <option value="phone">Bot&oacute;n Llamada</option>
+                                                <option value="contact_form">Formulario de Contacto</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Tel&eacute;fono del Negocio</label>
+                                            <input type="text"
+                                                   wire:model="widgetPhone"
+                                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                   placeholder="+57 300 123 4567">
+                                        </div>
+                                    </div>
+
+                                    <!-- Position, Color en una fila -->
+                                    <div class="grid grid-cols-2 gap-4 mb-4">
+                                        <div>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Posici&oacute;n del Widget</label>
                                             <select wire:model="widgetPosition"
                                                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                                 <option value="bottom-right">Abajo Derecha</option>
@@ -246,26 +262,26 @@
                                             <div class="flex items-center gap-2">
                                                 <input type="color"
                                                        wire:model="widgetColor"
-                                                       class="w-10 h-10 rounded border border-gray-300 cursor-pointer">
+                                                       class="w-12 h-[42px] rounded border border-gray-300 cursor-pointer p-1">
                                                 <input type="text"
                                                        wire:model="widgetColor"
-                                                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                                                       class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                        placeholder="#3B82F6">
                                             </div>
                                         </div>
                                     </div>
 
-                                    <!-- Title & Button Text -->
-                                    <div class="grid grid-cols-2 gap-3">
+                                    <!-- Title & Button en una fila -->
+                                    <div class="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">T&iacute;tulo Modal</label>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">T&iacute;tulo del Modal</label>
                                             <input type="text"
                                                    wire:model="widgetTitle"
                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                                    placeholder="Contactanos">
                                         </div>
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 mb-1">Texto Bot&oacute;n</label>
+                                            <label class="block text-sm font-medium text-gray-700 mb-1">Texto del Bot&oacute;n</label>
                                             <input type="text"
                                                    wire:model="widgetButtonText"
                                                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -274,14 +290,30 @@
                                     </div>
                                 </div>
 
-                                <!-- Active Toggle -->
-                                <div class="flex items-center justify-between pt-2">
-                                    <span class="text-sm font-medium text-gray-700">Sitio Activo</span>
-                                    <button type="button"
-                                            wire:click="$toggle('isActive')"
-                                            class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {{ $isActive ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                        <span class="translate-x-0 inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $isActive ? 'translate-x-5' : 'translate-x-0' }}"></span>
-                                    </button>
+                                <!-- Active Toggle & Lead Assignment en dos columnas -->
+                                <div class="border-t border-gray-200 pt-4 grid grid-cols-2 gap-6">
+                                    <!-- Sitio Activo -->
+                                    <div class="flex items-center justify-between bg-gray-50 rounded-lg p-3">
+                                        <span class="text-sm font-medium text-gray-700">Sitio Activo</span>
+                                        <button type="button"
+                                                wire:click="$toggle('isActive')"
+                                                class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none {{ $isActive ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                            <span class="translate-x-0 inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $isActive ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                        </button>
+                                    </div>
+
+                                    <!-- Lead Assignment -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Asignaci&oacute;n de Leads</label>
+                                        <select wire:model="defaultUserId"
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                            <option value="">Round Robin (equitativa)</option>
+                                            @foreach($availableUsers as $user)
+                                                <option value="{{ $user->uuid }}">{{ $user->name }}</option>
+                                            @endforeach
+                                        </select>
+                                        @error('defaultUserId') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                    </div>
                                 </div>
                             </div>
                         </div>

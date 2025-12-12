@@ -18,8 +18,13 @@ class GetDealsByPhaseHandler
      */
     public function handle(GetDealsByPhaseQuery $query): Collection
     {
-        $builder = DealModel::with('lead')
+        $builder = DealModel::with(['lead', 'assignedTo'])
             ->whereIn('sale_phase_id', $query->phaseIds);
+
+        // Filtro por usuario asignado (para vendedores)
+        if ($query->onlyOwn && $query->userUuid) {
+            $builder->where('assigned_to', $query->userUuid);
+        }
 
         if ($query->search) {
             $search = $query->search;

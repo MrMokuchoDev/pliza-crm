@@ -7,6 +7,7 @@ namespace App\Infrastructure\Http\Livewire\Leads;
 use App\Application\Lead\Services\LeadService;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Http\Livewire\Traits\HasNotifications;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -119,12 +120,18 @@ class LeadIndex extends Component
     public function render()
     {
         $leadService = app(LeadService::class);
+        $user = Auth::user();
 
         $filters = array_filter([
             'search' => $this->search,
             'source' => $this->filterSource,
         ]);
-        $leads = $leadService->getPaginated($filters);
+
+        // Determinar si el usuario solo puede ver sus propios leads
+        $userUuid = $user?->uuid;
+        $onlyOwn = $user && ! $user->canViewAllLeads();
+
+        $leads = $leadService->getPaginated($filters, 10, $userUuid, $onlyOwn);
 
         $sourceTypes = SourceType::cases();
         $stats = $leadService->getStats();
@@ -135,6 +142,9 @@ class LeadIndex extends Component
             'totalLeads' => $stats['total'],
             'leadsWithDeals' => $stats['with_deals'],
             'leadsWithoutDeals' => $stats['without_deals'],
+            'canCreate' => $user?->canCreateLeads() ?? false,
+            'canEdit' => $user?->canEditLeads() ?? false,
+            'canDelete' => $user?->canDeleteLeads() ?? false,
         ])->layout('components.layouts.app', ['title' => 'Contactos']);
     }
 }

@@ -53,6 +53,21 @@
                                               placeholder="Informaci&oacute;n adicional sobre el contacto..."></textarea>
                                     @error('message') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                 </div>
+
+                                <!-- Assigned To -->
+                                @if($canAssign)
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Asignado a</label>
+                                    <select wire:model="assigned_to"
+                                            class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <option value="">Sin asignar</option>
+                                        @foreach($assignableUsers as $user)
+                                            <option value="{{ $user->uuid }}">{{ $user->name }} ({{ $user->email }})</option>
+                                        @endforeach
+                                    </select>
+                                    @error('assigned_to') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                </div>
+                                @endif
                             </div>
                         </div>
 
