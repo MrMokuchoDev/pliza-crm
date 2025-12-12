@@ -117,53 +117,89 @@
                     </a>
                 </div>
 
-                <p class="px-3 mt-6 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Configuraci&oacute;n</p>
-                <div class="space-y-1">
-                    <!-- Fases de Venta -->
-                    <a href="{{ route('sale-phases.index') }}"
-                       class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('sale-phases.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
-                        <div class="w-8 h-8 rounded-lg {{ request()->routeIs('sale-phases.*') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
-                            <svg class="w-4 h-4 {{ request()->routeIs('sale-phases.*') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
-                            </svg>
-                        </div>
-                        Fases de Venta
-                    </a>
+                @if(auth()->user()?->isAdmin())
+                <!-- Sección Configuración - Solo Admin -->
+                @php
+                    $configRoutes = ['sale-phases.*', 'sites.*', 'users.*', 'maintenance', 'updates'];
+                    $isConfigActive = collect($configRoutes)->contains(fn($route) => request()->routeIs($route));
+                @endphp
+                <div x-data="{ configOpen: {{ $isConfigActive ? 'true' : 'false' }} }" class="mt-6">
+                    <!-- Accordion Header -->
+                    <button @click="configOpen = !configOpen"
+                            class="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider hover:text-gray-400 transition">
+                        <span>Configuraci&oacute;n</span>
+                        <svg class="w-4 h-4 transition-transform duration-200" :class="{ 'rotate-180': configOpen }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
 
-                    <!-- Sitios Web -->
-                    <a href="{{ route('sites.index') }}"
-                       class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('sites.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
-                        <div class="w-8 h-8 rounded-lg {{ request()->routeIs('sites.*') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
-                            <svg class="w-4 h-4 {{ request()->routeIs('sites.*') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
-                            </svg>
-                        </div>
-                        Sitios Web
-                    </a>
+                    <!-- Accordion Content -->
+                    <div x-show="configOpen"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 -translate-y-2"
+                         x-transition:enter-end="opacity-100 translate-y-0"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 translate-y-0"
+                         x-transition:leave-end="opacity-0 -translate-y-2"
+                         class="space-y-1 mt-2">
+                        <!-- Fases de Venta -->
+                        <a href="{{ route('sale-phases.index') }}"
+                           class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('sale-phases.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
+                            <div class="w-8 h-8 rounded-lg {{ request()->routeIs('sale-phases.*') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
+                                <svg class="w-4 h-4 {{ request()->routeIs('sale-phases.*') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/>
+                                </svg>
+                            </div>
+                            Fases de Venta
+                        </a>
 
-                    <!-- Mantenimiento -->
-                    <a href="{{ route('maintenance') }}"
-                       class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('maintenance') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
-                        <div class="w-8 h-8 rounded-lg {{ request()->routeIs('maintenance') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
-                            <svg class="w-4 h-4 {{ request()->routeIs('maintenance') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                            </svg>
-                        </div>
-                        Mantenimiento
-                    </a>
+                        <!-- Sitios Web -->
+                        <a href="{{ route('sites.index') }}"
+                           class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('sites.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
+                            <div class="w-8 h-8 rounded-lg {{ request()->routeIs('sites.*') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
+                                <svg class="w-4 h-4 {{ request()->routeIs('sites.*') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                                </svg>
+                            </div>
+                            Sitios Web
+                        </a>
 
-                    <!-- Actualizaciones -->
-                    <a href="{{ route('updates') }}"
-                       class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('updates') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
-                        <div class="w-8 h-8 rounded-lg {{ request()->routeIs('updates') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
-                            <svg class="w-4 h-4 {{ request()->routeIs('updates') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
-                            </svg>
-                        </div>
-                        Actualizaciones
-                    </a>
+                        <!-- Usuarios -->
+                        <a href="{{ route('users.index') }}"
+                           class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('users.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
+                            <div class="w-8 h-8 rounded-lg {{ request()->routeIs('users.*') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
+                                <svg class="w-4 h-4 {{ request()->routeIs('users.*') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                                </svg>
+                            </div>
+                            Usuarios
+                        </a>
+
+                        <!-- Mantenimiento -->
+                        <a href="{{ route('maintenance') }}"
+                           class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('maintenance') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
+                            <div class="w-8 h-8 rounded-lg {{ request()->routeIs('maintenance') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
+                                <svg class="w-4 h-4 {{ request()->routeIs('maintenance') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                </svg>
+                            </div>
+                            Mantenimiento
+                        </a>
+
+                        <!-- Actualizaciones -->
+                        <a href="{{ route('updates') }}"
+                           class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('updates') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
+                            <div class="w-8 h-8 rounded-lg {{ request()->routeIs('updates') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
+                                <svg class="w-4 h-4 {{ request()->routeIs('updates') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </div>
+                            Actualizaciones
+                        </a>
+                    </div>
                 </div>
+                @endif
             </nav>
 
             <!-- Sidebar Footer -->

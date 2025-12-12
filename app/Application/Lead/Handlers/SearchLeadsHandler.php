@@ -18,12 +18,19 @@ class SearchLeadsHandler
      */
     public function handle(SearchLeadsQuery $query): Collection
     {
-        return LeadModel::query()
+        $builder = LeadModel::query()
             ->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query->term}%")
                     ->orWhere('email', 'like', "%{$query->term}%")
                     ->orWhere('phone', 'like', "%{$query->term}%");
-            })
+            });
+
+        // Filtrar por usuario si es necesario
+        if ($query->onlyOwn && $query->userUuid) {
+            $builder->where('assigned_to', $query->userUuid);
+        }
+
+        return $builder
             ->withCount(['activeDeals'])
             ->orderByDesc('created_at')
             ->limit($query->limit)

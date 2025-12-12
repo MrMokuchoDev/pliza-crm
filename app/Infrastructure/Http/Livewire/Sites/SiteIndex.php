@@ -6,6 +6,8 @@ namespace App\Infrastructure\Http\Livewire\Sites;
 
 use App\Application\Site\DTOs\SiteData;
 use App\Application\Site\Services\SiteService;
+use App\Models\User;
+use Illuminate\Support\Collection;
 use Livewire\Component;
 
 class SiteIndex extends Component
@@ -21,6 +23,11 @@ class SiteIndex extends Component
 
     public bool $isActive = true;
 
+    // Lead Assignment settings
+    public ?string $defaultUserId = null;
+
+    public Collection $availableUsers;
+
     // Widget settings
     public string $widgetType = 'whatsapp';
 
@@ -33,6 +40,19 @@ class SiteIndex extends Component
     public string $widgetTitle = 'Contactanos';
 
     public string $widgetButtonText = 'Enviar';
+
+    public function mount(): void
+    {
+        $this->availableUsers = collect();
+        $this->loadAvailableUsers();
+    }
+
+    protected function loadAvailableUsers(): void
+    {
+        $this->availableUsers = User::where('is_active', true)
+            ->orderBy('name')
+            ->get(['uuid', 'name', 'email']);
+    }
 
     // Delete modal
     public bool $showDeleteModal = false;
@@ -51,6 +71,7 @@ class SiteIndex extends Component
         return [
             'name' => 'required|string|max:255',
             'domain' => 'required|string|max:255',
+            'defaultUserId' => 'nullable|exists:users,uuid',
             'widgetType' => 'required|in:whatsapp,phone,contact_form',
             'widgetPhone' => 'nullable|string|max:50',
             'widgetPosition' => 'required|in:bottom-right,bottom-left,top-right,top-left',
@@ -76,6 +97,7 @@ class SiteIndex extends Component
             $this->name = $site->name;
             $this->domain = $site->domain;
             $this->isActive = $site->is_active;
+            $this->defaultUserId = $site->default_user_id;
 
             $settings = $site->settings ?? [];
             $this->widgetType = $settings['type'] ?? 'whatsapp';
@@ -84,6 +106,9 @@ class SiteIndex extends Component
             $this->widgetColor = $settings['color'] ?? '#3B82F6';
             $this->widgetTitle = $settings['title'] ?? 'Contactanos';
             $this->widgetButtonText = $settings['button_text'] ?? 'Enviar';
+
+            // Recargar usuarios disponibles
+            $this->loadAvailableUsers();
 
             $this->showModal = true;
         }
@@ -109,6 +134,7 @@ class SiteIndex extends Component
             domain: $this->domain,
             isActive: $this->isActive,
             settings: $settings,
+            defaultUserId: $this->defaultUserId ?: null,
         );
 
         if ($this->siteId) {
@@ -233,6 +259,7 @@ class SiteIndex extends Component
         $this->name = '';
         $this->domain = '';
         $this->isActive = true;
+        $this->defaultUserId = null;
         $this->widgetType = 'whatsapp';
         $this->widgetPhone = '';
         $this->widgetPosition = 'bottom-right';

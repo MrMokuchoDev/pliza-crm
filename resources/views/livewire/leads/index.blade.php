@@ -30,6 +30,7 @@
                 @endif
 
                 <!-- Nuevo Contacto Button -->
+                @if($canCreate)
                 <button wire:click="openCreateModal"
                         class="inline-flex items-center gap-2 px-3 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition shadow-sm whitespace-nowrap">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -38,6 +39,7 @@
                     <span class="hidden sm:inline">Nuevo Contacto</span>
                     <span class="sm:hidden">Nuevo</span>
                 </button>
+                @endif
 
                 <!-- Stats compactos -->
                 <div class="flex items-center gap-3 lg:gap-4 lg:ml-auto overflow-x-auto pb-1 lg:pb-0">
@@ -72,6 +74,7 @@
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Contacto</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Datos</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Origen</th>
+                            <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Asignado</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Negocio</th>
                             <th class="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">Fecha</th>
                             <th class="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">Acciones</th>
@@ -134,6 +137,18 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-4">
+                                    @if($lead->assignedTo)
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-7 h-7 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                                                {{ strtoupper(substr($lead->assignedTo->name, 0, 1)) }}
+                                            </div>
+                                            <span class="text-sm text-gray-700">{{ $lead->assignedTo->name }}</span>
+                                        </div>
+                                    @else
+                                        <span class="text-xs text-gray-400">Sin asignar</span>
+                                    @endif
+                                </td>
+                                <td class="px-6 py-4">
                                     <div class="flex flex-col gap-1">
                                         @if($lead->active_deals_count > 0)
                                             @php $activeDeal = $lead->activeDeals->first(); @endphp
@@ -185,6 +200,7 @@
                                                 </svg>
                                             </button>
                                         @endif
+                                        @if($canEdit)
                                         <button wire:click="openEditModal('{{ $lead->id }}')"
                                                 class="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
                                                 title="Editar">
@@ -192,6 +208,8 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                             </svg>
                                         </button>
+                                        @endif
+                                        @if($canDelete)
                                         <button wire:click="openDeleteModal('{{ $lead->id }}')"
                                                 class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                                                 title="Eliminar">
@@ -199,6 +217,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>
                                         </button>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -219,28 +238,40 @@
                                 </div>
                                 <div class="min-w-0 flex-1">
                                     <h3 class="font-semibold text-gray-900 truncate">{{ $lead->name ?? 'Sin nombre' }}</h3>
-                                    <div class="flex items-center gap-2 mt-0.5">
+                                    <div class="flex items-center gap-2 mt-0.5 flex-wrap">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600">
                                             {{ $lead->source_type ? $lead->source_type->label() : 'Manual' }}
                                         </span>
+                                        @if($lead->assignedTo)
+                                            <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-indigo-50 text-indigo-700">
+                                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                </svg>
+                                                {{ $lead->assignedTo->name }}
+                                            </span>
+                                        @endif
                                         <span class="text-xs text-gray-400">{{ $lead->created_at->format('d/m/Y') }}</span>
                                     </div>
                                 </div>
                             </a>
                             <!-- Menú de acciones -->
                             <div class="flex items-center gap-1 flex-shrink-0">
+                                @if($canEdit)
                                 <button wire:click="openEditModal('{{ $lead->id }}')"
                                         class="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                     </svg>
                                 </button>
+                                @endif
+                                @if($canDelete)
                                 <button wire:click="openDeleteModal('{{ $lead->id }}')"
                                         class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                     </svg>
                                 </button>
+                                @endif
                             </div>
                         </div>
 
@@ -325,6 +356,7 @@
                 <h3 class="text-lg font-medium text-gray-900 mb-1">No hay contactos todavia</h3>
                 <p class="text-gray-500 mb-4">Comienza agregando tu primer contacto o configura los widgets de captura</p>
                 <div class="flex items-center justify-center gap-3">
+                    @if($canCreate)
                     <button wire:click="openCreateModal"
                             class="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -332,6 +364,7 @@
                         </svg>
                         Crear Contacto
                     </button>
+                    @endif
                     <a href="{{ route('sites.index') }}"
                        class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition">
                         Configurar Widgets

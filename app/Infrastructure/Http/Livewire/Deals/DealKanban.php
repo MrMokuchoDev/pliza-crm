@@ -7,6 +7,7 @@ namespace App\Infrastructure\Http\Livewire\Deals;
 use App\Application\Deal\Services\DealService;
 use App\Application\SalePhase\Services\SalePhaseService;
 use App\Infrastructure\Http\Livewire\Traits\HasWonPhaseValue;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -48,6 +49,7 @@ class DealKanban extends Component
     {
         $dealService = app(DealService::class);
         $phaseService = app(SalePhaseService::class);
+        $user = Auth::user();
 
         // Obtener fases usando el servicio
         $openPhases = $phaseService->getActivePhases();
@@ -56,9 +58,13 @@ class DealKanban extends Component
         // Obtener IDs de fases abiertas
         $openPhaseIds = $openPhases->pluck('id')->toArray();
 
+        // Determinar si el usuario solo puede ver sus propios deals
+        $userUuid = $user?->uuid;
+        $onlyOwn = $user && ! $user->canViewAllDeals();
+
         // Obtener todos los deals de fases abiertas usando el servicio
         $searchTerm = $this->search ?: null;
-        $allDeals = $dealService->getByPhaseIds($openPhaseIds, $searchTerm);
+        $allDeals = $dealService->getByPhaseIds($openPhaseIds, $searchTerm, $userUuid, $onlyOwn);
 
         // Agrupar en memoria por fase
         $dealsByPhase = $allDeals->groupBy('sale_phase_id');
@@ -80,6 +86,8 @@ class DealKanban extends Component
             'dealsByPhase' => $dealsByPhase,
             'totalDeals' => $totalDeals,
             'totalValue' => $totalValue,
+            'canCreate' => $user?->canCreateDeals() ?? false,
+            'canEdit' => $user?->canEditDeals() ?? false,
         ])->layout('components.layouts.app', ['title' => 'Pipeline']);
     }
 }

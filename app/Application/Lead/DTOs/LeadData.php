@@ -21,6 +21,7 @@ readonly class LeadData
         public ?string $sourceSiteId = null,
         public ?string $sourceUrl = null,
         public ?array $metadata = null,
+        public ?string $assignedTo = null,
     ) {}
 
     /**
@@ -40,6 +41,7 @@ readonly class LeadData
             sourceSiteId: $data['source_site_id'] ?? null,
             sourceUrl: $data['source_url'] ?? null,
             metadata: $data['metadata'] ?? null,
+            assignedTo: $data['assigned_to'] ?? null,
         );
     }
 
@@ -58,6 +60,7 @@ readonly class LeadData
             'source_site_id' => $this->sourceSiteId,
             'source_url' => $this->sourceUrl,
             'metadata' => $this->metadata,
+            'assigned_to' => $this->assignedTo,
         ], fn ($value) => $value !== null);
     }
 }

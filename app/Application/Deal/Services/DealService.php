@@ -218,11 +218,17 @@ class DealService
     /**
      * Obtener deals paginados con filtros.
      *
-     * @param  array{search?: string, phase_id?: string, source_type?: string}  $filters
+     * @param  array{search?: string, phase_id?: string, source_type?: string, assigned_to?: string}  $filters
+     * @param  string|null  $userUuid  UUID del usuario para filtrar por asignación
+     * @param  bool  $onlyOwn  Si true, solo muestra deals asignados al usuario
      */
-    public function getPaginated(array $filters = [], int $perPage = 10): LengthAwarePaginator
-    {
-        $query = new GetPaginatedDealsQuery($filters, $perPage);
+    public function getPaginated(
+        array $filters = [],
+        int $perPage = 10,
+        ?string $userUuid = null,
+        bool $onlyOwn = false,
+    ): LengthAwarePaginator {
+        $query = new GetPaginatedDealsQuery($filters, $perPage, $userUuid, $onlyOwn);
 
         return $this->paginatedHandler->handle($query);
     }
@@ -231,11 +237,17 @@ class DealService
      * Obtener deals por fase con filtros (para Kanban).
      *
      * @param  array<string>  $phaseIds
+     * @param  string|null  $userUuid  UUID del usuario para filtrar por asignación
+     * @param  bool  $onlyOwn  Si true, solo muestra deals asignados al usuario
      * @return Collection<int, DealModel>
      */
-    public function getByPhaseIds(array $phaseIds, ?string $search = null): Collection
-    {
-        $query = new GetDealsByPhaseQuery($phaseIds, $search);
+    public function getByPhaseIds(
+        array $phaseIds,
+        ?string $search = null,
+        ?string $userUuid = null,
+        bool $onlyOwn = false,
+    ): Collection {
+        $query = new GetDealsByPhaseQuery($phaseIds, $search, $userUuid, $onlyOwn);
 
         return $this->dealsByPhaseHandler->handle($query);
     }

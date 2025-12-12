@@ -15,7 +15,17 @@ class GetPaginatedDealsHandler
 {
     public function handle(GetPaginatedDealsQuery $query): LengthAwarePaginator
     {
-        $builder = DealModel::with(['lead', 'salePhase']);
+        $builder = DealModel::with(['lead', 'salePhase', 'assignedTo']);
+
+        // Filtro por usuario asignado (para vendedores)
+        if ($query->onlyOwn && $query->userUuid) {
+            $builder->where('assigned_to', $query->userUuid);
+        }
+
+        // Filtro por usuario específico (para managers filtrando por vendedor)
+        if (! empty($query->filters['assigned_to'])) {
+            $builder->where('assigned_to', $query->filters['assigned_to']);
+        }
 
         if (! empty($query->filters['search'])) {
             $search = $query->filters['search'];

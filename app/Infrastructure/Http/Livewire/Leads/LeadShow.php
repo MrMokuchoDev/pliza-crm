@@ -7,6 +7,9 @@ namespace App\Infrastructure\Http\Livewire\Leads;
 use App\Application\Lead\Services\LeadService;
 use App\Application\Note\DTOs\NoteData;
 use App\Application\Note\Services\NoteService;
+use App\Domain\User\ValueObjects\Permission;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -15,6 +18,10 @@ class LeadShow extends Component
     public $lead = null;
 
     public string $leadId;
+
+    public bool $canEditLead = false;
+
+    public bool $canDeleteLead = false;
 
     // Note form
     public string $noteContent = '';
@@ -44,6 +51,47 @@ class LeadShow extends Component
     {
         $leadService = app(LeadService::class);
         $this->lead = $leadService->findWithRelations($this->leadId);
+
+        // Calcular permisos de edición/eliminación del lead
+        $this->calculateLeadPermissions();
+    }
+
+    /**
+     * Calcula si el usuario puede editar/eliminar el lead actual.
+     */
+    protected function calculateLeadPermissions(): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (!$user || !$this->lead) {
+            $this->canEditLead = false;
+            $this->canDeleteLead = false;
+            return;
+        }
+
+        // Puede editar si tiene permiso update_all O el lead está asignado a él
+        $this->canEditLead = $user->hasPermission(Permission::LEADS_UPDATE_ALL)
+            || ($this->lead->assigned_to && $this->lead->assigned_to === $user->uuid);
+
+        // Puede eliminar si tiene permiso delete_all O el lead está asignado a él
+        $this->canDeleteLead = $user->hasPermission(Permission::LEADS_DELETE_ALL)
+            || ($this->lead->assigned_to && $this->lead->assigned_to === $user->uuid);
+    }
+
+    /**
+     * Verifica si el usuario puede editar un deal específico.
+     */
+    public function canEditDeal(string $dealAssignedTo = null): bool
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        // Puede editar si tiene permiso update_all O el deal está asignado a él
+        return $user->hasPermission(Permission::DEALS_UPDATE_ALL)
+            || ($dealAssignedTo && $dealAssignedTo === $user->uuid);
     }
 
     public function openCreateDealModal(): void

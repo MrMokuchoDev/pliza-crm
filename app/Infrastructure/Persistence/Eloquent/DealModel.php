@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Eloquent;
 
 use App\Domain\Shared\Traits\HasUuid;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,6 +31,8 @@ class DealModel extends Model
         'description',
         'estimated_close_date',
         'close_date',
+        'assigned_to',
+        'created_by',
     ];
 
     protected function casts(): array
@@ -76,5 +79,21 @@ class DealModel extends Model
         }
 
         return '$' . number_format((float) $this->value, 0, ',', '.');
+    }
+
+    /**
+     * Relación con el usuario asignado.
+     */
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to', 'uuid');
+    }
+
+    /**
+     * Relación con el usuario que creó el deal.
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by', 'uuid');
     }
 }

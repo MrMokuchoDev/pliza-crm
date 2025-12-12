@@ -153,11 +153,19 @@ class LeadService
     /**
      * Buscar leads por término de búsqueda.
      *
+     * @param  string  $term  Término de búsqueda
+     * @param  int  $limit  Límite de resultados
+     * @param  string|null  $userUuid  UUID del usuario para filtrar por asignación
+     * @param  bool  $onlyOwn  Si true, solo muestra leads asignados al usuario
      * @return Collection<int, LeadModel>
      */
-    public function search(string $term, int $limit = 10): Collection
-    {
-        $query = new SearchLeadsQuery($term, $limit);
+    public function search(
+        string $term,
+        int $limit = 10,
+        ?string $userUuid = null,
+        bool $onlyOwn = false,
+    ): Collection {
+        $query = new SearchLeadsQuery($term, $limit, $userUuid, $onlyOwn);
 
         return $this->searchHandler->handle($query);
     }
@@ -165,11 +173,17 @@ class LeadService
     /**
      * Obtener todos los leads paginados con filtros.
      *
-     * @param  array{search?: string, source?: string}  $filters
+     * @param  array{search?: string, source?: string, assigned_to?: string}  $filters
+     * @param  string|null  $userUuid  UUID del usuario para filtrar por asignación
+     * @param  bool  $onlyOwn  Si true, solo muestra leads asignados al usuario
      */
-    public function getPaginated(array $filters = [], int $perPage = 10): LengthAwarePaginator
-    {
-        $query = new GetPaginatedLeadsQuery($filters, $perPage);
+    public function getPaginated(
+        array $filters = [],
+        int $perPage = 10,
+        ?string $userUuid = null,
+        bool $onlyOwn = false,
+    ): LengthAwarePaginator {
+        $query = new GetPaginatedLeadsQuery($filters, $perPage, $userUuid, $onlyOwn);
 
         return $this->paginatedHandler->handle($query);
     }

@@ -9,6 +9,9 @@ use App\Application\DealComment\DTOs\DealCommentData;
 use App\Application\DealComment\Services\DealCommentService;
 use App\Application\SalePhase\Services\SalePhaseService;
 use App\Domain\Deal\Services\DealPhaseService;
+use App\Domain\User\ValueObjects\Permission;
+use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Component;
 
@@ -21,6 +24,10 @@ class DealShow extends Component
     public string $salePhaseId = '';
 
     public int $phaseSelectKey = 0;
+
+    public bool $canEditDeal = false;
+
+    public bool $canDeleteDeal = false;
 
     // Comment form
     public string $commentContent = '';
@@ -62,12 +69,43 @@ class DealShow extends Component
         $this->deal = $dealService->findForShow($this->dealId);
         if ($this->deal) {
             $this->salePhaseId = $this->deal->sale_phase_id;
+            $this->calculateDealPermissions();
         }
+    }
+
+    /**
+     * Calcula si el usuario puede editar/eliminar el deal actual.
+     */
+    protected function calculateDealPermissions(): void
+    {
+        /** @var User|null $user */
+        $user = Auth::user();
+        if (!$user || !$this->deal) {
+            $this->canEditDeal = false;
+            $this->canDeleteDeal = false;
+            return;
+        }
+
+        // Puede editar si tiene permiso update_all O el deal está asignado a él
+        $this->canEditDeal = $user->hasPermission(Permission::DEALS_UPDATE_ALL)
+            || ($this->deal->assigned_to && $this->deal->assigned_to === $user->uuid);
+
+        // Puede eliminar si tiene permiso delete_all O el deal está asignado a él
+        $this->canDeleteDeal = $user->hasPermission(Permission::DEALS_DELETE_ALL)
+            || ($this->deal->assigned_to && $this->deal->assigned_to === $user->uuid);
     }
 
     public function updatePhase(): void
     {
         if (! $this->deal || $this->salePhaseId === $this->deal->sale_phase_id) {
+            return;
+        }
+
+        // Validación de seguridad: verificar permisos antes de cambiar fase
+        if (!$this->canEditDeal) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para modificar este negocio.');
+            $this->salePhaseId = $this->deal->sale_phase_id;
+            $this->phaseSelectKey++;
             return;
         }
 
@@ -219,6 +257,13 @@ class DealShow extends Component
 
     public function deleteDeal(): void
     {
+        // Validación de seguridad: verificar permisos antes de eliminar
+        if (!$this->canDeleteDeal) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar este negocio.');
+            $this->showDeleteModal = false;
+            return;
+        }
+
         if ($this->deal) {
             $dealService = app(DealService::class);
             $result = $dealService->delete($this->dealId);

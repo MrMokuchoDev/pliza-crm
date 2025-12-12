@@ -9,6 +9,7 @@ use App\Application\SalePhase\Services\SalePhaseService;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Infrastructure\Http\Livewire\Traits\HasDeleteConfirmation;
 use App\Infrastructure\Http\Livewire\Traits\HasWonPhaseValue;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use Livewire\WithPagination;
@@ -128,6 +129,7 @@ class DealIndex extends Component
     {
         $dealService = app(DealService::class);
         $phaseService = app(SalePhaseService::class);
+        $user = Auth::user();
 
         // Obtener deals paginados usando el servicio
         $filters = array_filter([
@@ -135,7 +137,12 @@ class DealIndex extends Component
             'phase_id' => $this->filterPhase,
             'source_type' => $this->filterSource,
         ]);
-        $deals = $dealService->getPaginated($filters);
+
+        // Determinar si el usuario solo puede ver sus propios deals
+        $userUuid = $user?->uuid;
+        $onlyOwn = $user && ! $user->canViewAllDeals();
+
+        $deals = $dealService->getPaginated($filters, 10, $userUuid, $onlyOwn);
 
         // Obtener fases y tipos de origen
         $phases = $phaseService->getAllOrdered();
@@ -152,6 +159,9 @@ class DealIndex extends Component
             'totalDeals' => $stats['total'],
             'openDeals' => $stats['open'],
             'totalValue' => $stats['total_value'],
+            'canCreate' => $user?->canCreateDeals() ?? false,
+            'canEdit' => $user?->canEditDeals() ?? false,
+            'canDelete' => $user?->canDeleteDeals() ?? false,
         ])->layout('components.layouts.app', ['title' => 'Negocios']);
     }
 }
