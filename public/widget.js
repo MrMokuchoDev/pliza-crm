@@ -86,8 +86,9 @@
         color: customColor || typeColors[widgetType] || '#3B82F6',
         title: currentScript.getAttribute('data-title') || 'Contáctanos',
         buttonText: currentScript.getAttribute('data-button-text') || 'Enviar',
-        // Usar proxy para evitar bloqueos de CORS/WAF
-        apiUrl: baseUrl + '/api-proxy.php?endpoint=leads/capture'
+        // URLs para captura de leads (directa primero, proxy como fallback)
+        apiUrlDirect: baseUrl + '/api/v1/leads/capture',
+        apiUrlProxy: baseUrl + '/api-proxy.php?endpoint=leads/capture'
     };
 
     if (!config.siteId) {
@@ -711,14 +712,23 @@
             submitBtn.textContent = 'Enviando...';
 
             try {
-                const response = await fetch(cfg.apiUrl, {
+                // Intentar API directa primero, proxy como fallback para hosting con WAF/ModSecurity
+                let response;
+                const fetchOptions = {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
                     body: JSON.stringify(data)
-                });
+                };
+
+                try {
+                    response = await fetch(cfg.apiUrlDirect, fetchOptions);
+                } catch (e) {
+                    // Si falla la directa (CORS en producción), usar proxy
+                    response = await fetch(cfg.apiUrlProxy, fetchOptions);
+                }
 
                 const result = await response.json();
 
@@ -817,21 +827,38 @@
     // Verificar si el sitio está activo
     async function checkSiteStatus() {
         try {
-            // Construir URL correctamente para el proxy
-            // baseUrl + '/api-proxy.php?endpoint=sites/' + siteId + '/status'
-            const statusFullUrl = baseUrl + '/api-proxy.php?endpoint=sites/' + config.siteId + '/status';
-            const response = await fetch(statusFullUrl, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
-            });
+            // API directa primero, proxy como fallback para hosting con WAF/ModSecurity
+            const directUrl = baseUrl + '/api/v1/sites/' + config.siteId + '/status';
+            const proxyUrl = baseUrl + '/api-proxy.php?endpoint=sites/' + config.siteId + '/status';
+
+            // Usar AbortController para timeout de 3 segundos
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 3000);
+
+            let response;
+            try {
+                // Intentar API directa primero
+                response = await fetch(directUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    signal: controller.signal
+                });
+            } catch (e) {
+                // Si falla la directa, intentar el proxy
+                response = await fetch(proxyUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    signal: controller.signal
+                });
+            }
+
+            clearTimeout(timeoutId);
             const data = await response.json();
             return data.active === true;
         } catch (error) {
-            console.error('MiniCRM Widget: Error verificando estado del sitio', error);
-            // En caso de error de red/CORS, intentar mostrar el widget de todos modos
+            // En caso de error/timeout, mostrar el widget de todos modos
             // para no bloquear funcionalidad por problemas de conectividad
+            console.warn('MiniCRM Widget: No se pudo verificar estado, mostrando widget por defecto');
             return true;
         }
     }
