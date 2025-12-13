@@ -84,6 +84,7 @@ class SiteIndex extends Component
     public function openCreateModal(): void
     {
         $this->resetForm();
+        $this->loadAvailableUsers();
         $this->showModal = true;
     }
 
@@ -135,6 +136,7 @@ class SiteIndex extends Component
             isActive: $this->isActive,
             settings: $settings,
             defaultUserId: $this->defaultUserId ?: null,
+            clearDefaultUser: empty($this->defaultUserId),
         );
 
         if ($this->siteId) {
