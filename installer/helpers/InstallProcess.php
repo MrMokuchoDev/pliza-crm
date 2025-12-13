@@ -215,9 +215,19 @@ class InstallProcess
 
         // Crear usuario usando Eloquent
         $userClass = 'App\\Models\\User';
+        $roleClass = 'App\\Infrastructure\\Persistence\\Eloquent\\RoleModel';
 
         if (!class_exists($userClass)) {
             throw new Exception('Clase User no encontrada.');
+        }
+
+        // Obtener el rol admin
+        $adminRoleId = null;
+        if (class_exists($roleClass)) {
+            $adminRole = $roleClass::where('name', 'admin')->first();
+            if ($adminRole) {
+                $adminRoleId = $adminRole->id;
+            }
         }
 
         // Verificar si ya existe
@@ -227,6 +237,9 @@ class InstallProcess
             // Actualizar password si existe
             $existing->password = password_hash($admin['password'], PASSWORD_BCRYPT);
             $existing->name = $admin['name'];
+            if ($adminRoleId) {
+                $existing->role_id = $adminRoleId;
+            }
             $existing->save();
         } else {
             // Crear nuevo
@@ -235,6 +248,9 @@ class InstallProcess
             $user->email = $admin['email'];
             $user->password = password_hash($admin['password'], PASSWORD_BCRYPT);
             $user->email_verified_at = now();
+            if ($adminRoleId) {
+                $user->role_id = $adminRoleId;
+            }
             $user->save();
         }
     }
