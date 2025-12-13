@@ -46,7 +46,7 @@ El proyecto incluye un instalador web. Ver [INSTALL.md](INSTALL.md) para más de
 
 - **Backend:** Laravel 12
 - **Frontend:** Livewire 3 + Alpine.js + Tailwind CSS
-- **Arquitectura:** Hexagonal + DDD + CQRS
+- **Arquitectura:** Hexagonal + DDD + CQRS (ver [ARCHITECTURE.md](ARCHITECTURE.md))
 
 ## Widgets Embebibles
 
