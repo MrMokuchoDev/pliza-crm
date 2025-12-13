@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instalar MiniCRM</title>
+    <title>Instalar Pliza CRM</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .step-active { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); }
@@ -25,7 +25,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold">MiniCRM</h1>
+                        <h1 class="text-xl font-bold">Pliza CRM</h1>
                         <p class="text-blue-200 text-sm">Instalador v<?= htmlspecialchars($version) ?></p>
                     </div>
                 </div>
@@ -41,7 +41,7 @@
     <!-- Progress Steps -->
     <?php if ($step !== 'welcome' && $step !== 'complete' && $step !== 'already-installed'): ?>
     <div class="bg-white border-b shadow-sm">
-        <div class="max-w-3xl mx-auto px-4 py-4">
+        <div class="max-w-4xl mx-auto px-4 py-3">
             <div class="flex items-center justify-between">
                 <?php
                 $steps = $installer->getSteps();
@@ -88,7 +88,7 @@
     <?php endif; ?>
 
     <!-- Content -->
-    <div class="max-w-7xl mx-auto px-4 lg:px-8 py-8">
+    <div class="max-w-4xl mx-auto px-4 py-6">
         <?php if (!empty($errors)): ?>
         <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4">
             <div class="flex items-start gap-3">
@@ -116,7 +116,7 @@
 
     <!-- Footer -->
     <div class="text-center py-6 text-gray-500 text-sm">
-        <p>MiniCRM &copy; <?= date('Y') ?> - Sistema de Gesti&oacute;n de Leads</p>
+        <p>Pliza CRM &copy; <?= date('Y') ?> - Sistema de Gesti&oacute;n de Leads</p>
     </div>
 
     <script>

@@ -6,9 +6,9 @@
         </svg>
     </div>
 
-    <h2 class="text-2xl font-bold text-gray-900 mb-2">Bienvenido a MiniCRM</h2>
-    <p class="text-gray-600 mb-8 max-w-md mx-auto">
-        Este asistente te guiar&aacute; paso a paso para instalar y configurar MiniCRM en tu servidor.
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Bienvenido a Pliza CRM</h2>
+    <p class="text-gray-600 mb-6 max-w-lg mx-auto">
+        Este asistente te guiar&aacute; paso a paso para instalar y configurar Pliza CRM en tu servidor.
     </p>
 
     <div class="bg-blue-50 rounded-xl p-6 mb-8 text-left max-w-md mx-auto">

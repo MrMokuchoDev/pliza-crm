@@ -12,8 +12,8 @@ $appUrl = $installer->getStepData('application')['app_url'] ?? '';
     </div>
 
     <h2 class="text-2xl font-bold text-gray-900 mb-2">&iexcl;Instalaci&oacute;n Completada!</h2>
-    <p class="text-gray-600 mb-8 max-w-md mx-auto">
-        MiniCRM se ha instalado correctamente. Ya puedes comenzar a gestionar tus leads y negocios.
+    <p class="text-gray-600 mb-6 max-w-lg mx-auto">
+        Pliza CRM se ha instalado correctamente. Ya puedes comenzar a gestionar tus leads y negocios.
     </p>
 
     <!-- Credenciales -->
