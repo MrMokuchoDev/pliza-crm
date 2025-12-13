@@ -480,41 +480,41 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['execute'])) {
             </div>
         </div>
 
-        <div class="p-6">
+        <div class="p-4">
             <?php if ($success): ?>
                 <!-- Éxito -->
-                <div class="text-center">
-                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-10 h-10 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
                     </div>
-
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">¡Preparación Completada!</h2>
-                    <p class="text-gray-600 mb-6">
-                        Los archivos han sido reorganizados correctamente.
-                        Ahora puedes continuar con la instalación.
-                    </p>
-
-                    <!-- Log de acciones -->
-                    <div class="bg-gray-50 rounded-xl p-4 mb-6 text-left">
-                        <h3 class="font-semibold text-gray-700 mb-3">Acciones realizadas:</h3>
-                        <ul class="space-y-1 text-sm text-gray-600">
-                            <?php foreach ($preInstaller->getLogs() as $log): ?>
-                                <li class="flex items-start gap-2">
-                                    <svg class="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                    <?= htmlspecialchars($log) ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900">¡Preparación Completada!</h2>
+                        <p class="text-gray-600 text-sm">Los archivos han sido reorganizados. Continúa con la instalación.</p>
                     </div>
+                </div>
 
+                <!-- Log de acciones en grid compacto -->
+                <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                    <h3 class="font-medium text-gray-700 text-sm mb-2">Acciones realizadas:</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-0.5 text-xs text-gray-600">
+                        <?php foreach ($preInstaller->getLogs() as $log): ?>
+                            <div class="flex items-center gap-1.5 py-0.5">
+                                <svg class="w-3 h-3 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span class="truncate"><?= htmlspecialchars($log) ?></span>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
+                <div class="text-center">
                     <a href="<?= $redirectUrl ?>"
-                       class="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 transition shadow-lg">
+                       class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition shadow-lg">
                         Continuar con la Instalación
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                         </svg>
                     </a>
@@ -522,123 +522,108 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['execute'])) {
 
             <?php elseif (!empty($preInstaller->getErrors())): ?>
                 <!-- Errores -->
-                <div class="text-center">
-                    <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-10 h-10 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
                     </div>
-
-                    <h2 class="text-2xl font-bold text-gray-900 mb-2">Error en la Preparación</h2>
-                    <p class="text-gray-600 mb-6">
-                        Se encontraron problemas que impiden continuar.
-                    </p>
-
-                    <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6 text-left">
-                        <h3 class="font-semibold text-red-700 mb-3">Errores encontrados:</h3>
-                        <ul class="space-y-2 text-sm text-red-600">
-                            <?php foreach ($preInstaller->getErrors() as $error): ?>
-                                <li class="flex items-start gap-2">
-                                    <svg class="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                                    </svg>
-                                    <?= htmlspecialchars($error) ?>
-                                </li>
-                            <?php endforeach; ?>
-                        </ul>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900">Error en la Preparación</h2>
+                        <p class="text-gray-600 text-sm">Se encontraron problemas que impiden continuar.</p>
                     </div>
+                </div>
 
-                    <?php if (in_array('La carpeta "public/" no existe. ¿Ya se ejecutó este script?', $preInstaller->getErrors())): ?>
-                        <div class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6 text-left">
-                            <p class="text-sm text-blue-700">
-                                <strong>Nota:</strong> Si ya ejecutaste este script anteriormente, la preparación ya está completa.
-                                Intenta acceder directamente al instalador.
-                            </p>
-                        </div>
+                <div class="bg-red-50 border border-red-200 rounded-lg p-3 mb-4">
+                    <h3 class="font-medium text-red-700 text-sm mb-2">Errores encontrados:</h3>
+                    <ul class="space-y-1 text-sm text-red-600">
+                        <?php foreach ($preInstaller->getErrors() as $error): ?>
+                            <li class="flex items-start gap-2">
+                                <svg class="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                <?= htmlspecialchars($error) ?>
+                            </li>
+                        <?php endforeach; ?>
+                    </ul>
+                </div>
+
+                <?php if (in_array('La carpeta "public/" no existe. ¿Ya se ejecutó este script?', $preInstaller->getErrors())): ?>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+                        <p class="text-sm text-blue-700">
+                            <strong>Nota:</strong> Si ya ejecutaste este script anteriormente, la preparación ya está completa.
+                        </p>
+                    </div>
+                    <div class="text-center">
                         <a href="<?= $redirectUrl ?>"
-                           class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 transition">
+                           class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition">
                             Ir al Instalador
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/>
                             </svg>
                         </a>
-                    <?php endif; ?>
-                </div>
+                    </div>
+                <?php endif; ?>
 
             <?php else: ?>
                 <!-- Formulario inicial -->
-                <div class="mb-6">
-                    <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-                        <div class="flex items-start gap-3">
-                            <svg class="w-6 h-6 text-amber-500 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                            </svg>
-                            <div>
-                                <h3 class="font-semibold text-amber-800">¿Qué hace este script?</h3>
-                                <p class="text-sm text-amber-700 mt-1">
-                                    Este script prepara Pliza CRM para funcionar en hosting compartido donde
-                                    el dominio apunta directamente a <code class="bg-amber-100 px-1 rounded">public_html</code>.
-                                </p>
-                            </div>
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4">
+                    <div class="flex items-start gap-2">
+                        <svg class="w-5 h-5 text-amber-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                        </svg>
+                        <p class="text-sm text-amber-700">
+                            Este script prepara Pliza CRM para hosting compartido donde el dominio apunta a <code class="bg-amber-100 px-1 rounded">public_html</code>.
+                        </p>
+                    </div>
+                </div>
+
+                <h2 class="text-base font-bold text-gray-900 mb-3">Acciones que realizará:</h2>
+
+                <div class="grid sm:grid-cols-2 gap-2 mb-4">
+                    <div class="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
+                        <div class="w-6 h-6 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs font-bold text-blue-600">1</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 text-sm">Mover archivos públicos</p>
+                            <p class="text-xs text-gray-500">De <code class="bg-gray-200 px-0.5 rounded">public/</code> a raíz</p>
                         </div>
                     </div>
-
-                    <h2 class="text-xl font-bold text-gray-900 mb-4">Acciones que realizará:</h2>
-
-                    <ul class="space-y-3 mb-6">
-                        <li class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span class="text-sm font-bold text-blue-600">1</span>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Mover archivos públicos</p>
-                                <p class="text-sm text-gray-500">
-                                    Mueve el contenido de <code class="bg-gray-200 px-1 rounded">public/</code> a la raíz
-                                </p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span class="text-sm font-bold text-blue-600">2</span>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Corregir rutas de Laravel</p>
-                                <p class="text-sm text-gray-500">
-                                    Ajusta <code class="bg-gray-200 px-1 rounded">index.php</code> para encontrar las carpetas del framework
-                                </p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span class="text-sm font-bold text-blue-600">3</span>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Crear protección .htaccess</p>
-                                <p class="text-sm text-gray-500">
-                                    Protege carpetas sensibles como <code class="bg-gray-200 px-1 rounded">vendor/</code>,
-                                    <code class="bg-gray-200 px-1 rounded">config/</code>, etc.
-                                </p>
-                            </div>
-                        </li>
-                        <li class="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-                            <div class="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <span class="text-sm font-bold text-blue-600">4</span>
-                            </div>
-                            <div>
-                                <p class="font-medium text-gray-900">Auto-eliminarse</p>
-                                <p class="text-sm text-gray-500">
-                                    Por seguridad, este script se elimina después de ejecutarse
-                                </p>
-                            </div>
-                        </li>
-                    </ul>
+                    <div class="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
+                        <div class="w-6 h-6 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs font-bold text-blue-600">2</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 text-sm">Corregir rutas Laravel</p>
+                            <p class="text-xs text-gray-500">Ajusta <code class="bg-gray-200 px-0.5 rounded">index.php</code></p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
+                        <div class="w-6 h-6 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs font-bold text-blue-600">3</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 text-sm">Protección .htaccess</p>
+                            <p class="text-xs text-gray-500">Protege carpetas sensibles</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-2 p-2 bg-gray-50 rounded-lg">
+                        <div class="w-6 h-6 bg-blue-100 rounded flex items-center justify-center flex-shrink-0">
+                            <span class="text-xs font-bold text-blue-600">4</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900 text-sm">Auto-eliminarse</p>
+                            <p class="text-xs text-gray-500">Por seguridad al terminar</p>
+                        </div>
+                    </div>
                 </div>
 
                 <form method="POST" class="text-center">
                     <input type="hidden" name="execute" value="1">
                     <button type="submit"
-                            class="inline-flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-xl hover:from-blue-700 hover:to-indigo-700 transition shadow-lg">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            class="inline-flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-medium rounded-lg hover:from-blue-700 hover:to-indigo-700 transition shadow-lg">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
                         </svg>
                         Preparar Instalación
@@ -648,8 +633,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['execute'])) {
         </div>
 
         <!-- Footer -->
-        <div class="bg-gray-50 px-6 py-4 text-center text-sm text-gray-500">
-            Pliza CRM &copy; <?= date('Y') ?> - Sistema de Gestión de Leads
+        <div class="bg-gray-50 px-4 py-3 text-center text-xs text-gray-500">
+            Pliza CRM &copy; <?= date('Y') ?>
         </div>
     </div>
 </body>
