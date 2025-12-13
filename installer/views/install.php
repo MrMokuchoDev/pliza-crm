@@ -1,10 +1,10 @@
 <!-- Proceso de Instalación -->
-<div class="p-6 border-b border-gray-100">
-    <h2 class="text-xl font-bold text-gray-900">Instalar MiniCRM</h2>
-    <p class="text-gray-600 mt-1">Todo est&aacute; listo. Haz clic en instalar para comenzar.</p>
+<div class="p-4 border-b border-gray-100">
+    <h2 class="text-xl font-bold text-gray-900">Instalar Pliza CRM</h2>
+    <p class="text-gray-600 text-sm">Todo est&aacute; listo. Haz clic en instalar para comenzar.</p>
 </div>
 
-<div class="p-6">
+<div class="p-4">
     <!-- Layout de dos columnas -->
     <div class="grid lg:grid-cols-2 gap-6">
         <!-- Columna izquierda: Resumen de configuración -->
@@ -199,7 +199,7 @@
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
         </svg>
-        Instalar MiniCRM
+        Instalar Pliza CRM
     </button>
 </div>
 

@@ -6,9 +6,9 @@
         </svg>
     </div>
 
-    <h2 class="text-2xl font-bold text-gray-900 mb-2">MiniCRM ya est&aacute; instalado</h2>
-    <p class="text-gray-600 mb-8 max-w-md mx-auto">
-        El sistema detecta que MiniCRM ya fue instalado anteriormente. Por seguridad, el instalador est&aacute; desactivado.
+    <h2 class="text-2xl font-bold text-gray-900 mb-2">Pliza CRM ya est&aacute; instalado</h2>
+    <p class="text-gray-600 mb-6 max-w-lg mx-auto">
+        El sistema detecta que Pliza CRM ya fue instalado anteriormente. Por seguridad, el instalador est&aacute; desactivado.
     </p>
 
     <div class="bg-gray-50 rounded-xl p-6 mb-8 text-left max-w-md mx-auto">
