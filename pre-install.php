@@ -1,7 +1,7 @@
 <?php
 
 /**
- * MiniCRM Pre-Installer para Hosting Compartido
+ * Pliza CRM Pre-Installer para Hosting Compartido
  *
  * Este script prepara la aplicación para funcionar en hosting compartido
  * donde el dominio apunta directamente a public_html (sin subcarpeta public/).
@@ -454,7 +454,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['execute'])) {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MiniCRM - Preparación para Hosting Compartido</title>
+    <title>Pliza CRM - Preparación para Hosting Compartido</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .gradient-bg {
@@ -474,7 +474,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['execute'])) {
                     </svg>
                 </div>
                 <div>
-                    <h1 class="text-2xl font-bold">MiniCRM - Pre-Instalador</h1>
+                    <h1 class="text-2xl font-bold">Pliza CRM - Pre-Instalador</h1>
                     <p class="text-blue-100">Preparación para Hosting Compartido</p>
                 </div>
             </div>
@@ -576,7 +576,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['execute'])) {
                             <div>
                                 <h3 class="font-semibold text-amber-800">¿Qué hace este script?</h3>
                                 <p class="text-sm text-amber-700 mt-1">
-                                    Este script prepara MiniCRM para funcionar en hosting compartido donde
+                                    Este script prepara Pliza CRM para funcionar en hosting compartido donde
                                     el dominio apunta directamente a <code class="bg-amber-100 px-1 rounded">public_html</code>.
                                 </p>
                             </div>
@@ -649,7 +649,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['execute'])) {
 
         <!-- Footer -->
         <div class="bg-gray-50 px-6 py-4 text-center text-sm text-gray-500">
-            MiniCRM &copy; <?= date('Y') ?> - Sistema de Gestión de Leads
+            Pliza CRM &copy; <?= date('Y') ?> - Sistema de Gestión de Leads
         </div>
     </div>
 </body>
