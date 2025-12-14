@@ -301,6 +301,7 @@ class RolePermissions extends Component
 
             $role->update([
                 'name' => $this->roleName,
+                'display_name' => ucfirst(str_replace('_', ' ', $this->roleName)),
                 'description' => $this->roleDescription ?: null,
                 'level' => $role->name === 'admin' ? 100 : $this->roleLevel,
             ]);
@@ -317,6 +318,7 @@ class RolePermissions extends Component
             // Crear nuevo rol
             $role = RoleModel::create([
                 'name' => $this->roleName,
+                'display_name' => ucfirst(str_replace('_', ' ', $this->roleName)),
                 'description' => $this->roleDescription ?: null,
                 'level' => $this->roleLevel,
             ]);
