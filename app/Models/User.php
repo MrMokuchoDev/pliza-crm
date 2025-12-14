@@ -134,6 +134,24 @@ class User extends Authenticatable
     }
 
     /**
+     * Verifica si el usuario puede acceder al módulo de contactos.
+     * Tiene acceso si tiene cualquier permiso de leads (ver, crear, editar, eliminar, asignar).
+     */
+    public function canAccessLeads(): bool
+    {
+        return $this->hasAnyPermission([
+            Permission::LEADS_VIEW_ALL,
+            Permission::LEADS_VIEW_OWN,
+            Permission::LEADS_CREATE,
+            Permission::LEADS_UPDATE_ALL,
+            Permission::LEADS_UPDATE_OWN,
+            Permission::LEADS_DELETE_ALL,
+            Permission::LEADS_DELETE_OWN,
+            Permission::LEADS_ASSIGN,
+        ]);
+    }
+
+    /**
      * Verifica si el usuario puede ver todos los leads.
      */
     public function canViewAllLeads(): bool
@@ -168,6 +186,24 @@ class User extends Authenticatable
         return $this->hasAnyPermission([
             Permission::LEADS_DELETE_ALL,
             Permission::LEADS_DELETE_OWN,
+        ]);
+    }
+
+    /**
+     * Verifica si el usuario puede acceder al módulo de negocios.
+     * Tiene acceso si tiene cualquier permiso de deals (ver, crear, editar, eliminar, asignar).
+     */
+    public function canAccessDeals(): bool
+    {
+        return $this->hasAnyPermission([
+            Permission::DEALS_VIEW_ALL,
+            Permission::DEALS_VIEW_OWN,
+            Permission::DEALS_CREATE,
+            Permission::DEALS_UPDATE_ALL,
+            Permission::DEALS_UPDATE_OWN,
+            Permission::DEALS_DELETE_ALL,
+            Permission::DEALS_DELETE_OWN,
+            Permission::DEALS_ASSIGN,
         ]);
     }
 
@@ -210,6 +246,74 @@ class User extends Authenticatable
     }
 
     /**
+     * Verifica si el usuario puede editar un deal específico.
+     * Considera si es propio o si tiene permiso de editar todos.
+     */
+    public function canEditDeal(?string $dealOwnerId): bool
+    {
+        if ($this->hasPermission(Permission::DEALS_UPDATE_ALL)) {
+            return true;
+        }
+
+        if ($this->hasPermission(Permission::DEALS_UPDATE_OWN) && $dealOwnerId === $this->uuid) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Verifica si el usuario puede eliminar un deal específico.
+     * Considera si es propio o si tiene permiso de eliminar todos.
+     */
+    public function canDeleteDeal(?string $dealOwnerId): bool
+    {
+        if ($this->hasPermission(Permission::DEALS_DELETE_ALL)) {
+            return true;
+        }
+
+        if ($this->hasPermission(Permission::DEALS_DELETE_OWN) && $dealOwnerId === $this->uuid) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Verifica si el usuario puede editar un lead específico.
+     * Considera si es propio o si tiene permiso de editar todos.
+     */
+    public function canEditLead(?string $leadOwnerId): bool
+    {
+        if ($this->hasPermission(Permission::LEADS_UPDATE_ALL)) {
+            return true;
+        }
+
+        if ($this->hasPermission(Permission::LEADS_UPDATE_OWN) && $leadOwnerId === $this->uuid) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Verifica si el usuario puede eliminar un lead específico.
+     * Considera si es propio o si tiene permiso de eliminar todos.
+     */
+    public function canDeleteLead(?string $leadOwnerId): bool
+    {
+        if ($this->hasPermission(Permission::LEADS_DELETE_ALL)) {
+            return true;
+        }
+
+        if ($this->hasPermission(Permission::LEADS_DELETE_OWN) && $leadOwnerId === $this->uuid) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Verifica si el usuario puede asignar leads.
      */
     public function canAssignLeads(): bool
@@ -226,27 +330,110 @@ class User extends Authenticatable
     }
 
     /**
-     * Verifica si el usuario puede gestionar usuarios.
+     * Verifica si el usuario puede acceder al módulo de usuarios.
+     * Tiene acceso si tiene cualquier permiso de usuarios (ver, crear, editar, eliminar, asignar roles).
      */
     public function canManageUsers(): bool
     {
-        return $this->hasPermission(Permission::USERS_VIEW);
+        return $this->hasAnyPermission([
+            Permission::USERS_VIEW,
+            Permission::USERS_CREATE,
+            Permission::USERS_UPDATE,
+            Permission::USERS_DELETE,
+            Permission::USERS_ASSIGN_ROLE,
+        ]);
+    }
+
+    /**
+     * Verifica si el usuario puede crear usuarios.
+     */
+    public function canCreateUsers(): bool
+    {
+        return $this->hasPermission(Permission::USERS_CREATE);
+    }
+
+    /**
+     * Verifica si el usuario puede editar usuarios.
+     */
+    public function canUpdateUsers(): bool
+    {
+        return $this->hasPermission(Permission::USERS_UPDATE);
+    }
+
+    /**
+     * Verifica si el usuario puede eliminar usuarios.
+     */
+    public function canDeleteUsers(): bool
+    {
+        return $this->hasPermission(Permission::USERS_DELETE);
     }
 
     /**
      * Verifica si el usuario puede gestionar fases.
+     * Considera tanto el permiso general como los granulares.
      */
     public function canManagePhases(): bool
     {
-        return $this->hasPermission(Permission::PHASES_MANAGE);
+        return $this->hasAnyPermission([
+            Permission::PHASES_MANAGE,
+            'phases.manage',
+            'sale_phases.view',
+            'sale_phases.create',
+            'sale_phases.update',
+            'sale_phases.delete',
+        ]);
     }
 
     /**
-     * Verifica si el usuario puede gestionar sitios.
+     * Verifica si el usuario puede ver sitios (acceso al menú).
+     * Considera tanto el permiso general como los granulares.
      */
     public function canManageSites(): bool
     {
-        return $this->hasPermission(Permission::SITES_MANAGE);
+        return $this->hasAnyPermission([
+            Permission::SITES_MANAGE,
+            'sites.manage',
+            'sites.view',
+            'sites.create',
+            'sites.update',
+            'sites.delete',
+        ]);
+    }
+
+    /**
+     * Verifica si el usuario puede crear sitios.
+     */
+    public function canCreateSites(): bool
+    {
+        return $this->hasAnyPermission([
+            Permission::SITES_MANAGE,
+            'sites.manage',
+            'sites.create',
+        ]);
+    }
+
+    /**
+     * Verifica si el usuario puede editar sitios.
+     */
+    public function canUpdateSites(): bool
+    {
+        return $this->hasAnyPermission([
+            Permission::SITES_MANAGE,
+            'sites.manage',
+            'sites.update',
+        ]);
+    }
+
+    /**
+     * Verifica si el usuario puede eliminar sitios.
+     */
+    public function canDeleteSites(): bool
+    {
+        return $this->hasAnyPermission([
+            Permission::SITES_MANAGE,
+            'sites.manage',
+            'sites.delete',
+        ]);
     }
 
     /**
@@ -263,6 +450,51 @@ class User extends Authenticatable
     public function canManageUpdates(): bool
     {
         return $this->hasPermission(Permission::SYSTEM_UPDATES);
+    }
+
+    /**
+     * Verifica si el usuario puede gestionar roles y permisos.
+     */
+    public function canManageRoles(): bool
+    {
+        return $this->hasPermission(Permission::USERS_ASSIGN_ROLE);
+    }
+
+    /**
+     * Verifica si el usuario tiene al menos un permiso de configuración.
+     * Se usa para determinar si mostrar el menú de configuración.
+     * Considera tanto permisos del enum como los granulares de la BD.
+     */
+    public function hasAnyConfigPermission(): bool
+    {
+        return $this->hasAnyPermission([
+            // Permisos del enum
+            Permission::PHASES_MANAGE,
+            Permission::SITES_MANAGE,
+            Permission::USERS_VIEW,
+            Permission::USERS_ASSIGN_ROLE,
+            Permission::SYSTEM_MAINTENANCE,
+            Permission::SYSTEM_UPDATES,
+            // Permisos granulares de fases
+            'sale_phases.view',
+            'sale_phases.create',
+            'sale_phases.update',
+            'sale_phases.delete',
+            // Permisos granulares de sitios
+            'sites.view',
+            'sites.create',
+            'sites.update',
+            'sites.delete',
+            // Permisos granulares de usuarios (strings)
+            'users.view',
+            'users.create',
+            'users.update',
+            'users.delete',
+            'users.assign_role',
+            // Permisos de sistema (strings)
+            'system.maintenance',
+            'system.updates',
+        ]);
     }
 
     /**

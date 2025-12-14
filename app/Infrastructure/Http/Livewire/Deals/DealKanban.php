@@ -17,6 +17,14 @@ class DealKanban extends Component
 
     public string $search = '';
 
+    public function mount(): void
+    {
+        // Verificar acceso al módulo
+        if (! Auth::user()?->canAccessDeals()) {
+            $this->redirect(route('dashboard'), navigate: true);
+        }
+    }
+
     #[On('dealSaved')]
     public function refreshBoard(): void
     {
@@ -30,11 +38,43 @@ class DealKanban extends Component
 
     public function openEditModal(string $dealId): void
     {
+        // Verificar permiso antes de abrir el modal
+        $dealService = app(DealService::class);
+        $deal = $dealService->find($dealId);
+
+        if (! $deal) {
+            $this->dispatch('notify', type: 'error', message: 'Negocio no encontrado');
+
+            return;
+        }
+
+        if (! Auth::user()?->canEditDeal($deal->assigned_to)) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para editar este negocio');
+
+            return;
+        }
+
         $this->dispatch('openDealModal', dealId: $dealId);
     }
 
     public function moveToPhase(string $dealId, string $phaseId): void
     {
+        // Verificar permiso antes de mover
+        $dealService = app(DealService::class);
+        $deal = $dealService->find($dealId);
+
+        if (! $deal) {
+            $this->dispatch('notify', type: 'error', message: 'Negocio no encontrado');
+
+            return;
+        }
+
+        if (! Auth::user()?->canEditDeal($deal->assigned_to)) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para modificar este negocio');
+
+            return;
+        }
+
         $result = $this->handlePhaseChange($dealId, $phaseId);
 
         if ($result === null) {

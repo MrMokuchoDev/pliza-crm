@@ -16,6 +16,11 @@ class UserIndex extends Component
 {
     use WithPagination;
 
+    public function mount(): void
+    {
+        // La verificación de acceso se hace en el middleware de la ruta
+    }
+
     public string $search = '';
 
     public string $filterRole = '';
@@ -79,14 +84,28 @@ class UserIndex extends Component
 
     public function openCreateModal(): void
     {
+        if (! Auth::user()?->canCreateUsers()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para crear usuarios');
+
+            return;
+        }
+
         $this->resetForm();
         $this->showModal = true;
     }
 
     public function openEditModal(string $id): void
     {
+        if (! Auth::user()?->canUpdateUsers()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para editar usuarios');
+
+            return;
+        }
+
         $user = User::find($id);
         if (! $user) {
+            $this->dispatch('notify', type: 'error', message: 'Usuario no encontrado');
+
             return;
         }
 
@@ -104,6 +123,24 @@ class UserIndex extends Component
     public function save(): void
     {
         $this->validate();
+
+        // Verificación adicional de seguridad
+        $currentUser = Auth::user();
+        if ($this->editingId) {
+            if (! $currentUser?->canUpdateUsers()) {
+                $this->dispatch('notify', type: 'error', message: 'No tienes permiso para editar usuarios');
+                $this->closeModal();
+
+                return;
+            }
+        } else {
+            if (! $currentUser?->canCreateUsers()) {
+                $this->dispatch('notify', type: 'error', message: 'No tienes permiso para crear usuarios');
+                $this->closeModal();
+
+                return;
+            }
+        }
 
         $data = [
             'name' => $this->name,
@@ -132,8 +169,16 @@ class UserIndex extends Component
 
     public function openDeleteModal(string $id): void
     {
+        if (! Auth::user()?->canDeleteUsers()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar usuarios');
+
+            return;
+        }
+
         $user = User::find($id);
         if (! $user) {
+            $this->dispatch('notify', type: 'error', message: 'Usuario no encontrado');
+
             return;
         }
 
@@ -152,6 +197,14 @@ class UserIndex extends Component
     public function delete(): void
     {
         if (! $this->deletingId) {
+            return;
+        }
+
+        // Verificación adicional de seguridad
+        if (! Auth::user()?->canDeleteUsers()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar usuarios');
+            $this->closeDeleteModal();
+
             return;
         }
 
@@ -219,10 +272,14 @@ class UserIndex extends Component
 
         $users = $query->orderBy('name')->paginate(10);
         $roles = RoleModel::orderBy('level', 'desc')->get();
+        $currentUser = Auth::user();
 
         return view('livewire.users.index', [
             'users' => $users,
             'roles' => $roles,
+            'canCreate' => $currentUser?->canCreateUsers() ?? false,
+            'canUpdate' => $currentUser?->canUpdateUsers() ?? false,
+            'canDelete' => $currentUser?->canDeleteUsers() ?? false,
         ])->layout('components.layouts.app', ['title' => 'Usuarios']);
     }
 }

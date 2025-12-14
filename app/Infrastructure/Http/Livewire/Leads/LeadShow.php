@@ -89,9 +89,14 @@ class LeadShow extends Component
             return false;
         }
 
-        // Puede editar si tiene permiso update_all O el deal está asignado a él
+        // Primero verificar que tenga acceso al módulo de deals
+        if (!$user->canAccessDeals()) {
+            return false;
+        }
+
+        // Puede editar si tiene permiso update_all O (update_own Y el deal está asignado a él)
         return $user->hasPermission(Permission::DEALS_UPDATE_ALL)
-            || ($dealAssignedTo && $dealAssignedTo === $user->uuid);
+            || ($user->hasPermission(Permission::DEALS_UPDATE_OWN) && $dealAssignedTo && $dealAssignedTo === $user->uuid);
     }
 
     public function openCreateDealModal(): void
@@ -204,7 +209,11 @@ class LeadShow extends Component
                 ->layout('components.layouts.app', ['title' => 'Contacto no encontrado']);
         }
 
-        return view('livewire.leads.show')
-            ->layout('components.layouts.app', ['title' => 'Detalle del Contacto']);
+        $user = Auth::user();
+
+        return view('livewire.leads.show', [
+            'canAccessDeals' => $user?->canAccessDeals() ?? false,
+            'canCreateDeals' => $user?->canCreateDeals() ?? false,
+        ])->layout('components.layouts.app', ['title' => 'Detalle del Contacto']);
     }
 }

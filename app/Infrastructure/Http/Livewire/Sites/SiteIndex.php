@@ -43,6 +43,7 @@ class SiteIndex extends Component
 
     public function mount(): void
     {
+        // La verificación de acceso se hace en el middleware de la ruta
         $this->availableUsers = collect();
         $this->loadAvailableUsers();
     }
@@ -83,6 +84,12 @@ class SiteIndex extends Component
 
     public function openCreateModal(): void
     {
+        if (! auth()->user()?->canCreateSites()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para crear sitios');
+
+            return;
+        }
+
         $this->resetForm();
         $this->loadAvailableUsers();
         $this->showModal = true;
@@ -90,6 +97,12 @@ class SiteIndex extends Component
 
     public function openEditModal(string $id): void
     {
+        if (! auth()->user()?->canUpdateSites()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para editar sitios');
+
+            return;
+        }
+
         $service = app(SiteService::class);
         $site = $service->find($id);
 
@@ -117,6 +130,21 @@ class SiteIndex extends Component
 
     public function save(): void
     {
+        // Verificar permiso según si es crear o actualizar
+        if ($this->siteId) {
+            if (! auth()->user()?->canUpdateSites()) {
+                $this->dispatch('notify', type: 'error', message: 'No tienes permiso para editar sitios');
+
+                return;
+            }
+        } else {
+            if (! auth()->user()?->canCreateSites()) {
+                $this->dispatch('notify', type: 'error', message: 'No tienes permiso para crear sitios');
+
+                return;
+            }
+        }
+
         $this->validate();
 
         $service = app(SiteService::class);
@@ -158,6 +186,12 @@ class SiteIndex extends Component
 
     public function toggleActive(string $id): void
     {
+        if (! auth()->user()?->canUpdateSites()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para modificar sitios');
+
+            return;
+        }
+
         $service = app(SiteService::class);
         $result = $service->toggleActive($id);
 
@@ -169,6 +203,12 @@ class SiteIndex extends Component
 
     public function regenerateApiKey(string $id): void
     {
+        if (! auth()->user()?->canUpdateSites()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para modificar sitios');
+
+            return;
+        }
+
         $service = app(SiteService::class);
         $result = $service->regenerateApiKey($id);
 
@@ -179,6 +219,12 @@ class SiteIndex extends Component
 
     public function confirmDelete(string $id): void
     {
+        if (! auth()->user()?->canDeleteSites()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar sitios');
+
+            return;
+        }
+
         $this->deletingSiteId = $id;
         $this->showDeleteModal = true;
     }
@@ -186,6 +232,12 @@ class SiteIndex extends Component
     public function deleteSite(): void
     {
         if (! $this->deletingSiteId) {
+            return;
+        }
+
+        if (! auth()->user()?->canDeleteSites()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar sitios');
+
             return;
         }
 

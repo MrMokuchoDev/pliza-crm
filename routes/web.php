@@ -10,6 +10,7 @@ use App\Infrastructure\Http\Livewire\Leads\LeadShow;
 use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
 use App\Infrastructure\Http\Livewire\Sites\SiteIndex;
+use App\Infrastructure\Http\Livewire\Roles\RolePermissions;
 use App\Infrastructure\Http\Livewire\Updates\UpdatesPanel;
 use App\Infrastructure\Http\Livewire\Users\UserIndex;
 use Illuminate\Support\Facades\Route;
@@ -34,24 +35,39 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/pipeline', DealKanban::class)->name('deals.kanban');
 
     // =========================================
-    // Rutas de Configuración - Solo Admin
+    // Rutas de Configuración - Basadas en permisos
+    // El middleware soporta OR con | para múltiples permisos
     // =========================================
-    Route::middleware(['role:admin'])->group(function () {
-        // Sale Phases
-        Route::get('/sale-phases', SalePhaseIndex::class)->name('sale-phases.index');
 
-        // Sites
-        Route::get('/sites', SiteIndex::class)->name('sites.index');
+    // Sale Phases - requiere permiso phases.manage o cualquier permiso granular de sale_phases
+    Route::get('/sale-phases', SalePhaseIndex::class)
+        ->middleware('permission:phases.manage|sale_phases.view|sale_phases.create|sale_phases.update|sale_phases.delete')
+        ->name('sale-phases.index');
 
-        // Users
-        Route::get('/usuarios', UserIndex::class)->name('users.index');
+    // Sites - requiere permiso sites.manage o cualquier permiso granular de sites
+    Route::get('/sites', SiteIndex::class)
+        ->middleware('permission:sites.manage|sites.view|sites.create|sites.update|sites.delete')
+        ->name('sites.index');
 
-        // Maintenance Panel
-        Route::get('/admin/maintenance', MaintenancePanel::class)->name('maintenance');
+    // Users - requiere permiso users.view o cualquier permiso de usuarios
+    Route::get('/usuarios', UserIndex::class)
+        ->middleware('permission:users.view|users.create|users.update|users.delete')
+        ->name('users.index');
 
-        // Updates Panel
-        Route::get('/admin/updates', UpdatesPanel::class)->name('updates');
-    });
+    // Roles & Permissions - requiere permiso users.assign_role
+    Route::get('/roles', RolePermissions::class)
+        ->middleware('permission:users.assign_role')
+        ->name('roles.index');
+
+    // Maintenance Panel - requiere permiso system.maintenance
+    Route::get('/admin/maintenance', MaintenancePanel::class)
+        ->middleware('permission:system.maintenance')
+        ->name('maintenance');
+
+    // Updates Panel - requiere permiso system.updates
+    Route::get('/admin/updates', UpdatesPanel::class)
+        ->middleware('permission:system.updates')
+        ->name('updates');
 
     // Profile (de Breeze)
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

@@ -6,6 +6,7 @@
                 <h1 class="text-2xl font-bold text-gray-900">Sitios Web</h1>
                 <p class="text-gray-500 text-sm mt-1">Gestiona los sitios que capturan leads</p>
             </div>
+            @if(auth()->user()?->canCreateSites())
             <button wire:click="openCreateModal"
                     class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -13,6 +14,7 @@
                 </svg>
                 Nuevo Sitio
             </button>
+            @endif
         </div>
 
         <!-- Sites Grid -->
@@ -76,11 +78,13 @@
                             <div class="bg-gray-50 rounded-lg p-3 mb-4">
                                 <div class="flex items-center justify-between mb-1">
                                     <span class="text-xs font-medium text-gray-500 uppercase tracking-wider">API Key</span>
+                                    @if(auth()->user()?->canUpdateSites())
                                     <button wire:click="regenerateApiKey('{{ $site->id }}')"
                                             wire:confirm="&iquest;Regenerar API Key? Los widgets existentes dejar&aacute;n de funcionar."
                                             class="text-xs text-blue-600 hover:text-blue-800 transition">
                                         Regenerar
                                     </button>
+                                    @endif
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <code class="text-xs text-gray-700 font-mono truncate flex-1">{{ $site->api_key }}</code>
@@ -103,6 +107,7 @@
                                     </svg>
                                     C&oacute;digo Embed
                                 </button>
+                                @if(auth()->user()?->canUpdateSites())
                                 <button wire:click="openEditModal('{{ $site->id }}')"
                                         class="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
                                         title="Editar">
@@ -121,6 +126,8 @@
                                         @endif
                                     </svg>
                                 </button>
+                                @endif
+                                @if(auth()->user()?->canDeleteSites())
                                 <button wire:click="confirmDelete('{{ $site->id }}')"
                                         class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                                         title="Eliminar">
@@ -128,6 +135,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                     </svg>
                                 </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -142,7 +150,14 @@
                     </svg>
                 </div>
                 <h3 class="text-lg font-medium text-gray-900 mb-1">No hay sitios registrados</h3>
-                <p class="text-gray-500 mb-6 max-w-md mx-auto">Registra tus sitios web para generar widgets de captura de leads y obtener c&oacute;digos de integraci&oacute;n.</p>
+                <p class="text-gray-500 mb-6 max-w-md mx-auto">
+                    @if(auth()->user()?->canCreateSites())
+                        Registra tus sitios web para generar widgets de captura de leads y obtener c&oacute;digos de integraci&oacute;n.
+                    @else
+                        No hay sitios web configurados en el sistema.
+                    @endif
+                </p>
+                @if(auth()->user()?->canCreateSites())
                 <button wire:click="openCreateModal"
                         class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-sm font-medium flex items-center gap-2 transition mx-auto">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -150,6 +165,7 @@
                     </svg>
                     Registrar Primer Sitio
                 </button>
+                @endif
             </div>
         @endif
 

@@ -191,7 +191,7 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                             </svg>
                                         </a>
-                                        @if($lead->active_deals_count === 0)
+                                        @if($lead->active_deals_count === 0 && $canCreateDeals)
                                             <button wire:click="openCreateDealModal('{{ $lead->id }}')"
                                                     class="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
                                                     title="Crear negocio">
@@ -200,7 +200,7 @@
                                                 </svg>
                                             </button>
                                         @endif
-                                        @if($canEdit)
+                                        @if(auth()->user()?->canEditLead($lead->assigned_to))
                                         <button wire:click="openEditModal('{{ $lead->id }}')"
                                                 class="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition"
                                                 title="Editar">
@@ -209,7 +209,7 @@
                                             </svg>
                                         </button>
                                         @endif
-                                        @if($canDelete)
+                                        @if(auth()->user()?->canDeleteLead($lead->assigned_to))
                                         <button wire:click="openDeleteModal('{{ $lead->id }}')"
                                                 class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                                                 title="Eliminar">
@@ -256,7 +256,7 @@
                             </a>
                             <!-- Menú de acciones -->
                             <div class="flex items-center gap-1 flex-shrink-0">
-                                @if($canEdit)
+                                @if(auth()->user()?->canEditLead($lead->assigned_to))
                                 <button wire:click="openEditModal('{{ $lead->id }}')"
                                         class="p-2 text-gray-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -264,7 +264,7 @@
                                     </svg>
                                 </button>
                                 @endif
-                                @if($canDelete)
+                                @if(auth()->user()?->canDeleteLead($lead->assigned_to))
                                 <button wire:click="openDeleteModal('{{ $lead->id }}')"
                                         class="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition">
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -327,7 +327,7 @@
                                     Email
                                 </a>
                             @endif
-                            @if($lead->active_deals_count === 0)
+                            @if($lead->active_deals_count === 0 && $canCreateDeals)
                                 <button wire:click="openCreateDealModal('{{ $lead->id }}')"
                                         class="inline-flex items-center gap-2 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium hover:bg-indigo-100 transition">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

@@ -83,6 +83,7 @@
                     </a>
 
                     <!-- Contactos -->
+                    @if(auth()->user()?->canAccessLeads())
                     <a href="{{ route('leads.index') }}"
                        class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('leads.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
                         <div class="w-8 h-8 rounded-lg {{ request()->routeIs('leads.*') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
@@ -92,7 +93,9 @@
                         </div>
                         Contactos
                     </a>
+                    @endif
 
+                    @if(auth()->user()?->canAccessDeals())
                     <!-- Negocios Lista -->
                     @php $isDealsActive = request()->routeIs('deals.index') || request()->routeIs('deals.show'); @endphp
                     <a href="{{ route('deals.index') }}"
@@ -115,12 +118,13 @@
                         </div>
                         Pipeline
                     </a>
+                    @endif
                 </div>
 
-                @if(auth()->user()?->isAdmin())
-                <!-- Sección Configuración - Solo Admin -->
+                @if(auth()->user()?->hasAnyConfigPermission())
+                <!-- Sección Configuración - Basada en permisos -->
                 @php
-                    $configRoutes = ['sale-phases.*', 'sites.*', 'users.*', 'maintenance', 'updates'];
+                    $configRoutes = ['sale-phases.*', 'sites.*', 'users.*', 'roles.*', 'maintenance', 'updates'];
                     $isConfigActive = collect($configRoutes)->contains(fn($route) => request()->routeIs($route));
                 @endphp
                 <div x-data="{ configOpen: {{ $isConfigActive ? 'true' : 'false' }} }" class="mt-6">
@@ -142,6 +146,8 @@
                          x-transition:leave-start="opacity-100 translate-y-0"
                          x-transition:leave-end="opacity-0 -translate-y-2"
                          class="space-y-1 mt-2">
+
+                        @if(auth()->user()?->canManagePhases())
                         <!-- Fases de Venta -->
                         <a href="{{ route('sale-phases.index') }}"
                            class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('sale-phases.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
@@ -152,7 +158,9 @@
                             </div>
                             Fases de Venta
                         </a>
+                        @endif
 
+                        @if(auth()->user()?->canManageSites())
                         <!-- Sitios Web -->
                         <a href="{{ route('sites.index') }}"
                            class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('sites.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
@@ -163,7 +171,9 @@
                             </div>
                             Sitios Web
                         </a>
+                        @endif
 
+                        @if(auth()->user()?->canManageUsers())
                         <!-- Usuarios -->
                         <a href="{{ route('users.index') }}"
                            class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('users.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
@@ -174,7 +184,22 @@
                             </div>
                             Usuarios
                         </a>
+                        @endif
 
+                        @if(auth()->user()?->canManageRoles())
+                        <!-- Roles y Permisos -->
+                        <a href="{{ route('roles.index') }}"
+                           class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('roles.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
+                            <div class="w-8 h-8 rounded-lg {{ request()->routeIs('roles.*') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
+                                <svg class="w-4 h-4 {{ request()->routeIs('roles.*') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                                </svg>
+                            </div>
+                            Roles y Permisos
+                        </a>
+                        @endif
+
+                        @if(auth()->user()?->canAccessMaintenance())
                         <!-- Mantenimiento -->
                         <a href="{{ route('maintenance') }}"
                            class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('maintenance') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
@@ -186,7 +211,9 @@
                             </div>
                             Mantenimiento
                         </a>
+                        @endif
 
+                        @if(auth()->user()?->canManageUpdates())
                         <!-- Actualizaciones -->
                         <a href="{{ route('updates') }}"
                            class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('updates') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
@@ -197,6 +224,7 @@
                             </div>
                             Actualizaciones
                         </a>
+                        @endif
                     </div>
                 </div>
                 @endif

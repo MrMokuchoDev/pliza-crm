@@ -113,7 +113,7 @@
                     @php
                         $hasOpenDeal = $lead->deals->contains(fn($d) => !$d->salePhase?->is_closed);
                     @endphp
-                    @if(!$hasOpenDeal)
+                    @if(!$hasOpenDeal && $canCreateDeals)
                         <button wire:click="openCreateDealModal"
                                 class="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -180,10 +180,12 @@
                                 </svg>
                             </div>
                             <p class="text-sm text-gray-500">Sin negocios</p>
+                            @if($canCreateDeals)
                             <button wire:click="openCreateDealModal"
                                     class="mt-2 text-xs text-blue-600 hover:text-blue-800 font-medium">
                                 Crear primer negocio
                             </button>
+                            @endif
                         </div>
                     @endif
                 </div>

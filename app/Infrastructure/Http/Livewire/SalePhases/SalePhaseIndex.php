@@ -6,6 +6,7 @@ namespace App\Infrastructure\Http\Livewire\SalePhases;
 
 use App\Application\SalePhase\DTOs\SalePhaseData;
 use App\Application\SalePhase\Services\SalePhaseService;
+use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
 
 class SalePhaseIndex extends Component
@@ -44,6 +45,7 @@ class SalePhaseIndex extends Component
 
     public function mount(): void
     {
+        // La verificación de acceso se hace en el middleware de la ruta
         $this->loadPhases();
     }
 
@@ -55,12 +57,24 @@ class SalePhaseIndex extends Component
 
     public function openCreateModal(): void
     {
+        if (! Auth::user()?->canManagePhases()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para crear fases');
+
+            return;
+        }
+
         $this->resetForm();
         $this->showModal = true;
     }
 
     public function openEditModal(string $id): void
     {
+        if (! Auth::user()?->canManagePhases()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para editar fases');
+
+            return;
+        }
+
         $service = app(SalePhaseService::class);
         $phase = $service->find($id);
 
@@ -76,6 +90,13 @@ class SalePhaseIndex extends Component
 
     public function save(): void
     {
+        if (! Auth::user()?->canManagePhases()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para gestionar fases');
+            $this->closeModal();
+
+            return;
+        }
+
         $this->validate();
 
         $service = app(SalePhaseService::class);
@@ -101,6 +122,12 @@ class SalePhaseIndex extends Component
 
     public function openDeleteModal(string $id): void
     {
+        if (! Auth::user()?->canManagePhases()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar fases');
+
+            return;
+        }
+
         $this->deletingId = $id;
         $this->transferToPhaseId = null;
         $this->showDeleteModal = true;
@@ -109,6 +136,13 @@ class SalePhaseIndex extends Component
     public function delete(): void
     {
         if (! $this->deletingId) {
+            return;
+        }
+
+        if (! Auth::user()?->canManagePhases()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar fases');
+            $this->closeDeleteModal();
+
             return;
         }
 
@@ -127,6 +161,12 @@ class SalePhaseIndex extends Component
 
     public function updateOrder(array $orderedIds): void
     {
+        if (! Auth::user()?->canManagePhases()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para reordenar fases');
+
+            return;
+        }
+
         $service = app(SalePhaseService::class);
         $service->reorder($orderedIds);
 
@@ -136,6 +176,12 @@ class SalePhaseIndex extends Component
 
     public function setAsDefault(string $id): void
     {
+        if (! Auth::user()?->canManagePhases()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para modificar fases');
+
+            return;
+        }
+
         $service = app(SalePhaseService::class);
 
         if ($service->setAsDefault($id)) {

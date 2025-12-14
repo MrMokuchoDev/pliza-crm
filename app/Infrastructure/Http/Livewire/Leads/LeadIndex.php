@@ -17,6 +17,14 @@ class LeadIndex extends Component
     use HasNotifications;
     use WithPagination;
 
+    public function mount(): void
+    {
+        // Verificar acceso al módulo
+        if (! Auth::user()?->canAccessLeads()) {
+            $this->redirect(route('dashboard'), navigate: true);
+        }
+    }
+
     public bool $showDeleteModal = false;
 
     public ?string $deletingId = null;
@@ -54,6 +62,22 @@ class LeadIndex extends Component
 
     public function openEditModal(string $id): void
     {
+        // Verificar permiso antes de abrir el modal
+        $leadService = app(LeadService::class);
+        $lead = $leadService->find($id);
+
+        if (! $lead) {
+            $this->notifyError('Contacto no encontrado');
+
+            return;
+        }
+
+        if (! Auth::user()?->canEditLead($lead->assigned_to)) {
+            $this->notifyError('No tienes permiso para editar este contacto');
+
+            return;
+        }
+
         $this->dispatch('openLeadModal', leadId: $id);
     }
 
@@ -72,6 +96,19 @@ class LeadIndex extends Component
     public function openDeleteModal(string $id): void
     {
         $leadService = app(LeadService::class);
+        $lead = $leadService->find($id);
+
+        if (! $lead) {
+            $this->notifyError('Contacto no encontrado');
+
+            return;
+        }
+
+        if (! Auth::user()?->canDeleteLead($lead->assigned_to)) {
+            $this->notifyError('No tienes permiso para eliminar este contacto');
+
+            return;
+        }
 
         $this->deletingId = $id;
         $this->deletingName = $leadService->getDisplayName($id);
@@ -90,6 +127,16 @@ class LeadIndex extends Component
         }
 
         $leadService = app(LeadService::class);
+        $lead = $leadService->find($this->deletingId);
+
+        // Verificación adicional de seguridad
+        if (! $lead || ! Auth::user()?->canDeleteLead($lead->assigned_to)) {
+            $this->notifyError('No tienes permiso para eliminar este contacto');
+            $this->closeDeleteModal();
+
+            return;
+        }
+
         $result = $leadService->delete($this->deletingId);
 
         if ($result['success']) {
@@ -145,6 +192,7 @@ class LeadIndex extends Component
             'canCreate' => $user?->canCreateLeads() ?? false,
             'canEdit' => $user?->canEditLeads() ?? false,
             'canDelete' => $user?->canDeleteLeads() ?? false,
+            'canCreateDeals' => $user?->canCreateDeals() ?? false,
         ])->layout('components.layouts.app', ['title' => 'Contactos']);
     }
 }

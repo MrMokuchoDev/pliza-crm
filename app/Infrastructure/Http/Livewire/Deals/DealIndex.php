@@ -22,6 +22,14 @@ class DealIndex extends Component
 
     public int $refreshKey = 0;
 
+    public function mount(): void
+    {
+        // Verificar acceso al módulo
+        if (! Auth::user()?->canAccessDeals()) {
+            $this->redirect(route('dashboard'), navigate: true);
+        }
+    }
+
     // Filters
     public string $search = '';
 
@@ -57,7 +65,47 @@ class DealIndex extends Component
 
     public function openEditModal(string $dealId): void
     {
+        // Verificar permiso antes de abrir el modal
+        $dealService = app(DealService::class);
+        $deal = $dealService->find($dealId);
+
+        if (! $deal) {
+            $this->dispatch('notify', type: 'error', message: 'Negocio no encontrado');
+
+            return;
+        }
+
+        if (! Auth::user()?->canEditDeal($deal->assigned_to)) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para editar este negocio');
+
+            return;
+        }
+
         $this->dispatch('openDealModal', dealId: $dealId);
+    }
+
+    /**
+     * Sobrescribir openDeleteModal del trait para verificar permisos.
+     */
+    public function openDeleteModal(string $id): void
+    {
+        $dealService = app(DealService::class);
+        $deal = $dealService->find($id);
+
+        if (! $deal) {
+            $this->dispatch('notify', type: 'error', message: 'Negocio no encontrado');
+
+            return;
+        }
+
+        if (! Auth::user()?->canDeleteDeal($deal->assigned_to)) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar este negocio');
+
+            return;
+        }
+
+        $this->deletingId = $id;
+        $this->showDeleteModal = true;
     }
 
     #[On('dealSaved')]
@@ -72,6 +120,13 @@ class DealIndex extends Component
     protected function performDelete(string $id): bool
     {
         $dealService = app(DealService::class);
+        $deal = $dealService->find($id);
+
+        // Verificación adicional de seguridad
+        if (! $deal || ! Auth::user()?->canDeleteDeal($deal->assigned_to)) {
+            return false;
+        }
+
         $result = $dealService->delete($id);
 
         return $result['success'];
@@ -89,6 +144,24 @@ class DealIndex extends Component
 
     public function updatePhase(string $dealId, string $phaseId): void
     {
+        // Verificar permiso antes de cambiar fase
+        $dealService = app(DealService::class);
+        $deal = $dealService->find($dealId);
+
+        if (! $deal) {
+            $this->dispatch('notify', type: 'error', message: 'Negocio no encontrado');
+            $this->refreshKey++;
+
+            return;
+        }
+
+        if (! Auth::user()?->canEditDeal($deal->assigned_to)) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para modificar este negocio');
+            $this->refreshKey++;
+
+            return;
+        }
+
         $result = $this->handlePhaseChange($dealId, $phaseId);
 
         if ($result === null) {

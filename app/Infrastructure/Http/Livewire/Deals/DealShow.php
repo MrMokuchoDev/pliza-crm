@@ -9,7 +9,6 @@ use App\Application\DealComment\DTOs\DealCommentData;
 use App\Application\DealComment\Services\DealCommentService;
 use App\Application\SalePhase\Services\SalePhaseService;
 use App\Domain\Deal\Services\DealPhaseService;
-use App\Domain\User\ValueObjects\Permission;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\On;
@@ -59,6 +58,13 @@ class DealShow extends Component
 
     public function mount(string $id): void
     {
+        // Verificar acceso al módulo
+        if (! Auth::user()?->canAccessDeals()) {
+            $this->redirect(route('dashboard'), navigate: true);
+
+            return;
+        }
+
         $this->dealId = $id;
         $this->loadDeal();
     }
@@ -80,19 +86,16 @@ class DealShow extends Component
     {
         /** @var User|null $user */
         $user = Auth::user();
-        if (!$user || !$this->deal) {
+        if (! $user || ! $this->deal) {
             $this->canEditDeal = false;
             $this->canDeleteDeal = false;
+
             return;
         }
 
-        // Puede editar si tiene permiso update_all O el deal está asignado a él
-        $this->canEditDeal = $user->hasPermission(Permission::DEALS_UPDATE_ALL)
-            || ($this->deal->assigned_to && $this->deal->assigned_to === $user->uuid);
-
-        // Puede eliminar si tiene permiso delete_all O el deal está asignado a él
-        $this->canDeleteDeal = $user->hasPermission(Permission::DEALS_DELETE_ALL)
-            || ($this->deal->assigned_to && $this->deal->assigned_to === $user->uuid);
+        // Usar los métodos centralizados del modelo User
+        $this->canEditDeal = $user->canEditDeal($this->deal->assigned_to);
+        $this->canDeleteDeal = $user->canDeleteDeal($this->deal->assigned_to);
     }
 
     public function updatePhase(): void

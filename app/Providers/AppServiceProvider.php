@@ -13,6 +13,7 @@ use App\Infrastructure\Http\Livewire\Leads\LeadShow;
 use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
 use App\Infrastructure\Http\Livewire\Sites\SiteIndex;
+use App\Infrastructure\Http\Livewire\Roles\RolePermissions;
 use App\Infrastructure\Http\Livewire\Updates\UpdatesPanel;
 use App\Infrastructure\Http\Livewire\Users\UserIndex;
 use Illuminate\Support\ServiceProvider;
@@ -47,5 +48,6 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.infrastructure.http.livewire.sites.site-index', SiteIndex::class);
         Livewire::component('app.infrastructure.http.livewire.updates.updates-panel', UpdatesPanel::class);
         Livewire::component('app.infrastructure.http.livewire.users.user-index', UserIndex::class);
+        Livewire::component('app.infrastructure.http.livewire.roles.role-permissions', RolePermissions::class);
     }
 }

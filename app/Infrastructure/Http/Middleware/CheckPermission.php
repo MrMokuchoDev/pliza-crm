@@ -11,7 +11,9 @@ use Symfony\Component\HttpFoundation\Response;
 /**
  * Middleware para verificar que el usuario tiene un permiso específico.
  *
- * Uso: middleware('permission:leads.view_all')
+ * Uso:
+ *   - Un permiso: middleware('permission:leads.view_all')
+ *   - Múltiples permisos (OR): middleware('permission:leads.view_all|leads.view_own')
  */
 class CheckPermission
 {
@@ -19,9 +21,9 @@ class CheckPermission
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @param  string  $permission  El permiso requerido
+     * @param  string  $permissions  El/los permiso(s) requerido(s), separados por |
      */
-    public function handle(Request $request, Closure $next, string $permission): Response
+    public function handle(Request $request, Closure $next, string $permissions): Response
     {
         $user = $request->user();
 
@@ -29,7 +31,10 @@ class CheckPermission
             return redirect()->route('login');
         }
 
-        if (! $user->hasPermission($permission)) {
+        // Soporta múltiples permisos separados por |
+        $permissionList = explode('|', $permissions);
+
+        if (! $user->hasAnyPermission($permissionList)) {
             abort(403, 'No tienes permiso para realizar esta acción.');
         }
 
