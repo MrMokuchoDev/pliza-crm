@@ -10,6 +10,7 @@ use App\Infrastructure\Http\Livewire\Leads\LeadShow;
 use App\Infrastructure\Http\Livewire\Maintenance\MaintenancePanel;
 use App\Infrastructure\Http\Livewire\SalePhases\SalePhaseIndex;
 use App\Infrastructure\Http\Livewire\Sites\SiteIndex;
+use App\Infrastructure\Http\Livewire\Sites\SiteStatistics;
 use App\Infrastructure\Http\Livewire\Roles\RolePermissions;
 use App\Infrastructure\Http\Livewire\Updates\UpdatesPanel;
 use App\Infrastructure\Http\Livewire\Users\UserIndex;
@@ -48,6 +49,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/sites', SiteIndex::class)
         ->middleware('permission:sites.manage|sites.view|sites.create|sites.update|sites.delete')
         ->name('sites.index');
+
+    Route::get('/sites/{siteId}/statistics', SiteStatistics::class)
+        ->middleware('permission:sites.manage|sites.view')
+        ->name('sites.statistics');
 
     // Users - requiere permiso users.view o cualquier permiso de usuarios
     Route::get('/usuarios', UserIndex::class)
