@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Roles;
 
-use App\Infrastructure\Persistence\Eloquent\PermissionModel;
-use App\Infrastructure\Persistence\Eloquent\RoleModel;
+use App\Application\Role\DTOs\RoleDTO;
+use App\Application\Role\Services\RoleService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Component;
@@ -36,12 +36,14 @@ class RolePermissions extends Component
 
     public ?string $deletingRoleId = null;
 
+    private function getRoleService(): RoleService
+    {
+        return app(RoleService::class);
+    }
+
     public function mount(): void
     {
-        // La verificación de acceso se hace en el middleware de la ruta
-
-        // Seleccionar el primer rol por defecto (ordenado por nivel descendente)
-        $firstRole = RoleModel::orderBy('level', 'desc')->first();
+        $firstRole = $this->getRoleService()->getFirst();
         if ($firstRole) {
             $this->selectedRoleId = $firstRole->id;
             $this->loadRolePermissions();
@@ -63,15 +65,7 @@ class RolePermissions extends Component
             return;
         }
 
-        $role = RoleModel::with('permissions')->find($this->selectedRoleId);
-        if (! $role) {
-            $this->rolePermissions = [];
-            $this->originalPermissions = [];
-
-            return;
-        }
-
-        $this->rolePermissions = $role->permissions->pluck('id')->toArray();
+        $this->rolePermissions = $this->getRoleService()->getRolePermissionIds($this->selectedRoleId);
         $this->originalPermissions = $this->rolePermissions;
         $this->hasChanges = false;
     }
@@ -89,17 +83,15 @@ class RolePermissions extends Component
 
     public function toggleGroup(string $group): void
     {
-        $permissions = PermissionModel::where('group', $group)->get();
+        $service = $this->getRoleService();
+        $permissions = $service->getPermissionsByGroup($group);
         $groupPermissionIds = $permissions->pluck('id')->toArray();
 
-        // Verificar si todos los permisos del grupo están seleccionados
         $allSelected = empty(array_diff($groupPermissionIds, $this->rolePermissions));
 
         if ($allSelected) {
-            // Deseleccionar todos
             $this->rolePermissions = array_values(array_diff($this->rolePermissions, $groupPermissionIds));
         } else {
-            // Seleccionar todos
             $this->rolePermissions = array_values(array_unique(array_merge($this->rolePermissions, $groupPermissionIds)));
         }
 
@@ -108,7 +100,9 @@ class RolePermissions extends Component
 
     public function selectAll(): void
     {
-        $this->rolePermissions = PermissionModel::pluck('id')->toArray();
+        $service = $this->getRoleService();
+        $allPermissions = $service->getGroupedPermissions()->flatten();
+        $this->rolePermissions = $allPermissions->pluck('id')->toArray();
         $this->calculateChanges();
     }
 
@@ -127,37 +121,33 @@ class RolePermissions extends Component
     }
 
     /**
-     * Obtiene los cambios pendientes agrupados por categoría.
-     *
-     * @return array{added: array, removed: array}
+     * @return array{added: array, removed: array, addedCount: int, removedCount: int}
      */
     public function getChangesPreviewProperty(): array
     {
+        $service = $this->getRoleService();
         $addedIds = array_diff($this->rolePermissions, $this->originalPermissions);
         $removedIds = array_diff($this->originalPermissions, $this->rolePermissions);
 
         $added = [];
         $removed = [];
 
-        if (! empty($addedIds)) {
-            $addedPermissions = PermissionModel::whereIn('id', $addedIds)->get();
-            foreach ($addedPermissions as $permission) {
-                $group = $permission->group;
-                if (! isset($added[$group])) {
-                    $added[$group] = [];
-                }
-                $added[$group][] = $permission->display_name;
-            }
-        }
+        $groupedPermissions = $service->getGroupedPermissions();
 
-        if (! empty($removedIds)) {
-            $removedPermissions = PermissionModel::whereIn('id', $removedIds)->get();
-            foreach ($removedPermissions as $permission) {
-                $group = $permission->group;
-                if (! isset($removed[$group])) {
-                    $removed[$group] = [];
+        foreach ($groupedPermissions as $group => $permissions) {
+            foreach ($permissions as $permission) {
+                if (in_array($permission->id, $addedIds)) {
+                    if (! isset($added[$group])) {
+                        $added[$group] = [];
+                    }
+                    $added[$group][] = $permission->displayName;
                 }
-                $removed[$group][] = $permission->display_name;
+                if (in_array($permission->id, $removedIds)) {
+                    if (! isset($removed[$group])) {
+                        $removed[$group] = [];
+                    }
+                    $removed[$group][] = $permission->displayName;
+                }
             }
         }
 
@@ -171,7 +161,6 @@ class RolePermissions extends Component
 
     public function save(): void
     {
-        // Verificar permisos antes de guardar
         if (! Auth::user()?->canManageRoles()) {
             $this->dispatch('notify', type: 'error', message: 'No tienes permiso para gestionar roles');
 
@@ -182,24 +171,36 @@ class RolePermissions extends Component
             return;
         }
 
-        $role = RoleModel::find($this->selectedRoleId);
-        if (! $role) {
-            return;
+        $service = $this->getRoleService();
+        $role = $service->getById($this->selectedRoleId);
+
+        // Proteger rol admin: no permitir quitar permisos
+        if ($role && $service->isAdminRole($role)) {
+            $allPermissions = $service->getGroupedPermissions()->flatten()->pluck('id')->toArray();
+            $missingPermissions = array_diff($allPermissions, $this->rolePermissions);
+
+            if (! empty($missingPermissions)) {
+                $this->dispatch('notify', type: 'error', message: 'El rol administrador debe tener todos los permisos');
+                $this->rolePermissions = $allPermissions;
+                $this->calculateChanges();
+
+                return;
+            }
         }
 
-        // Sincronizar permisos
-        $role->permissions()->sync($this->rolePermissions);
+        $success = $service->syncPermissions($this->selectedRoleId, $this->rolePermissions);
 
-        // Actualizar permisos originales
-        $this->originalPermissions = $this->rolePermissions;
-        $this->hasChanges = false;
-
-        $this->dispatch('notify', type: 'success', message: 'Permisos actualizados correctamente');
+        if ($success) {
+            $this->originalPermissions = $this->rolePermissions;
+            $this->hasChanges = false;
+            $this->dispatch('notify', type: 'success', message: 'Permisos actualizados correctamente');
+        } else {
+            $this->dispatch('notify', type: 'error', message: 'Error al actualizar permisos');
+        }
     }
 
     public function resetToDefault(): void
     {
-        // Verificar permisos
         if (! Auth::user()?->canManageRoles()) {
             $this->dispatch('notify', type: 'error', message: 'No tienes permiso para gestionar roles');
 
@@ -210,18 +211,14 @@ class RolePermissions extends Component
             return;
         }
 
-        $role = RoleModel::find($this->selectedRoleId);
+        $service = $this->getRoleService();
+        $role = $service->getById($this->selectedRoleId);
+
         if (! $role) {
             return;
         }
 
-        // Obtener permisos por defecto según el rol
-        $defaultPermissions = $this->getDefaultPermissionsForRole($role->name);
-
-        // Obtener IDs de permisos
-        $permissionIds = PermissionModel::whereIn('name', $defaultPermissions)->pluck('id')->toArray();
-
-        $this->rolePermissions = $permissionIds;
+        $this->rolePermissions = $service->getDefaultPermissionIds($role->name);
         $this->calculateChanges();
 
         $this->dispatch('notify', type: 'info', message: 'Permisos restaurados a valores por defecto. Guarda para aplicar.');
@@ -251,7 +248,9 @@ class RolePermissions extends Component
             return;
         }
 
-        $role = RoleModel::find($roleId);
+        $service = $this->getRoleService();
+        $role = $service->getById($roleId);
+
         if (! $role) {
             return;
         }
@@ -283,47 +282,44 @@ class RolePermissions extends Component
             'roleLevel.max' => 'El nivel no puede ser mayor a 99 (reservado para admin)',
         ]);
 
+        $service = $this->getRoleService();
+
         if ($this->editingRoleId) {
-            // Actualizar rol existente
-            $role = RoleModel::find($this->editingRoleId);
-            if (! $role) {
+            $existingRole = $service->getById($this->editingRoleId);
+
+            if (! $existingRole) {
                 $this->dispatch('notify', type: 'error', message: 'Rol no encontrado');
 
                 return;
             }
 
-            // No permitir cambiar el nombre del rol admin
-            if ($role->name === 'admin' && $this->roleName !== 'admin') {
+            if ($existingRole->name === 'admin' && $this->roleName !== 'admin') {
                 $this->dispatch('notify', type: 'error', message: 'No puedes cambiar el nombre del rol admin');
 
                 return;
             }
 
-            $role->update([
-                'name' => $this->roleName,
-                'display_name' => ucfirst(str_replace('_', ' ', $this->roleName)),
-                'description' => $this->roleDescription ?: null,
-                'level' => $role->name === 'admin' ? 100 : $this->roleLevel,
-            ]);
+            $role = $service->update(
+                $this->editingRoleId,
+                $this->roleName,
+                $this->roleDescription ?: null,
+                $this->roleLevel
+            );
 
             $this->dispatch('notify', type: 'success', message: 'Rol actualizado correctamente');
         } else {
-            // Verificar que no exista un rol con el mismo nombre
-            if (RoleModel::where('name', $this->roleName)->exists()) {
+            if ($service->existsByName($this->roleName)) {
                 $this->dispatch('notify', type: 'error', message: 'Ya existe un rol con ese nombre');
 
                 return;
             }
 
-            // Crear nuevo rol
-            $role = RoleModel::create([
-                'name' => $this->roleName,
-                'display_name' => ucfirst(str_replace('_', ' ', $this->roleName)),
-                'description' => $this->roleDescription ?: null,
-                'level' => $this->roleLevel,
-            ]);
+            $role = $service->create(
+                $this->roleName,
+                $this->roleDescription ?: null,
+                $this->roleLevel
+            );
 
-            // Seleccionar el nuevo rol
             $this->selectedRoleId = $role->id;
             $this->loadRolePermissions();
 
@@ -347,13 +343,14 @@ class RolePermissions extends Component
             return;
         }
 
-        $role = RoleModel::find($roleId);
+        $service = $this->getRoleService();
+        $role = $service->getById($roleId);
+
         if (! $role) {
             return;
         }
 
-        // No permitir eliminar rol admin
-        if ($role->name === 'admin') {
+        if ($service->isAdminRole($role)) {
             $this->dispatch('notify', type: 'error', message: 'No puedes eliminar el rol de administrador');
 
             return;
@@ -375,44 +372,21 @@ class RolePermissions extends Component
             return;
         }
 
-        $role = RoleModel::find($this->deletingRoleId);
-        if (! $role) {
-            $this->closeDeleteRoleModal();
+        $service = $this->getRoleService();
+        $result = $service->delete($this->deletingRoleId);
 
-            return;
+        if ($result['success']) {
+            if ($this->selectedRoleId === $this->deletingRoleId) {
+                $firstRole = $service->getFirst();
+                $this->selectedRoleId = $firstRole?->id;
+                $this->loadRolePermissions();
+            }
+
+            $this->dispatch('notify', type: 'success', message: $result['message']);
+        } else {
+            $this->dispatch('notify', type: 'error', message: $result['message']);
         }
 
-        // No permitir eliminar rol admin
-        if ($role->name === 'admin') {
-            $this->dispatch('notify', type: 'error', message: 'No puedes eliminar el rol de administrador');
-            $this->closeDeleteRoleModal();
-
-            return;
-        }
-
-        // Verificar si hay usuarios con este rol
-        $usersCount = \App\Models\User::where('role_id', $role->id)->count();
-        if ($usersCount > 0) {
-            $this->dispatch('notify', type: 'error', message: "No puedes eliminar este rol porque tiene {$usersCount} usuario(s) asignado(s)");
-            $this->closeDeleteRoleModal();
-
-            return;
-        }
-
-        // Eliminar permisos del rol
-        $role->permissions()->detach();
-
-        // Eliminar rol
-        $role->delete();
-
-        // Si el rol eliminado era el seleccionado, seleccionar otro
-        if ($this->selectedRoleId === $this->deletingRoleId) {
-            $firstRole = RoleModel::orderBy('level', 'desc')->first();
-            $this->selectedRoleId = $firstRole?->id;
-            $this->loadRolePermissions();
-        }
-
-        $this->dispatch('notify', type: 'success', message: 'Rol eliminado correctamente');
         $this->closeDeleteRoleModal();
     }
 
@@ -430,67 +404,48 @@ class RolePermissions extends Component
         $this->roleLevel = 10;
     }
 
-    /**
-     * Obtiene los permisos por defecto para un rol.
-     *
-     * @return string[]
-     */
-    private function getDefaultPermissionsForRole(string $roleName): array
-    {
-        return match ($roleName) {
-            'admin' => PermissionModel::pluck('name')->toArray(),
-
-            'manager' => [
-                'leads.view_all',
-                'leads.view_own',
-                'leads.create',
-                'leads.update_all',
-                'leads.delete_all',
-                'leads.assign',
-                'deals.view_all',
-                'deals.view_own',
-                'deals.create',
-                'deals.update_all',
-                'deals.delete_all',
-                'deals.assign',
-                'phases.manage',
-                'reports.view_all',
-            ],
-
-            'sales' => [
-                'leads.view_own',
-                'leads.create',
-                'leads.update_own',
-                'leads.delete_own',
-                'deals.view_own',
-                'deals.create',
-                'deals.update_own',
-                'deals.delete_own',
-                'reports.view_own',
-            ],
-
-            default => [],
-        };
-    }
+    // ========================================
+    // Computed Properties para la vista
+    // ========================================
 
     public function getGroupedPermissionsProperty(): Collection
     {
-        return PermissionModel::getGrouped();
+        return $this->getRoleService()->getGroupedPermissions();
     }
 
     public function getRolesProperty(): Collection
     {
-        return RoleModel::orderBy('level', 'desc')->get();
+        return $this->getRoleService()->getAll();
     }
 
-    public function getSelectedRoleProperty(): ?RoleModel
+    public function getSelectedRoleProperty(): ?RoleDTO
     {
-        return $this->selectedRoleId ? RoleModel::find($this->selectedRoleId) : null;
+        return $this->selectedRoleId
+            ? $this->getRoleService()->getById($this->selectedRoleId)
+            : null;
+    }
+
+    public function getDeletingRoleProperty(): ?RoleDTO
+    {
+        return $this->deletingRoleId
+            ? $this->getRoleService()->getById($this->deletingRoleId)
+            : null;
+    }
+
+    public function getDeletingRoleUsersCountProperty(): int
+    {
+        if (! $this->deletingRoleId) {
+            return 0;
+        }
+
+        $result = $this->getRoleService()->checkHasUsers($this->deletingRoleId);
+
+        return $result['count'];
     }
 
     public function isGroupFullySelected(string $group): bool
     {
-        $permissions = PermissionModel::where('group', $group)->get();
+        $permissions = $this->getRoleService()->getPermissionsByGroup($group);
         $groupPermissionIds = $permissions->pluck('id')->toArray();
 
         return empty(array_diff($groupPermissionIds, $this->rolePermissions));
@@ -498,7 +453,7 @@ class RolePermissions extends Component
 
     public function isGroupPartiallySelected(string $group): bool
     {
-        $permissions = PermissionModel::where('group', $group)->get();
+        $permissions = $this->getRoleService()->getPermissionsByGroup($group);
         $groupPermissionIds = $permissions->pluck('id')->toArray();
 
         $selectedInGroup = array_intersect($groupPermissionIds, $this->rolePermissions);
@@ -508,10 +463,15 @@ class RolePermissions extends Component
 
     public function getSelectedCountInGroup(string $group): int
     {
-        $permissions = PermissionModel::where('group', $group)->get();
+        $permissions = $this->getRoleService()->getPermissionsByGroup($group);
         $groupPermissionIds = $permissions->pluck('id')->toArray();
 
         return count(array_intersect($groupPermissionIds, $this->rolePermissions));
+    }
+
+    public function getTotalPermissionsCountProperty(): int
+    {
+        return $this->getRoleService()->getGroupedPermissions()->flatten()->count();
     }
 
     public function render()

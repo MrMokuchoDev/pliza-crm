@@ -125,7 +125,7 @@
                         <span class="text-gray-500">
                             <span class="font-semibold text-gray-900">{{ count($rolePermissions) }}</span>
                             de
-                            <span class="font-semibold text-gray-900">{{ \App\Infrastructure\Persistence\Eloquent\PermissionModel::count() }}</span>
+                            <span class="font-semibold text-gray-900">{{ $this->totalPermissionsCount }}</span>
                             permisos activos
                         </span>
                         @if($hasChanges)
@@ -230,7 +230,7 @@
                                                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 cursor-pointer">
                                         <div class="flex-1 min-w-0">
                                             <span class="block text-sm text-gray-900 group-hover:text-blue-600 transition">
-                                                {{ $permission->display_name }}
+                                                {{ $permission->displayName }}
                                             </span>
                                         </div>
                                     </label>
@@ -415,10 +415,6 @@
 
     <!-- Modal Eliminar Rol -->
     @if($showDeleteRoleModal)
-        @php
-            $deletingRole = \App\Infrastructure\Persistence\Eloquent\RoleModel::find($deletingRoleId);
-            $usersCount = $deletingRole ? \App\Models\User::where('role_id', $deletingRole->id)->count() : 0;
-        @endphp
         <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" wire:click="closeDeleteRoleModal"></div>
@@ -434,15 +430,15 @@
                             <div>
                                 <h3 class="text-lg font-semibold text-gray-900">Eliminar Rol</h3>
                                 <p class="text-sm text-gray-500 mt-1">
-                                    Estas a punto de eliminar el rol <strong>{{ $deletingRole?->name ?? 'desconocido' }}</strong>.
+                                    Estas a punto de eliminar el rol <strong>{{ $this->deletingRole?->name ?? 'desconocido' }}</strong>.
                                 </p>
                             </div>
                         </div>
 
-                        @if($usersCount > 0)
+                        @if($this->deletingRoleUsersCount > 0)
                             <div class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
                                 <p class="text-sm text-amber-800">
-                                    <strong>Atencion:</strong> Este rol tiene {{ $usersCount }} usuario(s) asignado(s).
+                                    <strong>Atencion:</strong> Este rol tiene {{ $this->deletingRoleUsersCount }} usuario(s) asignado(s).
                                     Debes reasignarlos a otro rol antes de eliminar este.
                                 </p>
                             </div>
@@ -453,7 +449,7 @@
                                 class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition">
                             Cancelar
                         </button>
-                        @if($usersCount === 0)
+                        @if($this->deletingRoleUsersCount === 0)
                             <button type="button" wire:click="deleteRole"
                                     class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
                                 Eliminar Rol
