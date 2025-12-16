@@ -13,15 +13,27 @@ use App\Application\Site\DTOs\SiteData;
 use App\Application\Site\Handlers\CreateSiteHandler;
 use App\Application\Site\Handlers\DeleteSiteHandler;
 use App\Application\Site\Handlers\FindActiveSiteHandler;
+use App\Application\Site\Handlers\GetActiveSitesHandler;
+use App\Application\Site\Handlers\GetAllSitesHandler;
+use App\Application\Site\Handlers\GetSiteByApiKeyHandler;
+use App\Application\Site\Handlers\GetSiteByIdHandler;
+use App\Application\Site\Handlers\GetSiteLeadsCountHandler;
+use App\Application\Site\Handlers\GetSiteStatisticsHandler;
 use App\Application\Site\Handlers\RegenerateApiKeyHandler;
 use App\Application\Site\Handlers\ToggleSiteActiveHandler;
 use App\Application\Site\Handlers\UpdateSiteHandler;
 use App\Application\Site\Queries\FindActiveSiteQuery;
+use App\Application\Site\Queries\GetActiveSitesQuery;
+use App\Application\Site\Queries\GetAllSitesQuery;
+use App\Application\Site\Queries\GetSiteByApiKeyQuery;
+use App\Application\Site\Queries\GetSiteByIdQuery;
+use App\Application\Site\Queries\GetSiteLeadsCountQuery;
+use App\Application\Site\Queries\GetSiteStatisticsQuery;
 use App\Infrastructure\Persistence\Eloquent\SiteModel;
 use Illuminate\Support\Collection;
 
 /**
- * Servicio de aplicación para gestionar Sitios Web.
+ * Servicio de aplicacion para gestionar Sitios Web.
  * Orquesta los comandos y handlers.
  */
 class SiteService
@@ -33,6 +45,12 @@ class SiteService
         private readonly ToggleSiteActiveHandler $toggleActiveHandler,
         private readonly RegenerateApiKeyHandler $regenerateApiKeyHandler,
         private readonly FindActiveSiteHandler $findActiveSiteHandler,
+        private readonly GetSiteStatisticsHandler $statisticsHandler,
+        private readonly GetSiteByIdHandler $getSiteByIdHandler,
+        private readonly GetAllSitesHandler $getAllSitesHandler,
+        private readonly GetActiveSitesHandler $getActiveSitesHandler,
+        private readonly GetSiteByApiKeyHandler $getSiteByApiKeyHandler,
+        private readonly GetSiteLeadsCountHandler $getSiteLeadsCountHandler,
     ) {}
 
     /**
@@ -96,7 +114,9 @@ class SiteService
      */
     public function find(string $siteId): ?SiteModel
     {
-        return SiteModel::find($siteId);
+        $query = new GetSiteByIdQuery($siteId);
+
+        return $this->getSiteByIdHandler->handle($query);
     }
 
     /**
@@ -110,13 +130,15 @@ class SiteService
     }
 
     /**
-     * Obtener todos los sitios ordenados por fecha de creación.
+     * Obtener todos los sitios ordenados por fecha de creacion.
      *
      * @return Collection<int, SiteModel>
      */
     public function getAllOrdered(): Collection
     {
-        return SiteModel::orderBy('created_at', 'desc')->get();
+        $query = new GetAllSitesQuery('created_at', 'desc');
+
+        return $this->getAllSitesHandler->handle($query);
     }
 
     /**
@@ -126,9 +148,9 @@ class SiteService
      */
     public function getActiveSites(): Collection
     {
-        return SiteModel::where('is_active', true)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $query = new GetActiveSitesQuery('created_at', 'desc');
+
+        return $this->getActiveSitesHandler->handle($query);
     }
 
     /**
@@ -136,7 +158,9 @@ class SiteService
      */
     public function findByApiKey(string $apiKey): ?SiteModel
     {
-        return SiteModel::where('api_key', $apiKey)->first();
+        $query = new GetSiteByApiKeyQuery($apiKey);
+
+        return $this->getSiteByApiKeyHandler->handle($query);
     }
 
     /**
@@ -144,8 +168,28 @@ class SiteService
      */
     public function getLeadsCount(string $siteId): int
     {
-        $site = SiteModel::find($siteId);
+        $query = new GetSiteLeadsCountQuery($siteId);
 
-        return $site ? $site->leads()->count() : 0;
+        return $this->getSiteLeadsCountHandler->handle($query);
+    }
+
+    /**
+     * Obtener estadisticas de un sitio.
+     *
+     * @return array{
+     *     site: SiteModel|null,
+     *     totals: array{leads: int, deals: int, won: int, lost: int, value: float},
+     *     conversion_rate: float,
+     *     leads_by_source: array,
+     *     leads_by_period: array,
+     *     deals_by_phase: array,
+     *     recent_leads: \Illuminate\Database\Eloquent\Collection
+     * }
+     */
+    public function getStatistics(string $siteId, ?string $dateFrom = null, ?string $dateTo = null): array
+    {
+        $query = new GetSiteStatisticsQuery($siteId, $dateFrom, $dateTo);
+
+        return $this->statisticsHandler->handle($query);
     }
 }
