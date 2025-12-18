@@ -120,7 +120,7 @@
                         </div>
                         <div>
                             <h3 class="font-semibold text-gray-800 dark:text-white">Base de Datos</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Migraciones y seeders</p>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Migraciones</p>
                         </div>
                     </div>
                 </div>
@@ -143,7 +143,7 @@
 
                     <button wire:click="runCommand('migrate')"
                             wire:loading.attr="disabled"
-                            wire:confirm="&iquest;Ejecutar migraciones pendientes? Esta acci&oacute;n puede modificar la base de datos."
+                            wire:confirm="&iquest;Ejecutar migraciones pendientes? Esta acci&oacute;n aplica cambios de estructura a la base de datos."
                             class="w-full text-left px-4 py-3 rounded-lg border border-amber-200 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-300 dark:hover:border-amber-600 transition flex items-center justify-between group disabled:opacity-50">
                         <div>
                             <p class="font-medium text-amber-700 dark:text-amber-400 text-sm">Ejecutar Migraciones</p>
@@ -153,40 +153,6 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
                         </svg>
                         <svg wire:loading wire:target="runCommand('migrate')" class="w-5 h-5 text-amber-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
-                    </button>
-
-                    <button wire:click="runCommand('db:seed')"
-                            wire:loading.attr="disabled"
-                            wire:confirm="&iquest;Ejecutar seeders? Esta acci&oacute;n puede modificar datos existentes."
-                            class="w-full text-left px-4 py-3 rounded-lg border border-amber-200 dark:border-amber-700 hover:bg-amber-50 dark:hover:bg-amber-900/20 hover:border-amber-300 dark:hover:border-amber-600 transition flex items-center justify-between group disabled:opacity-50">
-                        <div>
-                            <p class="font-medium text-amber-700 dark:text-amber-400 text-sm">Ejecutar Seeders</p>
-                            <p class="text-xs text-amber-500 dark:text-amber-500">db:seed --force</p>
-                        </div>
-                        <svg wire:loading.remove wire:target="runCommand('db:seed')" class="w-5 h-5 text-amber-400 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
-                        </svg>
-                        <svg wire:loading wire:target="runCommand('db:seed')" class="w-5 h-5 text-amber-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
-                        </svg>
-                    </button>
-
-                    <button wire:click="runCommand('migrate:rollback')"
-                            wire:loading.attr="disabled"
-                            wire:confirm="&iexcl;PELIGRO! &iquest;Revertir la &uacute;ltima migraci&oacute;n? Esta acci&oacute;n puede causar p&eacute;rdida de datos."
-                            class="w-full text-left px-4 py-3 rounded-lg border border-red-200 dark:border-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:border-red-300 dark:hover:border-red-600 transition flex items-center justify-between group disabled:opacity-50">
-                        <div>
-                            <p class="font-medium text-red-700 dark:text-red-400 text-sm">Rollback Migraci&oacute;n</p>
-                            <p class="text-xs text-red-400 dark:text-red-500">migrate:rollback</p>
-                        </div>
-                        <svg wire:loading.remove wire:target="runCommand('migrate:rollback')" class="w-5 h-5 text-red-400 group-hover:text-red-600 dark:group-hover:text-red-400 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                        <svg wire:loading wire:target="runCommand('migrate:rollback')" class="w-5 h-5 text-red-600 animate-spin" fill="none" viewBox="0 0 24 24">
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
                         </svg>
