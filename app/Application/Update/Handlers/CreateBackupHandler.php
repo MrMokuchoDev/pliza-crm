@@ -113,6 +113,11 @@ class CreateBackupHandler
             ];
         }
 
+        // Check if shell functions are available (disabled in most shared hosting)
+        if (!$this->canUseShellFunctions()) {
+            return $this->backupDatabasePHP($backupDir, $config);
+        }
+
         // Check if mysqldump is available
         $mysqldumpPath = $this->findMysqldump();
         if (!$mysqldumpPath) {
@@ -140,7 +145,7 @@ class CreateBackupHandler
             escapeshellarg($backupFile)
         );
 
-        exec($command, $output, $returnCode);
+        \exec($command, $output, $returnCode);
 
         if ($returnCode !== 0 || !file_exists($backupFile) || filesize($backupFile) === 0) {
             // Fallback to PHP-based backup
@@ -151,6 +156,17 @@ class CreateBackupHandler
             'success' => true,
             'message' => 'Base de datos respaldada via mysqldump.',
         ];
+    }
+
+    /**
+     * Check if shell functions (exec, shell_exec) are available.
+     */
+    private function canUseShellFunctions(): bool
+    {
+        $disabled = explode(',', ini_get('disable_functions'));
+        $disabled = array_map('trim', $disabled);
+
+        return !in_array('exec', $disabled) && !in_array('shell_exec', $disabled);
     }
 
     /**
@@ -166,15 +182,17 @@ class CreateBackupHandler
         ];
 
         foreach ($paths as $path) {
-            if (is_executable($path)) {
+            if (@is_executable($path)) {
                 return $path;
             }
         }
 
-        // Check if available in PATH
-        $which = shell_exec('which mysqldump 2>/dev/null');
-        if ($which && is_executable(trim($which))) {
-            return trim($which);
+        // Check if available in PATH (only if shell_exec is available)
+        if ($this->canUseShellFunctions()) {
+            $which = \shell_exec('which mysqldump 2>/dev/null');
+            if ($which && @is_executable(trim($which))) {
+                return trim($which);
+            }
         }
 
         return null;
@@ -218,7 +236,8 @@ class CreateBackupHandler
                             if ($value === null) {
                                 return 'NULL';
                             }
-                            return $pdo->quote($value);
+                            // Cast to string for PDO::quote() compatibility
+                            return $pdo->quote((string) $value);
                         }, array_values($row));
 
                         $output[] = "INSERT INTO `{$table}` ({$columnList}) VALUES (" . implode(', ', $values) . ");";
