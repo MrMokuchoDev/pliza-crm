@@ -13,10 +13,10 @@
     </div>
 
     <!-- Phases List -->
-    <div class="bg-white rounded-lg shadow">
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow border border-gray-100 dark:border-gray-700">
         <ul
             id="phases-list"
-            class="divide-y divide-gray-200"
+            class="divide-y divide-gray-200 dark:divide-gray-700"
             x-data
             x-init="
                 new Sortable($el, {
@@ -30,10 +30,10 @@
             "
         >
             @forelse($phases as $phase)
-                <li data-id="{{ $phase['id'] }}" class="flex items-center justify-between p-4 hover:bg-gray-50 transition">
+                <li data-id="{{ $phase['id'] }}" class="flex items-center justify-between p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
                     <div class="flex items-center gap-4">
                         <!-- Drag Handle -->
-                        <button class="drag-handle cursor-grab text-gray-400 hover:text-gray-600">
+                        <button class="drag-handle cursor-grab text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8h16M4 16h16"/>
                             </svg>
@@ -47,13 +47,13 @@
 
                         <!-- Phase Info -->
                         <div>
-                            <span class="font-medium text-gray-900">{{ $phase['name'] }}</span>
+                            <span class="font-medium text-gray-900 dark:text-white">{{ $phase['name'] }}</span>
                             <div class="flex items-center gap-2 mt-1">
                                 @if($phase['is_default'])
-                                    <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">Por defecto</span>
+                                    <span class="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-400 px-2 py-0.5 rounded">Por defecto</span>
                                 @endif
                                 @if($phase['is_closed'])
-                                    <span class="text-xs {{ $phase['is_won'] ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }} px-2 py-0.5 rounded">
+                                    <span class="text-xs {{ $phase['is_won'] ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-400' }} px-2 py-0.5 rounded">
                                         {{ $phase['is_won'] ? 'Ganado' : 'Perdido' }}
                                     </span>
                                 @endif
@@ -66,7 +66,7 @@
                         @if(!$phase['is_default'] && !$phase['is_closed'])
                             <button
                                 wire:click="setAsDefault('{{ $phase['id'] }}')"
-                                class="text-gray-400 hover:text-blue-600 p-2"
+                                class="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-2"
                                 title="Establecer como defecto"
                             >
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -76,7 +76,7 @@
                         @endif
                         <button
                             wire:click="openEditModal('{{ $phase['id'] }}')"
-                            class="text-gray-400 hover:text-blue-600 p-2"
+                            class="text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 p-2"
                             title="Editar"
                         >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -85,7 +85,7 @@
                         </button>
                         <button
                             wire:click="openDeleteModal('{{ $phase['id'] }}')"
-                            class="text-gray-400 hover:text-red-600 p-2"
+                            class="text-gray-400 hover:text-red-600 dark:hover:text-red-400 p-2"
                             title="Eliminar"
                         >
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -95,7 +95,7 @@
                     </div>
                 </li>
             @empty
-                <li class="p-8 text-center text-gray-500">
+                <li class="p-8 text-center text-gray-500 dark:text-gray-400">
                     No hay fases de venta configuradas
                 </li>
             @endforelse
@@ -105,12 +105,12 @@
     <!-- Create/Edit Modal -->
     @if($showModal)
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" x-data x-cloak>
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4" @click.away="$wire.closeModal()">
-                <div class="flex justify-between items-center p-4 border-b">
-                    <h3 class="text-lg font-semibold">
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4" @click.away="$wire.closeModal()">
+                <div class="flex justify-between items-center p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                         {{ $editingId ? 'Editar Fase' : 'Nueva Fase' }}
                     </h3>
-                    <button wire:click="closeModal" class="text-gray-400 hover:text-gray-600">
+                    <button wire:click="closeModal" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                         </svg>
@@ -120,29 +120,29 @@
                 <form wire:submit="save" class="p-4 space-y-4">
                     <!-- Name -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
                         <input
                             type="text"
                             wire:model="name"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                             placeholder="Ej: En negociación"
                         >
-                        @error('name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        @error('name') <span class="text-red-500 dark:text-red-400 text-sm">{{ $message }}</span> @enderror
                     </div>
 
                     <!-- Color -->
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Color</label>
                         <div class="flex items-center gap-3">
                             <input
                                 type="color"
                                 wire:model.live="color"
-                                class="w-12 h-10 border border-gray-300 rounded cursor-pointer"
+                                class="w-12 h-10 border border-gray-300 dark:border-gray-600 rounded cursor-pointer"
                             >
                             <input
                                 type="text"
                                 wire:model.live="color"
-                                class="flex-1 border border-gray-300 rounded-lg px-3 py-2"
+                                class="flex-1 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2"
                                 placeholder="#6B7280"
                             >
                         </div>
@@ -156,7 +156,7 @@
                             id="isClosed"
                             class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
                         >
-                        <label for="isClosed" class="text-sm text-gray-700">Es fase de cierre</label>
+                        <label for="isClosed" class="text-sm text-gray-700 dark:text-gray-300">Es fase de cierre</label>
                     </div>
 
                     <!-- Is Won (only if closed) -->
@@ -168,16 +168,16 @@
                                 id="isWon"
                                 class="w-4 h-4 text-green-600 rounded focus:ring-green-500"
                             >
-                            <label for="isWon" class="text-sm text-gray-700">Es cierre ganado</label>
+                            <label for="isWon" class="text-sm text-gray-700 dark:text-gray-300">Es cierre ganado</label>
                         </div>
                     @endif
 
                     <!-- Actions -->
-                    <div class="flex justify-end gap-3 pt-4 border-t">
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button
                             type="button"
                             wire:click="closeModal"
-                            class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                            class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
                         >
                             Cancelar
                         </button>
@@ -198,24 +198,24 @@
     <!-- Delete Modal -->
     @if($showDeleteModal)
         <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" x-data x-cloak>
-            <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
-                <div class="p-4 border-b">
-                    <h3 class="text-lg font-semibold text-red-600">Eliminar Fase</h3>
+            <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full max-w-md mx-4">
+                <div class="p-4 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-lg font-semibold text-red-600 dark:text-red-400">Eliminar Fase</h3>
                 </div>
 
                 <div class="p-4 space-y-4">
-                    <p class="text-gray-600">
+                    <p class="text-gray-600 dark:text-gray-400">
                         ¿Estás seguro de eliminar esta fase? Esta acción no se puede deshacer.
                     </p>
 
                     @if(count($availablePhases) > 0)
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                                 Transferir leads a:
                             </label>
                             <select
                                 wire:model="transferToPhaseId"
-                                class="w-full border border-gray-300 rounded-lg px-3 py-2"
+                                class="w-full border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-lg px-3 py-2"
                             >
                                 <option value="">-- No transferir --</option>
                                 @foreach($availablePhases as $phase)
@@ -225,10 +225,10 @@
                         </div>
                     @endif
 
-                    <div class="flex justify-end gap-3 pt-4 border-t">
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
                         <button
                             wire:click="closeDeleteModal"
-                            class="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition"
+                            class="px-4 py-2 text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition"
                         >
                             Cancelar
                         </button>
