@@ -166,253 +166,455 @@
         const styles = document.createElement('style');
         styles.id = 'mcw-global-styles';
         styles.textContent = `
+            /* Anular Elementor/WordPress en TODOS los elementos button del modal EXCEPTO btn-close */
+            #mcw-modal-overlay button:not(.mcw-btn-submit):not(.mcw-btn-close),
+            #mcw-modal-overlay button:not(.mcw-btn-submit):not(.mcw-btn-close):hover,
+            #mcw-modal-overlay button:not(.mcw-btn-submit):not(.mcw-btn-close):focus,
+            #mcw-modal-overlay button:not(.mcw-btn-submit):not(.mcw-btn-close):active,
+            #mcw-modal-overlay [type="button"]:not(.mcw-btn-submit):not(.mcw-btn-close),
+            #mcw-modal-overlay [type="button"]:not(.mcw-btn-submit):not(.mcw-btn-close):hover,
+            #mcw-modal-overlay [type="button"]:not(.mcw-btn-submit):not(.mcw-btn-close):focus,
+            #mcw-modal-overlay [type="button"]:not(.mcw-btn-submit):not(.mcw-btn-close):active {
+                background: transparent !important;
+                background-color: transparent !important;
+            }
             .mcw-widget-container * {
-                box-sizing: border-box;
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+                box-sizing: border-box !important;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif !important;
             }
             .mcw-buttons-container {
-                position: fixed;
-                display: flex;
-                gap: 12px;
-                z-index: 99998;
+                position: fixed !important;
+                display: flex !important;
+                gap: 12px !important;
+                z-index: 99998 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                background: transparent !important;
             }
             .mcw-buttons-container.bottom-right {
-                right: 20px;
-                bottom: 20px;
-                flex-direction: row-reverse;
+                right: 20px !important;
+                bottom: 20px !important;
+                flex-direction: row-reverse !important;
             }
             .mcw-buttons-container.bottom-left {
-                left: 20px;
-                bottom: 20px;
-                flex-direction: row;
+                left: 20px !important;
+                bottom: 20px !important;
+                flex-direction: row !important;
             }
             .mcw-buttons-container.top-right {
-                right: 20px;
-                top: 20px;
-                flex-direction: row-reverse;
+                right: 20px !important;
+                top: 20px !important;
+                flex-direction: row-reverse !important;
             }
             .mcw-buttons-container.top-left {
-                left: 20px;
-                top: 20px;
-                flex-direction: row;
+                left: 20px !important;
+                top: 20px !important;
+                flex-direction: row !important;
             }
             .mcw-fab {
-                width: 56px;
-                height: 56px;
-                border-radius: 50%;
-                border: none;
-                cursor: pointer;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: transform 0.2s, box-shadow 0.2s;
-                flex-shrink: 0;
+                width: 56px !important;
+                height: 56px !important;
+                border-radius: 50% !important;
+                border: none !important;
+                cursor: pointer !important;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                transition: transform 0.2s, box-shadow 0.2s !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .mcw-fab:hover {
-                transform: scale(1.1);
-                box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+                transform: scale(1.1) !important;
+                box-shadow: 0 6px 20px rgba(0,0,0,0.2) !important;
             }
             .mcw-fab svg {
-                width: 26px;
-                height: 26px;
-                fill: white;
+                width: 26px !important;
+                height: 26px !important;
+                fill: white !important;
+                display: block !important;
             }
             .mcw-modal-overlay {
-                position: fixed;
-                inset: 0;
-                background: rgba(0,0,0,0.5);
-                display: none;
-                align-items: center;
-                justify-content: center;
-                z-index: 99999;
-                padding: 20px;
+                position: fixed !important;
+                inset: 0 !important;
+                top: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                bottom: 0 !important;
+                background: rgba(0,0,0,0.5) !important;
+                display: none !important;
+                z-index: 99999 !important;
+                padding: 20px !important;
+                margin: 0 !important;
+                border: none !important;
             }
             .mcw-modal-overlay.mcw-active {
-                display: flex;
+                display: block !important;
             }
             .mcw-modal {
-                background: white;
-                border-radius: 16px;
-                width: 100%;
-                max-width: 400px;
-                box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-                overflow: hidden;
-                animation: mcw-slideUp 0.3s ease;
+                background: white !important;
+                border-radius: 16px !important;
+                width: 100% !important;
+                max-width: 400px !important;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3) !important;
+                overflow: hidden !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                position: fixed !important;
+            }
+            /* Posicionamiento según ubicación del widget */
+            .mcw-modal-overlay.mcw-position-bottom-right .mcw-modal {
+                bottom: 20px !important;
+                right: 20px !important;
+                animation: mcw-slideInFromBottomRight 0.3s ease !important;
+            }
+            .mcw-modal-overlay.mcw-position-bottom-left .mcw-modal {
+                bottom: 20px !important;
+                left: 20px !important;
+                animation: mcw-slideInFromBottomLeft 0.3s ease !important;
+            }
+            .mcw-modal-overlay.mcw-position-top-right .mcw-modal {
+                top: 20px !important;
+                right: 20px !important;
+                animation: mcw-slideInFromTopRight 0.3s ease !important;
+            }
+            .mcw-modal-overlay.mcw-position-top-left .mcw-modal {
+                top: 20px !important;
+                left: 20px !important;
+                animation: mcw-slideInFromTopLeft 0.3s ease !important;
+            }
+            /* En móviles, centrar el modal */
+            @media (max-width: 640px) {
+                .mcw-modal {
+                    position: fixed !important;
+                    top: 50% !important;
+                    left: 50% !important;
+                    transform: translate(-50%, -50%) !important;
+                    bottom: auto !important;
+                    right: auto !important;
+                    max-width: calc(100% - 40px) !important;
+                }
+                .mcw-modal-overlay.mcw-position-bottom-right .mcw-modal,
+                .mcw-modal-overlay.mcw-position-bottom-left .mcw-modal,
+                .mcw-modal-overlay.mcw-position-top-right .mcw-modal,
+                .mcw-modal-overlay.mcw-position-top-left .mcw-modal {
+                    animation: mcw-slideUp 0.3s ease !important;
+                }
             }
             @keyframes mcw-slideUp {
-                from { opacity: 0; transform: translateY(20px); }
-                to { opacity: 1; transform: translateY(0); }
+                from {
+                    opacity: 0;
+                    transform: translate(-50%, -40%) !important;
+                }
+                to {
+                    opacity: 1;
+                    transform: translate(-50%, -50%) !important;
+                }
+            }
+            /* Animaciones por posición */
+            @keyframes mcw-slideInFromBottomRight {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px) translateX(20px) scale(0.9);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) translateX(0) scale(1);
+                }
+            }
+            @keyframes mcw-slideInFromBottomLeft {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px) translateX(-20px) scale(0.9);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) translateX(0) scale(1);
+                }
+            }
+            @keyframes mcw-slideInFromTopRight {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px) translateX(20px) scale(0.9);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) translateX(0) scale(1);
+                }
+            }
+            @keyframes mcw-slideInFromTopLeft {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px) translateX(-20px) scale(0.9);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) translateX(0) scale(1);
+                }
             }
             .mcw-modal-header {
-                color: white;
-                padding: 20px;
-                text-align: center;
-                position: relative;
+                color: white !important;
+                padding: 20px !important;
+                text-align: center !important;
+                position: relative !important;
+                margin: 0 !important;
+                border: none !important;
             }
             .mcw-modal-header h3 {
-                margin: 0;
-                font-size: 20px;
-                font-weight: 600;
+                margin: 0 !important;
+                padding: 0 !important;
+                font-size: 20px !important;
+                font-weight: 600 !important;
+                color: white !important;
+                border: none !important;
+                background: transparent !important;
+                text-transform: none !important;
             }
             .mcw-modal-header p {
-                margin: 8px 0 0;
-                font-size: 14px;
-                opacity: 0.9;
+                margin: 8px 0 0 !important;
+                padding: 0 !important;
+                font-size: 14px !important;
+                opacity: 0.9 !important;
+                color: white !important;
+                border: none !important;
+                background: transparent !important;
+                text-transform: none !important;
             }
             .mcw-modal-body {
-                padding: 24px;
+                padding: 24px !important;
+                margin: 0 !important;
+                background: white !important;
+                border: none !important;
             }
             .mcw-form-group {
-                margin-bottom: 16px;
+                margin-bottom: 16px !important;
+                margin-top: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                background: transparent !important;
             }
             .mcw-form-group label {
-                display: block;
-                font-size: 14px;
-                font-weight: 500;
-                color: #374151;
-                margin-bottom: 6px;
+                display: block !important;
+                font-size: 14px !important;
+                font-weight: 500 !important;
+                color: #374151 !important;
+                margin-bottom: 6px !important;
+                margin-top: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                background: transparent !important;
+                text-transform: none !important;
             }
             .mcw-form-group label span {
-                color: #EF4444;
+                color: #EF4444 !important;
             }
             .mcw-form-group input,
             .mcw-form-group textarea {
-                width: 100%;
-                padding: 12px;
-                border: 1px solid #D1D5DB;
-                border-radius: 8px;
-                font-size: 14px;
-                transition: border-color 0.2s, box-shadow 0.2s;
+                width: 100% !important;
+                padding: 12px !important;
+                border: 1px solid #D1D5DB !important;
+                border-radius: 8px !important;
+                font-size: 14px !important;
+                transition: border-color 0.2s, box-shadow 0.2s !important;
+                margin: 0 !important;
+                background: white !important;
+                color: #111827 !important;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif !important;
+                text-transform: none !important;
+                box-sizing: border-box !important;
             }
             .mcw-form-group input:focus,
             .mcw-form-group textarea:focus {
-                outline: none;
-                border-color: var(--mcw-color);
-                box-shadow: 0 0 0 3px var(--mcw-color-light);
+                outline: none !important;
+                border-color: var(--mcw-color) !important;
+                box-shadow: 0 0 0 3px var(--mcw-color-light) !important;
             }
             .mcw-form-group textarea {
-                resize: vertical;
-                min-height: 80px;
+                resize: vertical !important;
+                min-height: 80px !important;
             }
             .mcw-form-group .mcw-error {
-                color: #EF4444;
-                font-size: 12px;
-                margin-top: 4px;
-                display: none;
+                color: #EF4444 !important;
+                font-size: 12px !important;
+                margin-top: 4px !important;
+                margin-bottom: 0 !important;
+                display: none !important;
+                padding: 0 !important;
+                border: none !important;
+                background: transparent !important;
             }
             .mcw-form-group.mcw-invalid input,
             .mcw-form-group.mcw-invalid textarea {
-                border-color: #EF4444;
+                border-color: #EF4444 !important;
             }
             .mcw-form-group.mcw-invalid .mcw-error {
-                display: block;
+                display: block !important;
             }
             /* Estilos para intl-tel-input */
             .mcw-form-group .iti {
-                width: 100%;
+                width: 100% !important;
+                display: block !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .mcw-form-group .iti__tel-input {
-                width: 100%;
-                padding: 12px;
-                padding-left: 52px;
-                border: 1px solid #D1D5DB;
-                border-radius: 8px;
-                font-size: 14px;
+                width: 100% !important;
+                padding: 12px !important;
+                padding-left: 80px !important;
+                border: 1px solid #D1D5DB !important;
+                border-radius: 8px !important;
+                font-size: 14px !important;
+                margin: 0 !important;
+                background: white !important;
+                color: #111827 !important;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif !important;
+                box-sizing: border-box !important;
             }
             .mcw-form-group .iti__tel-input:focus {
-                outline: none;
-                border-color: var(--mcw-color);
-                box-shadow: 0 0 0 3px var(--mcw-color-light);
+                outline: none !important;
+                border-color: var(--mcw-color) !important;
+                box-shadow: 0 0 0 3px var(--mcw-color-light) !important;
             }
             .mcw-form-group.mcw-invalid .iti__tel-input {
-                border-color: #EF4444;
+                border-color: #EF4444 !important;
+            }
+            .mcw-form-group .iti__country-list {
+                z-index: 100001 !important;
+                background: white !important;
+                border: 1px solid #D1D5DB !important;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.1) !important;
+            }
+            .mcw-form-group .iti__flag-container {
+                position: absolute !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .mcw-form-group .iti__selected-dial-code {
+                margin-left: 6px !important;
+                color: #6B7280 !important;
+                font-size: 14px !important;
+                font-weight: normal !important;
+                line-height: normal !important;
             }
             .mcw-btn-submit {
-                width: 100%;
-                padding: 14px;
-                color: white;
-                border: none;
-                border-radius: 8px;
-                font-size: 16px;
-                font-weight: 600;
-                cursor: pointer;
-                transition: opacity 0.2s;
+                width: 100% !important;
+                padding: 14px !important;
+                color: white !important;
+                border: none !important;
+                border-radius: 8px !important;
+                font-size: 16px !important;
+                font-weight: 600 !important;
+                cursor: pointer !important;
+                transition: opacity 0.2s !important;
+                margin: 0 !important;
+                background-color: var(--mcw-color) !important;
+                text-transform: none !important;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif !important;
             }
             .mcw-btn-submit:hover {
-                opacity: 0.9;
+                opacity: 0.9 !important;
             }
             .mcw-btn-submit:disabled {
-                opacity: 0.6;
-                cursor: not-allowed;
+                opacity: 0.6 !important;
+                cursor: not-allowed !important;
             }
             .mcw-btn-close {
-                position: absolute;
-                top: 12px;
-                right: 12px;
-                background: rgba(255,255,255,0.2);
-                border: none;
-                width: 32px;
-                height: 32px;
-                border-radius: 50%;
-                cursor: pointer;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                transition: background 0.2s;
+                position: absolute !important;
+                top: 12px !important;
+                right: 12px !important;
+                background: rgba(255,255,255,0.2) !important;
+                border: none !important;
+                width: 32px !important;
+                height: 32px !important;
+                border-radius: 50% !important;
+                cursor: pointer !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                transition: background 0.2s !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .mcw-btn-close:hover {
-                background: rgba(255,255,255,0.3);
+                background: rgba(255,255,255,0.3) !important;
             }
             .mcw-btn-close svg {
-                width: 18px;
-                height: 18px;
-                stroke: white;
+                width: 18px !important;
+                height: 18px !important;
+                stroke: white !important;
+                display: block !important;
             }
             .mcw-success {
-                text-align: center;
-                padding: 40px 20px;
+                text-align: center !important;
+                padding: 40px 20px !important;
+                margin: 0 !important;
+                border: none !important;
+                background: transparent !important;
             }
             .mcw-success svg {
-                width: 64px;
-                height: 64px;
-                stroke: #10B981;
-                margin-bottom: 16px;
+                width: 64px !important;
+                height: 64px !important;
+                stroke: #10B981 !important;
+                margin-bottom: 16px !important;
+                display: inline-block !important;
             }
             .mcw-success h4 {
-                font-size: 20px;
-                color: #111827;
-                margin: 0 0 8px;
+                font-size: 20px !important;
+                color: #111827 !important;
+                margin: 0 0 8px !important;
+                padding: 0 !important;
+                font-weight: 600 !important;
+                border: none !important;
+                background: transparent !important;
+                text-transform: none !important;
             }
             .mcw-success p {
-                color: #6B7280;
-                margin: 0;
+                color: #6B7280 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                font-size: 14px !important;
+                border: none !important;
+                background: transparent !important;
+                text-transform: none !important;
             }
             /* Toast notifications */
             .mcw-toast-container {
-                position: fixed;
-                top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                z-index: 100000;
-                display: flex;
-                flex-direction: column;
-                gap: 10px;
+                position: fixed !important;
+                top: 20px !important;
+                left: 50% !important;
+                transform: translateX(-50%) !important;
+                z-index: 100000 !important;
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 10px !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
+                background: transparent !important;
             }
             .mcw-toast {
-                background: #1F2937;
-                border-radius: 12px;
-                padding: 16px 20px;
-                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
-                display: flex;
-                align-items: center;
-                gap: 14px;
-                min-width: 320px;
-                max-width: 420px;
-                animation: mcw-toastIn 0.3s ease;
+                background: #1F2937 !important;
+                border-radius: 12px !important;
+                padding: 16px 20px !important;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3) !important;
+                display: flex !important;
+                align-items: center !important;
+                gap: 14px !important;
+                min-width: 320px !important;
+                max-width: 420px !important;
+                animation: mcw-toastIn 0.3s ease !important;
+                margin: 0 !important;
+                border: none !important;
             }
             .mcw-toast.mcw-toast-out {
-                animation: mcw-toastOut 0.3s ease forwards;
+                animation: mcw-toastOut 0.3s ease forwards !important;
             }
             @keyframes mcw-toastIn {
                 from { opacity: 0; transform: translateY(-20px); }
@@ -423,66 +625,82 @@
                 to { opacity: 0; transform: translateY(-20px); }
             }
             .mcw-toast-icon {
-                width: 40px;
-                height: 40px;
-                border-radius: 50%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                flex-shrink: 0;
+                width: 40px !important;
+                height: 40px !important;
+                border-radius: 50% !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                flex-shrink: 0 !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                border: none !important;
             }
             .mcw-toast-icon svg {
-                width: 22px;
-                height: 22px;
+                width: 22px !important;
+                height: 22px !important;
+                display: block !important;
             }
             .mcw-toast-icon.mcw-toast-error {
-                background: #FEE2E2;
+                background: #FEE2E2 !important;
             }
             .mcw-toast-icon.mcw-toast-error svg {
-                stroke: #DC2626;
+                stroke: #DC2626 !important;
             }
             .mcw-toast-icon.mcw-toast-success {
-                background: #D1FAE5;
+                background: #D1FAE5 !important;
             }
             .mcw-toast-icon.mcw-toast-success svg {
-                stroke: #059669;
+                stroke: #059669 !important;
             }
             .mcw-toast-icon.mcw-toast-warning {
-                background: #FEF3C7;
+                background: #FEF3C7 !important;
             }
             .mcw-toast-icon.mcw-toast-warning svg {
-                stroke: #D97706;
+                stroke: #D97706 !important;
             }
             .mcw-toast-content {
-                flex: 1;
+                flex: 1 !important;
+                margin: 0 !important;
+                padding: 0 !important;
             }
             .mcw-toast-title {
-                font-weight: 600;
-                color: #FFFFFF;
-                margin: 0 0 2px;
-                font-size: 15px;
+                font-weight: 600 !important;
+                color: #FFFFFF !important;
+                margin: 0 0 2px !important;
+                padding: 0 !important;
+                font-size: 15px !important;
+                border: none !important;
+                background: transparent !important;
+                text-transform: none !important;
             }
             .mcw-toast-message {
-                color: #9CA3AF;
-                margin: 0;
-                font-size: 13px;
-                line-height: 1.4;
+                color: #9CA3AF !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                font-size: 13px !important;
+                line-height: 1.4 !important;
+                border: none !important;
+                background: transparent !important;
+                text-transform: none !important;
             }
             .mcw-toast-close {
-                background: none;
-                border: none;
-                padding: 4px;
-                cursor: pointer;
-                color: #6B7280;
-                transition: color 0.2s;
-                align-self: flex-start;
+                background: none !important;
+                border: none !important;
+                padding: 4px !important;
+                cursor: pointer !important;
+                color: #6B7280 !important;
+                transition: color 0.2s !important;
+                align-self: flex-start !important;
+                margin: 0 !important;
             }
             .mcw-toast-close:hover {
-                color: #9CA3AF;
+                color: #9CA3AF !important;
             }
             .mcw-toast-close svg {
-                width: 18px;
-                height: 18px;
+                width: 18px !important;
+                height: 18px !important;
+                display: block !important;
             }
         `;
         document.head.appendChild(styles);
@@ -636,6 +854,12 @@
 
         // Attach form submit
         attachFormSubmit(cfg, modal);
+
+        // Limpiar clases de posición previas
+        modal.overlay.classList.remove('mcw-position-bottom-right', 'mcw-position-bottom-left', 'mcw-position-top-right', 'mcw-position-top-left');
+
+        // Agregar clase según posición del widget
+        modal.overlay.classList.add('mcw-position-' + cfg.position);
 
         // Mostrar modal
         modal.overlay.classList.add('mcw-active');
