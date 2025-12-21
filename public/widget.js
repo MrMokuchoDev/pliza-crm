@@ -260,11 +260,11 @@
                 width: 100% !important;
                 max-width: 400px !important;
                 box-shadow: 0 20px 60px rgba(0,0,0,0.3) !important;
-                overflow: hidden !important;
                 margin: 0 !important;
                 padding: 0 !important;
                 border: none !important;
                 position: fixed !important;
+                overflow: hidden !important;
             }
             /* Posicionamiento según ubicación del widget */
             .mcw-modal-overlay.mcw-position-bottom-right .mcw-modal {
@@ -287,32 +287,43 @@
                 left: 20px !important;
                 animation: mcw-slideInFromTopLeft 0.3s ease !important;
             }
-            /* En móviles, centrar el modal */
+            /* En móviles, mantener posicionamiento pero con altura automática */
             @media (max-width: 640px) {
-                .mcw-modal {
-                    position: fixed !important;
-                    top: 50% !important;
-                    left: 50% !important;
-                    transform: translate(-50%, -50%) !important;
-                    bottom: auto !important;
-                    right: auto !important;
-                    max-width: calc(100% - 40px) !important;
-                }
                 .mcw-modal-overlay.mcw-position-bottom-right .mcw-modal,
-                .mcw-modal-overlay.mcw-position-bottom-left .mcw-modal,
+                .mcw-modal-overlay.mcw-position-bottom-left .mcw-modal {
+                    top: auto !important;
+                    bottom: 20px !important;
+                }
                 .mcw-modal-overlay.mcw-position-top-right .mcw-modal,
                 .mcw-modal-overlay.mcw-position-top-left .mcw-modal {
-                    animation: mcw-slideUp 0.3s ease !important;
+                    bottom: auto !important;
+                    top: 20px !important;
+                }
+                .mcw-modal-overlay.mcw-position-bottom-right .mcw-modal,
+                .mcw-modal-overlay.mcw-position-top-right .mcw-modal {
+                    left: auto !important;
+                    right: 20px !important;
+                    transform: none !important;
+                }
+                .mcw-modal-overlay.mcw-position-bottom-left .mcw-modal,
+                .mcw-modal-overlay.mcw-position-top-left .mcw-modal {
+                    right: auto !important;
+                    left: 20px !important;
+                    transform: none !important;
+                }
+                .mcw-modal {
+                    max-width: calc(100% - 40px) !important;
+                    width: calc(100% - 40px) !important;
                 }
             }
             @keyframes mcw-slideUp {
                 from {
                     opacity: 0;
-                    transform: translate(-50%, -40%) !important;
+                    transform: translateX(-50%) translateY(20px) !important;
                 }
                 to {
                     opacity: 1;
-                    transform: translate(-50%, -50%) !important;
+                    transform: translateX(-50%) translateY(0) !important;
                 }
             }
             /* Animaciones por posición */
@@ -363,6 +374,8 @@
                 position: relative !important;
                 margin: 0 !important;
                 border: none !important;
+                border-radius: 16px 16px 0 0 !important;
+                overflow: hidden !important;
             }
             .mcw-modal-header h3 {
                 margin: 0 !important;
