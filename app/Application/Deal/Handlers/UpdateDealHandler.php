@@ -20,7 +20,29 @@ class UpdateDealHandler
             return null;
         }
 
-        $deal->update($command->data->toArrayForUpdate());
+        $data = $command->data->toArrayForUpdate();
+
+        // Separar custom fields de campos normales
+        $customFieldMapping = $deal->getCustomFieldMapping();
+        $customFields = [];
+        $regularFields = [];
+
+        foreach ($data as $key => $value) {
+            if (isset($customFieldMapping[$key])) {
+                $customFields[$key] = $value;
+            } else {
+                $regularFields[$key] = $value;
+            }
+        }
+
+        // Actualizar campos regulares
+        $deal->update($regularFields);
+
+        // Asignar y guardar custom fields
+        foreach ($customFields as $key => $value) {
+            $deal->$key = $value;
+        }
+        $deal->saveCustomFieldValues();
 
         return $deal->fresh();
     }

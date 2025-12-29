@@ -20,13 +20,13 @@ class LeadFormModal extends Component
 
     public ?string $leadId = null;
 
-    public string $name = '';
+    public ?string $name = '';
 
-    public string $email = '';
+    public ?string $email = '';
 
-    public string $phone = '';
+    public ?string $phone = '';
 
-    public string $message = '';
+    public ?string $message = '';
 
     public ?string $assigned_to = null;
 

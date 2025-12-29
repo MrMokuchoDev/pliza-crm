@@ -20,7 +20,29 @@ class UpdateLeadHandler
             return null;
         }
 
-        $lead->update($command->data->toArray());
+        $data = $command->data->toArray();
+
+        // Separar custom fields de campos normales
+        $customFieldMapping = $lead->getCustomFieldMapping();
+        $customFields = [];
+        $regularFields = [];
+
+        foreach ($data as $key => $value) {
+            if (isset($customFieldMapping[$key])) {
+                $customFields[$key] = $value;
+            } else {
+                $regularFields[$key] = $value;
+            }
+        }
+
+        // Actualizar campos regulares
+        $lead->update($regularFields);
+
+        // Asignar y guardar custom fields
+        foreach ($customFields as $key => $value) {
+            $lead->$key = $value;
+        }
+        $lead->saveCustomFieldValues();
 
         return $lead->fresh();
     }

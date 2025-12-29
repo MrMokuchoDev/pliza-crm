@@ -54,7 +54,29 @@ class CreateDealHandler
                 $dealData['created_by'] = $user->uuid;
             }
 
-            $deal = DealModel::create($dealData);
+            // Separar custom fields de campos normales
+            $customFieldMapping = (new DealModel())->getCustomFieldMapping();
+            $customFields = [];
+            $regularFields = [];
+
+            foreach ($dealData as $key => $value) {
+                if (isset($customFieldMapping[$key])) {
+                    $customFields[$key] = $value;
+                } else {
+                    $regularFields[$key] = $value;
+                }
+            }
+
+            // Crear el deal con campos regulares
+            $deal = DealModel::create($regularFields);
+
+            // Asignar custom fields manualmente
+            foreach ($customFields as $key => $value) {
+                $deal->$key = $value;
+            }
+
+            // Guardar custom fields
+            $deal->saveCustomFieldValues();
 
             return [
                 'deal' => $deal,

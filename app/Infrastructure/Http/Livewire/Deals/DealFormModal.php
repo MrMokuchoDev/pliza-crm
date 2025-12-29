@@ -27,11 +27,11 @@ class DealFormModal extends Component
 
     public ?string $leadId = null;
 
-    public string $name = '';
+    public ?string $name = '';
 
     public ?string $value = '';
 
-    public string $description = '';
+    public ?string $description = '';
 
     public string $salePhaseId = '';
 
@@ -40,11 +40,11 @@ class DealFormModal extends Component
     public ?string $closeDate = null;
 
     // Lead data for display/edit
-    public string $leadName = '';
+    public ?string $leadName = '';
 
-    public string $leadEmail = '';
+    public ?string $leadEmail = '';
 
-    public string $leadPhone = '';
+    public ?string $leadPhone = '';
 
     // Lead search
     public string $leadSearch = '';
@@ -186,10 +186,11 @@ class DealFormModal extends Component
                 $this->dealId = $dealId;
                 $this->leadId = $deal->lead_id;
                 $this->name = $deal->name;
-                $this->value = $deal->value ? (string) $deal->value : '';
-                $this->description = $deal->description ?? '';
+                $this->value = $deal->value;
+                $this->description = $deal->description;
                 $this->salePhaseId = $deal->sale_phase_id;
-                $this->estimatedCloseDate = $deal->estimated_close_date?->format('Y-m-d');
+                // estimated_close_date es custom field (string), no necesita format()
+                $this->estimatedCloseDate = $deal->estimated_close_date;
                 $this->closeDate = $deal->close_date?->format('Y-m-d');
 
                 // Load lead data

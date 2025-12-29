@@ -19,6 +19,11 @@ final class FieldName
         return new self($value);
     }
 
+    public static function fromString(string $value): self
+    {
+        return new self($value);
+    }
+
     /**
      * Generar nombre de campo con formato cf_{entity}_{number}
      */
@@ -73,6 +78,11 @@ final class FieldName
     }
 
     public function __toString(): string
+    {
+        return $this->value;
+    }
+
+    public function toString(): string
     {
         return $this->value;
     }

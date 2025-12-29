@@ -37,6 +37,29 @@ final class CustomFieldValue
         );
     }
 
+    /**
+     * Reconstruct from database
+     */
+    public static function reconstruct(
+        UuidInterface $id,
+        UuidInterface $customFieldId,
+        EntityType $entityType,
+        UuidInterface $entityId,
+        ?string $value,
+        \DateTimeImmutable $createdAt,
+        \DateTimeImmutable $updatedAt
+    ): self {
+        return new self(
+            id: $id,
+            customFieldId: $customFieldId,
+            entityType: $entityType,
+            entityId: $entityId,
+            value: $value,
+            createdAt: $createdAt,
+            updatedAt: $updatedAt,
+        );
+    }
+
     // Getters
     public function id(): UuidInterface
     {

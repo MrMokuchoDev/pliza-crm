@@ -16,7 +16,25 @@ final class ValidationRules
 
     public static function fromArray(array $rules): self
     {
-        return new self($rules);
+        // Si es un array asociativo, usarlo directamente
+        if (array_keys($rules) !== range(0, count($rules) - 1)) {
+            return new self($rules);
+        }
+
+        // Si es un array indexado, parsear las reglas estilo Laravel
+        $parsed = [];
+        foreach ($rules as $rule) {
+            if (!is_string($rule)) {
+                continue;
+            }
+
+            if (str_contains($rule, ':')) {
+                [$key, $value] = explode(':', $rule, 2);
+                $parsed[$key] = $value;
+            }
+        }
+
+        return new self($parsed);
     }
 
     public static function empty(): self

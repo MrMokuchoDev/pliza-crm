@@ -42,6 +42,20 @@
         .nav-item:hover:not(.nav-item-active) {
             background: rgba(255, 255, 255, 0.05);
         }
+        /* Sortable.js styles */
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #dbeafe;
+        }
+        .dark .sortable-ghost {
+            background: #1e3a8a;
+        }
+        .sortable-chosen {
+            opacity: 0.5;
+        }
+        .sortable-drag {
+            opacity: 0;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-200" x-data="{ sidebarOpen: false }">
@@ -136,7 +150,7 @@
                 @if(auth()->user()?->hasAnyConfigPermission())
                 <!-- Sección Configuración - Basada en permisos -->
                 @php
-                    $configRoutes = ['sale-phases.*', 'sites.*', 'users.*', 'roles.*', 'maintenance', 'updates'];
+                    $configRoutes = ['sale-phases.*', 'sites.*', 'users.*', 'roles.*', 'custom-fields.*', 'maintenance', 'updates'];
                     $isConfigActive = collect($configRoutes)->contains(fn($route) => request()->routeIs($route));
                 @endphp
                 <div x-data="{ configOpen: {{ $isConfigActive ? 'true' : 'false' }} }" class="mt-6">
@@ -208,6 +222,19 @@
                                 </svg>
                             </div>
                             Roles y Permisos
+                        </a>
+                        @endif
+
+                        @if(auth()->user()?->canManageCustomFields())
+                        <!-- Campos Personalizados -->
+                        <a href="{{ route('custom-fields.index') }}"
+                           class="nav-item flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-all duration-150 {{ request()->routeIs('custom-fields.*') ? 'nav-item-active text-blue-400' : 'text-gray-300' }}">
+                            <div class="w-8 h-8 rounded-lg {{ request()->routeIs('custom-fields.*') ? 'bg-blue-500/20' : 'bg-white/5' }} flex items-center justify-center mr-3">
+                                <svg class="w-4 h-4 {{ request()->routeIs('custom-fields.*') ? 'text-blue-400' : 'text-gray-400' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                                </svg>
+                            </div>
+                            Campos Personalizados
                         </a>
                         @endif
 

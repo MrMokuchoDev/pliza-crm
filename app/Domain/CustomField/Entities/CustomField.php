@@ -57,6 +57,38 @@ final class CustomField
         );
     }
 
+    public static function reconstruct(
+        UuidInterface $id,
+        EntityType $entityType,
+        ?UuidInterface $groupId,
+        FieldName $name,
+        string $label,
+        FieldType $type,
+        ?string $defaultValue,
+        bool $isRequired,
+        ValidationRules $validationRules,
+        int $order,
+        bool $isActive,
+        \DateTimeImmutable $createdAt,
+        \DateTimeImmutable $updatedAt
+    ): self {
+        return new self(
+            id: $id,
+            entityType: $entityType,
+            groupId: $groupId,
+            name: $name,
+            label: $label,
+            type: $type,
+            defaultValue: $defaultValue,
+            isRequired: $isRequired,
+            validationRules: $validationRules,
+            order: $order,
+            isActive: $isActive,
+            createdAt: $createdAt,
+            updatedAt: $updatedAt,
+        );
+    }
+
     // Getters
     public function id(): UuidInterface
     {
@@ -132,11 +164,69 @@ final class CustomField
         ValidationRules $validationRules,
         int $order
     ): void {
+        if (empty($label)) {
+            throw new \DomainException('Label cannot be empty');
+        }
+
+        if ($order < 0) {
+            throw new \DomainException('Order must be non-negative');
+        }
+
         $this->label = $label;
         $this->groupId = $groupId;
         $this->defaultValue = $defaultValue;
         $this->isRequired = $isRequired;
         $this->validationRules = $validationRules;
+        $this->order = $order;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function updateLabel(string $label): void
+    {
+        if (empty($label)) {
+            throw new \DomainException('Label cannot be empty');
+        }
+
+        $this->label = $label;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function updateGroup(UuidInterface $groupId): void
+    {
+        $this->groupId = $groupId;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function removeGroup(): void
+    {
+        $this->groupId = null;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function updateDefaultValue(?string $defaultValue): void
+    {
+        $this->defaultValue = $defaultValue;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function updateRequired(bool $isRequired): void
+    {
+        $this->isRequired = $isRequired;
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function updateValidationRules(array $rules): void
+    {
+        $this->validationRules = ValidationRules::fromArray($rules);
+        $this->updatedAt = new \DateTimeImmutable();
+    }
+
+    public function updateOrder(int $order): void
+    {
+        if ($order < 0) {
+            throw new \DomainException('Order must be non-negative');
+        }
+
         $this->order = $order;
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -150,12 +240,6 @@ final class CustomField
     public function deactivate(): void
     {
         $this->isActive = false;
-        $this->updatedAt = new \DateTimeImmutable();
-    }
-
-    public function changeOrder(int $order): void
-    {
-        $this->order = $order;
         $this->updatedAt = new \DateTimeImmutable();
     }
 
@@ -173,6 +257,14 @@ final class CustomField
     public function getOptionsTableName(): string
     {
         return $this->name->getOptionsTableName();
+    }
+
+    /**
+     * Verificar si acepta un tipo de entidad específico
+     */
+    public function acceptsEntityType(EntityType $entityType): bool
+    {
+        return $this->entityType->value === $entityType->value;
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persistence\Eloquent;
 
+use App\Domain\Shared\Traits\HasCustomFields;
 use App\Domain\Shared\Traits\HasUuid;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +16,7 @@ class DealModel extends Model
 {
     use HasUuid;
     use SoftDeletes;
+    use HasCustomFields;
 
     protected $table = 'deals';
 
@@ -22,14 +24,13 @@ class DealModel extends Model
 
     public $incrementing = false;
 
+    protected $with = ['customFieldValues'];
+
     protected $fillable = [
         'id',
         'lead_id',
         'sale_phase_id',
-        'name',
-        'value',
-        'description',
-        'estimated_close_date',
+        // name, value, description, estimated_close_date -> ahora son custom fields
         'close_date',
         'assigned_to',
         'created_by',
@@ -38,8 +39,7 @@ class DealModel extends Model
     protected function casts(): array
     {
         return [
-            'value' => 'decimal:2',
-            'estimated_close_date' => 'date',
+            // value y estimated_close_date -> ahora son custom fields, NO cast aquí
             'close_date' => 'date',
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
@@ -95,5 +95,26 @@ class DealModel extends Model
     public function createdBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by', 'uuid');
+    }
+
+    /**
+     * Mapeo de propiedades a custom fields.
+     */
+    public function getCustomFieldMapping(): array
+    {
+        return [
+            'name' => 'cf_deal_1',
+            'value' => 'cf_deal_2',
+            'description' => 'cf_deal_3',
+            'estimated_close_date' => 'cf_deal_4',
+        ];
+    }
+
+    /**
+     * Tipo de entidad para custom fields.
+     */
+    protected function getEntityType(): string
+    {
+        return 'deal';
     }
 }

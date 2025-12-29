@@ -25,6 +25,30 @@ class CreateLeadHandler
             }
         }
 
-        return LeadModel::create($data);
+        // Separar custom fields de campos normales
+        $customFieldMapping = (new LeadModel())->getCustomFieldMapping();
+        $customFields = [];
+        $regularFields = [];
+
+        foreach ($data as $key => $value) {
+            if (isset($customFieldMapping[$key])) {
+                $customFields[$key] = $value;
+            } else {
+                $regularFields[$key] = $value;
+            }
+        }
+
+        // Crear el lead con campos regulares
+        $lead = LeadModel::create($regularFields);
+
+        // Asignar custom fields manualmente
+        foreach ($customFields as $key => $value) {
+            $lead->$key = $value;
+        }
+
+        // Guardar custom fields
+        $lead->saveCustomFieldValues();
+
+        return $lead;
     }
 }

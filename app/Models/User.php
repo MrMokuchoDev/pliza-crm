@@ -461,6 +461,67 @@ class User extends Authenticatable
     }
 
     /**
+     * Verifica si el usuario puede gestionar campos personalizados (cualquier acción).
+     */
+    public function canManageCustomFields(): bool
+    {
+        return $this->hasAnyPermission([
+            Permission::SYSTEM_MAINTENANCE,
+            Permission::CUSTOM_FIELDS_VIEW,
+            Permission::CUSTOM_FIELDS_CREATE,
+            Permission::CUSTOM_FIELDS_UPDATE,
+            Permission::CUSTOM_FIELDS_DELETE,
+        ]);
+    }
+
+    /**
+     * Verifica si el usuario puede acceder al módulo de campos personalizados.
+     */
+    public function canAccessCustomFields(): bool
+    {
+        return $this->canManageCustomFields();
+    }
+
+    /**
+     * Verifica si el usuario puede ver campos personalizados.
+     */
+    public function canViewCustomFields(): bool
+    {
+        return $this->hasPermission(Permission::CUSTOM_FIELDS_VIEW) ||
+               $this->hasPermission(Permission::SYSTEM_MAINTENANCE);
+    }
+
+    /**
+     * Verifica si el usuario puede crear campos personalizados.
+     * Solo ADMIN tiene este permiso.
+     */
+    public function canCreateCustomFields(): bool
+    {
+        return $this->hasPermission(Permission::CUSTOM_FIELDS_CREATE) ||
+               $this->hasPermission(Permission::SYSTEM_MAINTENANCE);
+    }
+
+    /**
+     * Verifica si el usuario puede editar campos personalizados.
+     * Solo ADMIN tiene este permiso.
+     */
+    public function canUpdateCustomFields(): bool
+    {
+        return $this->hasPermission(Permission::CUSTOM_FIELDS_UPDATE) ||
+               $this->hasPermission(Permission::SYSTEM_MAINTENANCE);
+    }
+
+    /**
+     * Verifica si el usuario puede eliminar campos personalizados.
+     * Solo ADMIN tiene este permiso.
+     */
+    public function canDeleteCustomFields(): bool
+    {
+        return $this->hasPermission(Permission::CUSTOM_FIELDS_DELETE) ||
+               $this->hasPermission(Permission::SYSTEM_MAINTENANCE);
+    }
+
+    /**
      * Verifica si el usuario tiene al menos un permiso de configuración.
      * Se usa para determinar si mostrar el menú de configuración.
      * Considera tanto permisos del enum como los granulares de la BD.
@@ -491,6 +552,11 @@ class User extends Authenticatable
             'users.update',
             'users.delete',
             'users.assign_role',
+            // Permisos granulares de custom fields
+            'custom_fields.view',
+            'custom_fields.create',
+            'custom_fields.update',
+            'custom_fields.delete',
             // Permisos de sistema (strings)
             'system.maintenance',
             'system.updates',

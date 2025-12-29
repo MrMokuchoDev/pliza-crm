@@ -23,5 +23,5 @@ interface CustomFieldRepositoryInterface
 
     public function delete(UuidInterface $id): void;
 
-    public function getNextOrder(EntityType $entityType): int;
+    public function getNextOrder(EntityType $entityType, ?UuidInterface $groupId = null): int;
 }
