@@ -11,6 +11,7 @@ use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
 use App\Infrastructure\Persistence\Eloquent\SiteModel;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\DB;
 
 final class GetSiteStatisticsHandler
 {

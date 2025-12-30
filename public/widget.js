@@ -785,28 +785,87 @@
 
     // Generar formulario HTML
     function getFormHtml(cfg) {
-        return `
-            <form id="mcw-form">
+        // Usar custom fields si están disponibles, sino campos por defecto
+        const customFields = window.MCW_CUSTOM_FIELDS || [];
+
+        console.log('[MiniCRM Widget] Custom fields loaded:', customFields.length > 0 ? customFields : 'Using default fields');
+
+        let fieldsHtml = '';
+
+        if (customFields.length > 0) {
+            console.log('[MiniCRM Widget] Rendering dynamic form with', customFields.length, 'custom fields');
+            // Generar campos dinámicamente desde custom fields
+            customFields.forEach(field => {
+                const requiredAttr = field.required ? 'required' : '';
+                const requiredMark = field.required ? '<span>*</span>' : '';
+                const errorMsg = field.required ? `${field.label} es requerido` : `Ingresa un ${field.label.toLowerCase()} válido`;
+
+                // Determinar el tipo de input según el tipo de custom field
+                let inputHtml = '';
+
+                switch (field.type) {
+                    case 'textarea':
+                        inputHtml = `<textarea name="${field.name}" ${requiredAttr} placeholder="${field.label}"></textarea>`;
+                        break;
+                    case 'select':
+                        const options = field.options || [];
+                        const optionsHtml = options.map(opt => `<option value="${opt.value || opt}">${opt.label || opt}</option>`).join('');
+                        inputHtml = `<select name="${field.name}" ${requiredAttr}><option value="">Selecciona...</option>${optionsHtml}</select>`;
+                        break;
+                    case 'tel':
+                    case 'phone':
+                        // Campo teléfono con intl-tel-input
+                        inputHtml = `<input type="tel" name="${field.name}" id="mcw-phone-input" ${requiredAttr}>`;
+                        break;
+                    case 'email':
+                        inputHtml = `<input type="email" name="${field.name}" ${requiredAttr} placeholder="${field.label}">`;
+                        break;
+                    case 'number':
+                        inputHtml = `<input type="number" name="${field.name}" ${requiredAttr} placeholder="${field.label}">`;
+                        break;
+                    default:
+                        // text por defecto
+                        inputHtml = `<input type="text" name="${field.name}" ${requiredAttr} placeholder="${field.label}">`;
+                }
+
+                fieldsHtml += `
+                    <div class="mcw-form-group">
+                        <label>${field.label} ${requiredMark}</label>
+                        ${inputHtml}
+                        <div class="mcw-error">${errorMsg}</div>
+                    </div>
+                `;
+            });
+        } else {
+            console.log('[MiniCRM Widget] Using default hardcoded fields');
+            // Campos por defecto (fallback si no hay custom fields)
+            fieldsHtml = `
                 <div class="mcw-form-group">
                     <label>Nombre <span>*</span></label>
-                    <input type="text" name="name" required placeholder="Tu nombre">
+                    <input type="text" name="cf_lead_1" required placeholder="Tu nombre">
                     <div class="mcw-error">El nombre es requerido</div>
                 </div>
                 <div class="mcw-form-group">
                     <label>Teléfono <span>*</span></label>
-                    <input type="tel" name="phone" id="mcw-phone-input" required>
+                    <input type="tel" name="cf_lead_3" id="mcw-phone-input" required>
                     <div class="mcw-error">Ingresa un número de teléfono válido</div>
                 </div>
                 <div class="mcw-form-group">
                     <label>Email</label>
-                    <input type="email" name="email" placeholder="tu@email.com">
+                    <input type="email" name="cf_lead_2" placeholder="tu@email.com">
                     <div class="mcw-error">Ingresa un email válido</div>
                 </div>
                 <div class="mcw-form-group">
                     <label>Mensaje <span>*</span></label>
-                    <textarea name="message" required placeholder="¿En qué podemos ayudarte?"></textarea>
+                    <textarea name="cf_lead_4" required placeholder="¿En qué podemos ayudarte?"></textarea>
                     <div class="mcw-error">El mensaje es requerido</div>
                 </div>
+            `;
+        }
+
+        return `
+            <form id="mcw-form">
+                ${fieldsHtml}
                 <button type="submit" class="mcw-btn-submit" style="background: ${cfg.color};">${cfg.buttonText}</button>
             </form>
         `;
@@ -891,25 +950,8 @@
 
             const formData = new FormData(form);
 
-            // Obtener teléfono completo con código de país desde intl-tel-input
-            let phoneNumber = formData.get('phone').trim();
-            let phoneValid = true;
-
-            if (MCW.itiInstance) {
-                // Obtener número en formato E.164 (+573001234567)
-                phoneNumber = MCW.itiInstance.getNumber();
-
-                // Validar usando la librería
-                if (phoneNumber && !MCW.itiInstance.isValidNumber()) {
-                    phoneValid = false;
-                }
-            }
-
+            // Construir data object dinámicamente desde todos los campos del formulario
             const data = {
-                name: formData.get('name').trim(),
-                phone: phoneNumber,
-                email: formData.get('email').trim(),
-                message: formData.get('message').trim(),
                 site_id: cfg.siteId,
                 source_type: cfg.type === 'contact_form' ? 'contact_form' : (cfg.type + '_button'),
                 source_url: window.location.href,
@@ -917,29 +959,62 @@
                 user_agent: navigator.userAgent
             };
 
-            // Validaciones
+            // Procesar cada campo del formulario
+            let phoneNumber = '';
+            let phoneValid = true;
+            let phoneFieldName = null;
+
+            for (let [name, value] of formData.entries()) {
+                // Detectar campo de teléfono (buscar input type="tel" o id con "phone")
+                const input = form.querySelector(`[name="${name}"]`);
+                if (input && (input.type === 'tel' || input.id === 'mcw-phone-input')) {
+                    phoneFieldName = name;
+                    // Obtener teléfono completo con código de país desde intl-tel-input
+                    if (MCW.itiInstance) {
+                        phoneNumber = MCW.itiInstance.getNumber();
+                        // Validar usando la librería
+                        if (phoneNumber && !MCW.itiInstance.isValidNumber()) {
+                            phoneValid = false;
+                        }
+                    } else {
+                        phoneNumber = (value || '').trim();
+                    }
+                    data[name] = phoneNumber;
+                } else {
+                    // Otros campos
+                    data[name] = (value || '').trim();
+                }
+            }
+
+            // Validaciones dinámicas
             let hasErrors = false;
 
-            if (!data.name) {
-                form.querySelector('[name="name"]').closest('.mcw-form-group').classList.add('mcw-invalid');
-                hasErrors = true;
-            }
-            if (!data.phone || !phoneValid) {
-                const phoneGroup = form.querySelector('[name="phone"]').closest('.mcw-form-group');
-                phoneGroup.classList.add('mcw-invalid');
-                if (!phoneValid && data.phone) {
-                    phoneGroup.querySelector('.mcw-error').textContent = 'El número de teléfono no es válido para el país seleccionado';
+            // Validar todos los campos requeridos
+            form.querySelectorAll('[required]').forEach(field => {
+                const fieldName = field.name;
+                const fieldValue = data[fieldName];
+                const formGroup = field.closest('.mcw-form-group');
+
+                // Validar campo vacío
+                if (!fieldValue || fieldValue.trim() === '') {
+                    formGroup.classList.add('mcw-invalid');
+                    hasErrors = true;
                 }
-                hasErrors = true;
-            }
-            if (!isValidEmail(data.email)) {
-                form.querySelector('[name="email"]').closest('.mcw-form-group').classList.add('mcw-invalid');
-                hasErrors = true;
-            }
-            if (!data.message) {
-                form.querySelector('[name="message"]').closest('.mcw-form-group').classList.add('mcw-invalid');
-                hasErrors = true;
-            }
+                // Validar email si es tipo email
+                else if (field.type === 'email' && !isValidEmail(fieldValue)) {
+                    formGroup.classList.add('mcw-invalid');
+                    hasErrors = true;
+                }
+                // Validar teléfono con intl-tel-input
+                else if (field.type === 'tel' && phoneFieldName === fieldName && !phoneValid) {
+                    formGroup.classList.add('mcw-invalid');
+                    const errorDiv = formGroup.querySelector('.mcw-error');
+                    if (errorDiv) {
+                        errorDiv.textContent = 'El número de teléfono no es válido para el país seleccionado';
+                    }
+                    hasErrors = true;
+                }
+            });
 
             if (hasErrors) return;
 
@@ -972,28 +1047,18 @@
                 if (!response.ok) {
                     // Mostrar errores de validación del servidor
                     if (result.errors) {
-                        // Mapear errores a los campos del formulario
-                        const fieldMap = {
-                            'name': 'name',
-                            'phone': 'phone',
-                            'email': 'email',
-                            'message': 'message'
-                        };
-
-                        Object.keys(result.errors).forEach(field => {
-                            const inputName = fieldMap[field];
-                            if (inputName) {
-                                const formGroup = form.querySelector(`[name="${inputName}"]`)?.closest('.mcw-form-group');
-                                if (formGroup) {
-                                    formGroup.classList.add('mcw-invalid');
-                                    const errorDiv = formGroup.querySelector('.mcw-error');
-                                    if (errorDiv) {
-                                        // Mostrar el primer mensaje de error
-                                        const errorMsg = Array.isArray(result.errors[field])
-                                            ? result.errors[field][0]
-                                            : result.errors[field];
-                                        errorDiv.textContent = errorMsg;
-                                    }
+                        // Mapear errores dinámicamente a los campos del formulario
+                        Object.keys(result.errors).forEach(fieldName => {
+                            const formGroup = form.querySelector(`[name="${fieldName}"]`)?.closest('.mcw-form-group');
+                            if (formGroup) {
+                                formGroup.classList.add('mcw-invalid');
+                                const errorDiv = formGroup.querySelector('.mcw-error');
+                                if (errorDiv) {
+                                    // Mostrar el primer mensaje de error
+                                    const errorMsg = Array.isArray(result.errors[fieldName])
+                                        ? result.errors[fieldName][0]
+                                        : result.errors[fieldName];
+                                    errorDiv.textContent = errorMsg;
                                 }
                             }
                         });
@@ -1019,7 +1084,10 @@
                 setTimeout(() => {
                     if (cfg.type === 'whatsapp' && cfg.phone) {
                         const cleanPhone = cfg.phone.replace(/[^0-9]/g, '');
-                        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(data.message)}`;
+                        // Buscar campo textarea para el mensaje (probablemente mensaje)
+                        const textareaField = form.querySelector('textarea');
+                        const messageText = textareaField ? data[textareaField.name] : '';
+                        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(messageText || 'Hola')}`;
                         window.open(whatsappUrl, '_blank');
                     } else if (cfg.type === 'phone' && cfg.phone) {
                         window.location.href = `tel:${cfg.phone}`;

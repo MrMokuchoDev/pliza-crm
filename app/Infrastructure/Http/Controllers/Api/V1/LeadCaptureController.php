@@ -21,21 +21,13 @@ class LeadCaptureController extends Controller
 
     public function capture(Request $request): JsonResponse
     {
-        // Validar datos - teléfono validado en frontend con intl-tel-input
+        // Validar solo datos del sistema (no custom fields)
         $validator = Validator::make($request->all(), [
             'site_id' => 'required|uuid',
-            'name' => 'nullable|string|max:255',
-            'email' => 'nullable|email|max:255',
-            'phone' => ['nullable', 'string', 'min:7', 'max:20', 'regex:/^\+?[0-9\s\-\(\)]+$/'],
-            'message' => 'nullable|string|max:5000',
             'source_type' => 'required|string|in:whatsapp_button,phone_button,contact_form',
             'source_url' => 'nullable|string|max:2000',
             'page_url' => 'nullable|string|max:2000',
             'user_agent' => 'nullable|string|max:500',
-        ], [
-            'email.email' => 'El email proporcionado no es válido.',
-            'phone.min' => 'El teléfono debe tener al menos 7 dígitos.',
-            'phone.regex' => 'El teléfono solo puede contener números, espacios, guiones y paréntesis.',
         ]);
 
         if ($validator->fails()) {
@@ -43,18 +35,6 @@ class LeadCaptureController extends Controller
                 'success' => false,
                 'message' => 'Datos inválidos',
                 'errors' => $validator->errors(),
-            ], 422);
-        }
-
-        // Validar que al menos email o teléfono esté presente
-        if (empty($request->input('email')) && empty($request->input('phone'))) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Debes proporcionar al menos un email o teléfono.',
-                'errors' => [
-                    'email' => ['Debes proporcionar al menos un email o teléfono.'],
-                    'phone' => ['Debes proporcionar al menos un email o teléfono.'],
-                ],
             ], 422);
         }
 
@@ -77,14 +57,34 @@ class LeadCaptureController extends Controller
         // Determinar el source_type
         $sourceType = $this->parseSourceType($request->input('source_type'));
 
+        // Extraer custom fields (todos los campos que empiezan con cf_lead_)
+        $customFields = [];
+        foreach ($request->all() as $key => $value) {
+            if (str_starts_with($key, 'cf_lead_')) {
+                $customFields[$key] = $value;
+            }
+        }
+
+        // Validar que al menos email o teléfono esté presente
+        $email = $customFields['cf_lead_2'] ?? null;
+        $phone = $customFields['cf_lead_3'] ?? null;
+
+        if (empty($email) && empty($phone)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Debes proporcionar al menos un email o teléfono.',
+                'errors' => [
+                    'cf_lead_2' => ['Debes proporcionar al menos un email o teléfono.'],
+                    'cf_lead_3' => ['Debes proporcionar al menos un email o teléfono.'],
+                ],
+            ], 422);
+        }
+
         // Capturar lead usando el servicio
         $result = $this->leadService->capture(
             siteId: $site->id,
             sourceType: $sourceType,
-            name: $request->input('name'),
-            email: $request->input('email'),
-            phone: $request->input('phone'),
-            message: $request->input('message'),
+            customFields: $customFields,
             sourceUrl: $request->input('source_url') ?? $request->input('page_url'),
             userAgent: $request->input('user_agent'),
             ipAddress: $request->ip(),

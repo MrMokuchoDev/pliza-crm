@@ -14,10 +14,7 @@ readonly class CaptureLeadCommand
     public function __construct(
         public string $siteId,
         public SourceType $sourceType,
-        public ?string $name = null,
-        public ?string $email = null,
-        public ?string $phone = null,
-        public ?string $message = null,
+        public array $customFields = [],
         public ?string $sourceUrl = null,
         public ?string $userAgent = null,
         public ?string $ipAddress = null,

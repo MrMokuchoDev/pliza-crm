@@ -73,4 +73,40 @@ trait CustomFieldSearchable
             $relationQuery->searchInCustomFields($searchTerm, $fieldNames);
         });
     }
+
+    /**
+     * Scope para buscar valor exacto en un custom field específico.
+     * Útil para búsquedas por email, ID, etc.
+     *
+     * @param Builder $query
+     * @param string $fieldName Nombre del custom field (ej: 'cf_lead_2')
+     * @param mixed $value Valor exacto a buscar
+     * @return Builder
+     */
+    public function scopeWhereCustomField(Builder $query, string $fieldName, mixed $value): Builder
+    {
+        return $query->whereHas('customFieldValues', function ($cfQuery) use ($fieldName, $value) {
+            $cfQuery->whereHas('customField', function ($cfDefinition) use ($fieldName) {
+                $cfDefinition->where('name', $fieldName);
+            })->where('value', $value);
+        });
+    }
+
+    /**
+     * Scope para buscar con LIKE en un custom field específico.
+     * Útil para búsquedas parciales por teléfono, nombre, etc.
+     *
+     * @param Builder $query
+     * @param string $fieldName Nombre del custom field (ej: 'cf_lead_3')
+     * @param string $pattern Patrón para LIKE (ej: '%3356182%')
+     * @return Builder
+     */
+    public function scopeWhereCustomFieldLike(Builder $query, string $fieldName, string $pattern): Builder
+    {
+        return $query->whereHas('customFieldValues', function ($cfQuery) use ($fieldName, $pattern) {
+            $cfQuery->whereHas('customField', function ($cfDefinition) use ($fieldName) {
+                $cfDefinition->where('name', $fieldName);
+            })->where('value', 'like', $pattern);
+        });
+    }
 }

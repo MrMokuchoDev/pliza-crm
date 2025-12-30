@@ -47,10 +47,14 @@ class CaptureLeadHandler
 
         // Toda la lógica dentro de transacción para evitar race conditions
         return DB::transaction(function () use ($command, $defaultPhase) {
+            // Extraer email y phone de los custom fields para buscar lead existente
+            $email = $command->customFields['cf_lead_2'] ?? null;
+            $phone = $command->customFields['cf_lead_3'] ?? null;
+
             // Buscar contacto existente por email o teléfono (con lock)
             $findQuery = new FindLeadByContactQuery(
-                email: $command->email,
-                phone: $command->phone,
+                email: $email,
+                phone: $phone,
                 lockForUpdate: true
             );
             $existingLead = $this->findByContactHandler->handle($findQuery);
@@ -90,7 +94,7 @@ class CaptureLeadHandler
             : null;
 
         // No tiene negocio abierto, crear uno nuevo
-        $deal = $this->createDealForLead($lead->id, $command, $defaultPhase, $assignedUserId);
+        $deal = $this->createDealForLead($lead->id, $command->customFields, $command->sourceType, $defaultPhase, $assignedUserId);
 
         return [
             'success' => true,
@@ -116,12 +120,8 @@ class CaptureLeadHandler
             ? $this->leadAssignmentService->getAssignedUserForSite($command->siteId)
             : null;
 
-        // Crear lead
+        // Crear lead con custom fields dinámicos
         $leadData = new LeadData(
-            name: $command->name,
-            email: $command->email,
-            phone: $command->phone,
-            message: $command->message,
             sourceType: $command->sourceType,
             sourceSiteId: $command->siteId,
             sourceUrl: $command->sourceUrl ?? $command->pageUrl,
@@ -132,13 +132,14 @@ class CaptureLeadHandler
                 'captured_at' => now()->toIso8601String(),
             ],
             assignedTo: $assignedUserId,
+            customFields: $command->customFields,
         );
 
         $createCommand = new \App\Application\Lead\Commands\CreateLeadCommand($leadData);
         $lead = $this->createLeadHandler->handle($createCommand);
 
         // Crear negocio asociado (con el mismo usuario asignado)
-        $deal = $this->createDealForLead($lead->id, $command, $defaultPhase, $assignedUserId);
+        $deal = $this->createDealForLead($lead->id, $command->customFields, $command->sourceType, $defaultPhase, $assignedUserId);
 
         return [
             'success' => true,
@@ -156,14 +157,18 @@ class CaptureLeadHandler
     /**
      * Crear un negocio para un lead.
      */
-    private function createDealForLead(string $leadId, CaptureLeadCommand $command, $defaultPhase, ?string $assignedUserId = null): \App\Infrastructure\Persistence\Eloquent\DealModel
+    private function createDealForLead(string $leadId, array $customFields, SourceType $sourceType, $defaultPhase, ?string $assignedUserId = null): \App\Infrastructure\Persistence\Eloquent\DealModel
     {
-        $dealName = $this->generateDealName($command->sourceType, $command->name);
+        // Extraer nombre del custom field cf_lead_1
+        $name = $customFields['cf_lead_1'] ?? null;
+        $message = $customFields['cf_lead_4'] ?? null;
+
+        $dealName = $this->generateDealName($sourceType, $name);
         $dealData = DealData::fromArray([
             'lead_id' => $leadId,
             'sale_phase_id' => $defaultPhase->id,
             'name' => $dealName,
-            'description' => $command->message,
+            'description' => $message,
             'estimated_close_date' => now()->addMonth()->format('Y-m-d'),
             'assigned_to' => $assignedUserId,
         ]);
