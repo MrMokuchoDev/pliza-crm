@@ -55,7 +55,9 @@ trait HasWonPhaseValue
             }
 
             if ($validation['reason'] === DealPhaseService::RESULT_REQUIRES_VALUE) {
-                $this->openWonValueModal($dealId, $phaseId, $deal->value);
+                // Convertir value a float (viene como string del custom field)
+                $currentValue = $deal->value ? (float) $deal->value : null;
+                $this->openWonValueModal($dealId, $phaseId, $currentValue);
 
                 return null;
             }

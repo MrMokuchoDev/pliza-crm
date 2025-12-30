@@ -6,6 +6,7 @@ namespace App\Infrastructure\Persistence\Eloquent;
 
 use App\Domain\Shared\Traits\HasCustomFields;
 use App\Domain\Shared\Traits\HasUuid;
+use App\Infrastructure\Persistence\Eloquent\Concerns\CustomFieldSearchable;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,7 @@ class DealModel extends Model
     use HasUuid;
     use SoftDeletes;
     use HasCustomFields;
+    use CustomFieldSearchable;
 
     protected $table = 'deals';
 
@@ -98,7 +100,17 @@ class DealModel extends Model
     }
 
     /**
-     * Mapeo de propiedades a custom fields.
+     * Tipo de entidad para custom fields.
+     */
+    protected function getEntityType(): string
+    {
+        return 'deal';
+    }
+
+    /**
+     * DEPRECADO: Mapeo de propiedades a custom fields.
+     * Mantenido solo para compatibilidad temporal con trait HasCustomFields.
+     * NO usar en código nuevo.
      */
     public function getCustomFieldMapping(): array
     {
@@ -108,13 +120,5 @@ class DealModel extends Model
             'description' => 'cf_deal_3',
             'estimated_close_date' => 'cf_deal_4',
         ];
-    }
-
-    /**
-     * Tipo de entidad para custom fields.
-     */
-    protected function getEntityType(): string
-    {
-        return 'deal';
     }
 }

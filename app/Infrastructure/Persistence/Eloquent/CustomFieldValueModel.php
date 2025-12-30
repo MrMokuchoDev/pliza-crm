@@ -13,6 +13,8 @@ final class CustomFieldValueModel extends Model
 
     protected $table = 'custom_field_values';
 
+    protected $with = ['customField'];
+
     protected $fillable = [
         'id',
         'custom_field_id',

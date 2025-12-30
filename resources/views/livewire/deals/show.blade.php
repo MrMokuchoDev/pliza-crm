@@ -197,7 +197,7 @@
                         @if($deal->estimated_close_date)
                             <div class="flex justify-between">
                                 <dt class="text-gray-500 dark:text-gray-400">Cierre estimado</dt>
-                                <dd class="text-gray-900 dark:text-white">{{ $deal->estimated_close_date->format('d/m/Y') }}</dd>
+                                <dd class="text-gray-900 dark:text-white">{{ \Carbon\Carbon::parse($deal->estimated_close_date)->format('d/m/Y') }}</dd>
                             </div>
                         @endif
                         @if($deal->close_date)

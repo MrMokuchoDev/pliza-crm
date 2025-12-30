@@ -15,39 +15,32 @@ class CreateLeadHandler
 {
     public function handle(CreateLeadCommand $command): LeadModel
     {
-        $data = $command->data->toArray();
+        // Obtener custom fields directamente del DTO
+        $customFields = $command->data->customFields;
 
         // Auto-asignar al vendedor que crea el lead si no tiene asignación
-        if (empty($data['assigned_to'])) {
+        $assignedTo = $command->data->assignedTo;
+        if (empty($assignedTo)) {
             $user = Auth::user();
             if ($user && $user->isSales()) {
-                $data['assigned_to'] = $user->uuid;
+                $assignedTo = $user->uuid;
             }
         }
 
-        // Separar custom fields de campos normales
-        $customFieldMapping = (new LeadModel())->getCustomFieldMapping();
-        $customFields = [];
-        $regularFields = [];
+        // Campos regulares del sistema (NO incluir los que son custom fields)
+        $regularFields = array_filter([
+            'source_type' => $command->data->sourceType?->value,
+            'source_site_id' => $command->data->sourceSiteId,
+            'source_url' => $command->data->sourceUrl,
+            'metadata' => $command->data->metadata,
+            'assigned_to' => $assignedTo,
+        ], fn($value) => $value !== null);
 
-        foreach ($data as $key => $value) {
-            if (isset($customFieldMapping[$key])) {
-                $customFields[$key] = $value;
-            } else {
-                $regularFields[$key] = $value;
-            }
-        }
-
-        // Crear el lead con campos regulares
+        // Crear el lead con campos regulares y custom fields
         $lead = LeadModel::create($regularFields);
 
-        // Asignar custom fields manualmente
-        foreach ($customFields as $key => $value) {
-            $lead->$key = $value;
-        }
-
-        // Guardar custom fields
-        $lead->saveCustomFieldValues();
+        // Asignar custom fields usando helper del trait
+        $lead->setCustomFieldsFromArray($customFields)->save();
 
         return $lead;
     }

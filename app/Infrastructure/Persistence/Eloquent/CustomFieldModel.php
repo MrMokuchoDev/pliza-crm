@@ -25,11 +25,13 @@ final class CustomFieldModel extends Model
         'validation_rules',
         'order',
         'is_active',
+        'is_system',
     ];
 
     protected $casts = [
         'is_required' => 'boolean',
         'is_active' => 'boolean',
+        'is_system' => 'boolean',
         'validation_rules' => 'array',
         'order' => 'integer',
     ];

@@ -7,6 +7,7 @@ namespace App\Infrastructure\Persistence\Eloquent;
 use App\Domain\Lead\ValueObjects\SourceType;
 use App\Domain\Shared\Traits\HasCustomFields;
 use App\Domain\Shared\Traits\HasUuid;
+use App\Infrastructure\Persistence\Eloquent\Concerns\CustomFieldSearchable;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +19,7 @@ class LeadModel extends Model
     use HasUuid;
     use SoftDeletes;
     use HasCustomFields;
+    use CustomFieldSearchable;
 
     protected $table = 'leads';
 
@@ -90,7 +92,17 @@ class LeadModel extends Model
     }
 
     /**
-     * Mapeo de propiedades a custom fields.
+     * Tipo de entidad para custom fields.
+     */
+    protected function getEntityType(): string
+    {
+        return 'lead';
+    }
+
+    /**
+     * DEPRECADO: Mapeo de propiedades a custom fields.
+     * Mantenido solo para compatibilidad temporal con trait HasCustomFields.
+     * NO usar en código nuevo.
      */
     public function getCustomFieldMapping(): array
     {
@@ -100,13 +112,5 @@ class LeadModel extends Model
             'phone' => 'cf_lead_3',
             'message' => 'cf_lead_4',
         ];
-    }
-
-    /**
-     * Tipo de entidad para custom fields.
-     */
-    protected function getEntityType(): string
-    {
-        return 'lead';
     }
 }

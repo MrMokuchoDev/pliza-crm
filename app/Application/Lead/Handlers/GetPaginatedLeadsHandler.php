@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Lead\Handlers;
 
 use App\Application\Lead\Queries\GetPaginatedLeadsQuery;
+use App\Domain\CustomField\ValueObjects\SystemCustomFields;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -30,12 +31,10 @@ class GetPaginatedLeadsHandler
         }
 
         if (! empty($query->filters['search'])) {
-            $search = $query->filters['search'];
-            $builder->where(function ($sq) use ($search) {
-                $sq->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
-            });
+            $builder->searchInCustomFields(
+                $query->filters['search'],
+                SystemCustomFields::getLeadSearchableFields()
+            );
         }
 
         if (! empty($query->filters['source'])) {

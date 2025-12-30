@@ -6,6 +6,7 @@ namespace App\Application\Dashboard\Handlers;
 
 use App\Application\Dashboard\DTOs\DashboardStatsData;
 use App\Application\Dashboard\Queries\GetDashboardStatsQuery;
+use App\Application\Deal\Services\DealValueCalculationService;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
@@ -16,6 +17,10 @@ use Carbon\Carbon;
  */
 class GetDashboardStatsHandler
 {
+    public function __construct(
+        private readonly DealValueCalculationService $dealValueCalculator
+    ) {}
+
     /**
      * @return DashboardStatsData
      */
@@ -53,9 +58,8 @@ class GetDashboardStatsHandler
         // Deals perdidos
         $lostDeals = DealModel::whereIn('sale_phase_id', $lostPhaseIds)->count();
 
-        // Valor total de deals ganados
-        $totalWonValue = DealModel::whereIn('sale_phase_id', $wonPhaseIds)
-            ->sum('value') ?? 0;
+        // Valor total de deals ganados usando servicio centralizado
+        $totalWonValue = $this->dealValueCalculator->calculateTotalValueByPhaseIds($wonPhaseIds);
 
         // Tasa de conversión (ganados / cerrados totales * 100)
         $closedDeals = $wonDeals + $lostDeals;

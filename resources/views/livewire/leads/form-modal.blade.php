@@ -6,66 +6,32 @@
 
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-5xl sm:w-full">
                     <form wire:submit="save">
                         <div class="bg-white dark:bg-gray-800 px-6 pt-6 pb-4">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
                                 {{ $leadId ? 'Editar Contacto' : 'Nuevo Contacto' }}
                             </h3>
 
-                            <div class="space-y-4">
-                                <!-- Name -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
-                                    <input type="text"
-                                           wire:model="name"
-                                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                                           placeholder="Nombre del contacto">
-                                    @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                                </div>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {{-- Custom Fields por Grupos (se distribuirán en las 2 columnas automáticamente) --}}
+                                <x-custom-fields-group entityType="lead" />
 
-                                <!-- Email -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                                    <input type="email"
-                                           wire:model="email"
-                                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                                           placeholder="email@ejemplo.com">
-                                    @error('email') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                                </div>
-
-                                <!-- Phone -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tel&eacute;fono</label>
-                                    <input type="text"
-                                           wire:model="phone"
-                                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                                           placeholder="+57 300 123 4567">
-                                    @error('phone') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                                </div>
-
-                                <!-- Message -->
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Mensaje / Notas</label>
-                                    <textarea wire:model="message"
-                                              rows="3"
-                                              class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                                              placeholder="Informaci&oacute;n adicional sobre el contacto..."></textarea>
-                                    @error('message') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
-                                </div>
-
-                                <!-- Assigned To -->
+                                {{-- Configuración (campo del sistema) --}}
                                 @if($canAssign)
-                                <div>
-                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asignado a</label>
-                                    <select wire:model="assigned_to"
-                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                                        <option value="">Sin asignar</option>
-                                        @foreach($assignableUsers as $user)
-                                            <option value="{{ $user->uuid }}">{{ $user->name }} ({{ $user->email }})</option>
-                                        @endforeach
-                                    </select>
-                                    @error('assigned_to') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                <div class="col-span-full border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+                                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Configuración</h4>
+                                    <div class="max-w-md">
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asignado a</label>
+                                        <select wire:model="assigned_to"
+                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                                            <option value="">Sin asignar</option>
+                                            @foreach($assignableUsers as $user)
+                                                <option value="{{ $user->uuid }}">{{ $user->name }} ({{ $user->email }})</option>
+                                            @endforeach
+                                        </select>
+                                        @error('assigned_to') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
+                                    </div>
                                 </div>
                                 @endif
                             </div>

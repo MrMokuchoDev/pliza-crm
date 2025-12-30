@@ -20,29 +20,23 @@ class UpdateLeadHandler
             return null;
         }
 
-        $data = $command->data->toArray();
+        // Obtener custom fields directamente del DTO
+        $customFields = $command->data->customFields;
 
-        // Separar custom fields de campos normales
-        $customFieldMapping = $lead->getCustomFieldMapping();
-        $customFields = [];
-        $regularFields = [];
-
-        foreach ($data as $key => $value) {
-            if (isset($customFieldMapping[$key])) {
-                $customFields[$key] = $value;
-            } else {
-                $regularFields[$key] = $value;
-            }
-        }
+        // Campos regulares del sistema (NO incluir los que son custom fields)
+        $regularFields = array_filter([
+            'source_type' => $command->data->sourceType?->value,
+            'source_site_id' => $command->data->sourceSiteId,
+            'source_url' => $command->data->sourceUrl,
+            'metadata' => $command->data->metadata,
+            'assigned_to' => $command->data->assignedTo,
+        ], fn($value) => $value !== null);
 
         // Actualizar campos regulares
         $lead->update($regularFields);
 
-        // Asignar y guardar custom fields
-        foreach ($customFields as $key => $value) {
-            $lead->$key = $value;
-        }
-        $lead->saveCustomFieldValues();
+        // Asignar custom fields usando helper del trait
+        $lead->setCustomFieldsFromArray($customFields)->save();
 
         return $lead->fresh();
     }

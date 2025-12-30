@@ -41,42 +41,29 @@ class CreateDealHandler
                 $leadCreated = true;
             }
 
-            $dealData = $command->dealData->toArray();
-            $dealData['lead_id'] = $leadId;
+            // Obtener custom fields directamente del DTO
+            $customFields = $command->dealData->customFields;
 
             // Auto-asignar al vendedor si no tiene asignación
-            if (empty($dealData['assigned_to']) && $user && $user->isSales()) {
-                $dealData['assigned_to'] = $user->uuid;
+            $assignedTo = $command->dealData->assignedTo;
+            if (empty($assignedTo) && $user && $user->isSales()) {
+                $assignedTo = $user->uuid;
             }
 
-            // Registrar quién creó el deal
-            if ($user) {
-                $dealData['created_by'] = $user->uuid;
-            }
+            // Campos regulares del sistema (NO incluir los que son custom fields)
+            $regularFields = array_filter([
+                'lead_id' => $leadId,
+                'sale_phase_id' => $command->dealData->salePhaseId,
+                'close_date' => $command->dealData->closeDate,
+                'assigned_to' => $assignedTo,
+                'created_by' => $user?->uuid,
+            ], fn($value) => $value !== null);
 
-            // Separar custom fields de campos normales
-            $customFieldMapping = (new DealModel())->getCustomFieldMapping();
-            $customFields = [];
-            $regularFields = [];
-
-            foreach ($dealData as $key => $value) {
-                if (isset($customFieldMapping[$key])) {
-                    $customFields[$key] = $value;
-                } else {
-                    $regularFields[$key] = $value;
-                }
-            }
-
-            // Crear el deal con campos regulares
+            // Crear el deal con campos regulares y custom fields
             $deal = DealModel::create($regularFields);
 
-            // Asignar custom fields manualmente
-            foreach ($customFields as $key => $value) {
-                $deal->$key = $value;
-            }
-
-            // Guardar custom fields
-            $deal->saveCustomFieldValues();
+            // Asignar custom fields usando helper del trait
+            $deal->setCustomFieldsFromArray($customFields)->save();
 
             return [
                 'deal' => $deal,

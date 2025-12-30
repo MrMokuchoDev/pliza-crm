@@ -68,13 +68,18 @@ trait HasCustomFields
      */
     public function getAttribute($key)
     {
-        // PRIMERO: Verificar si es un campo mapeado a custom field
+        // 1. Verificar si es un campo mapeado a custom field (legacy: name, email, etc.)
         $mapping = $this->getCustomFieldMapping();
         if (isset($mapping[$key])) {
             return $this->getCustomFieldValue($mapping[$key]);
         }
 
-        // Si no es custom field, usar comportamiento normal de Eloquent
+        // 2. Verificar si es un nombre técnico de custom field (cf_lead_1, cf_deal_2, etc.)
+        if (preg_match('/^cf_(lead|deal)_\d+$/', $key)) {
+            return $this->getCustomFieldValue($key);
+        }
+
+        // 3. Si no es custom field, usar comportamiento normal de Eloquent
         return parent::getAttribute($key);
     }
 
@@ -83,14 +88,20 @@ trait HasCustomFields
      */
     public function setAttribute($key, $value)
     {
-        // Verificar si es un campo que está mapeado a custom field
+        // 1. Verificar si es un campo que está mapeado a custom field (legacy: name, email, etc.)
         $mapping = $this->getCustomFieldMapping();
         if (isset($mapping[$key])) {
             $this->setCustomFieldValue($mapping[$key], $value);
             return $this;
         }
 
-        // Si no es custom field, usar comportamiento normal
+        // 2. Verificar si es un nombre técnico de custom field (cf_lead_1, cf_deal_2, etc.)
+        if (preg_match('/^cf_(lead|deal)_\d+$/', $key)) {
+            $this->setCustomFieldValue($key, $value);
+            return $this;
+        }
+
+        // 3. Si no es custom field, usar comportamiento normal
         return parent::setAttribute($key, $value);
     }
 
@@ -142,6 +153,22 @@ trait HasCustomFields
     }
 
     /**
+     * Asignar múltiples custom fields desde un array.
+     * Útil para asignar todos los custom fields de un DTO de una vez.
+     *
+     * @param array $customFields Array asociativo ['cf_lead_1' => 'valor', 'cf_lead_2' => 'valor', ...]
+     * @return static
+     */
+    public function setCustomFieldsFromArray(array $customFields): static
+    {
+        foreach ($customFields as $fieldName => $value) {
+            $this->setAttribute($fieldName, $value);
+        }
+
+        return $this;
+    }
+
+    /**
      * Guardar todos los custom field values pendientes.
      * Llamar después de guardar el modelo.
      */
@@ -185,12 +212,19 @@ trait HasCustomFields
      */
     protected static function bootHasCustomFields(): void
     {
-        // Antes de guardar: remover atributos mapeados para evitar errores en columnas físicas
+        // Antes de guardar: remover atributos de custom fields para evitar errores
         static::saving(function ($model) {
+            // Remover propiedades mapeadas (compatibilidad legacy)
             $mapping = $model->getCustomFieldMapping();
             foreach (array_keys($mapping) as $attribute) {
-                // Remover del array de attributes para que no se guarde en la tabla física
                 unset($model->attributes[$attribute]);
+            }
+
+            // Remover nombres técnicos de custom fields (cf_lead_1, cf_deal_1, etc.)
+            foreach ($model->attributes as $key => $value) {
+                if (preg_match('/^cf_(lead|deal)_\d+$/', $key)) {
+                    unset($model->attributes[$key]);
+                }
             }
         });
 

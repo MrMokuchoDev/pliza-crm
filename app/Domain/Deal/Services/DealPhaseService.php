@@ -131,8 +131,9 @@ class DealPhaseService
      */
     public function changePhaseWithValue(DealModel $deal, SalePhaseModel $newPhase, float $value): array
     {
-        // Actualizar valor primero
-        $deal->update(['value' => $value]);
+        // Actualizar valor primero usando magic setter (value es custom field: cf_deal_2)
+        $deal->value = $value;
+        $deal->save();
 
         return $this->changePhase($deal, $newPhase);
     }

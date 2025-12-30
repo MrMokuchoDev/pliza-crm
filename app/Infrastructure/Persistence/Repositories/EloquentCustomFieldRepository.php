@@ -111,6 +111,7 @@ final class EloquentCustomFieldRepository implements CustomFieldRepositoryInterf
             validationRules: ValidationRules::fromArray($model->validation_rules ?? []),
             order: $model->order,
             isActive: $model->is_active,
+            isSystem: $model->is_system ?? false,
             createdAt: \DateTimeImmutable::createFromMutable($model->created_at),
             updatedAt: \DateTimeImmutable::createFromMutable($model->updated_at),
         );

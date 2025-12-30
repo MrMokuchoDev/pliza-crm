@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Deal\Handlers;
 
 use App\Application\Deal\Queries\GetPaginatedDealsQuery;
+use App\Domain\CustomField\ValueObjects\SystemCustomFields;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
@@ -30,11 +31,11 @@ class GetPaginatedDealsHandler
         if (! empty($query->filters['search'])) {
             $search = $query->filters['search'];
             $builder->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhereHas('lead', function ($lq) use ($search) {
-                        $lq->where('name', 'like', "%{$search}%")
-                            ->orWhere('email', 'like', "%{$search}%")
-                            ->orWhere('phone', 'like', "%{$search}%");
+                // Buscar por nombre del deal
+                $q->searchInCustomFields($search, SystemCustomFields::getDealSearchableFields())
+                    // O buscar en el lead asociado
+                    ->orWhereHas('lead', function ($leadQuery) use ($search) {
+                        $leadQuery->searchInCustomFields($search, SystemCustomFields::getLeadSearchableFields());
                     });
             });
         }

@@ -24,6 +24,7 @@ final class CustomField
         private ValidationRules $validationRules,
         private int $order,
         private bool $isActive,
+        private bool $isSystem,
         private readonly \DateTimeImmutable $createdAt,
         private \DateTimeImmutable $updatedAt,
     ) {}
@@ -52,6 +53,7 @@ final class CustomField
             validationRules: $validationRules,
             order: $order,
             isActive: true,
+            isSystem: false, // Los campos creados manualmente no son del sistema
             createdAt: new \DateTimeImmutable(),
             updatedAt: new \DateTimeImmutable(),
         );
@@ -69,6 +71,7 @@ final class CustomField
         ValidationRules $validationRules,
         int $order,
         bool $isActive,
+        bool $isSystem,
         \DateTimeImmutable $createdAt,
         \DateTimeImmutable $updatedAt
     ): self {
@@ -84,6 +87,7 @@ final class CustomField
             validationRules: $validationRules,
             order: $order,
             isActive: $isActive,
+            isSystem: $isSystem,
             createdAt: $createdAt,
             updatedAt: $updatedAt,
         );
@@ -143,6 +147,11 @@ final class CustomField
     public function isActive(): bool
     {
         return $this->isActive;
+    }
+
+    public function isSystem(): bool
+    {
+        return $this->isSystem;
     }
 
     public function createdAt(): \DateTimeImmutable
@@ -239,6 +248,10 @@ final class CustomField
 
     public function deactivate(): void
     {
+        if ($this->isSystem) {
+            throw new \DomainException("Cannot deactivate system field: {$this->label}");
+        }
+
         $this->isActive = false;
         $this->updatedAt = new \DateTimeImmutable();
     }

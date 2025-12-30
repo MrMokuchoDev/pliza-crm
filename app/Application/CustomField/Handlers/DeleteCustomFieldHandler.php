@@ -28,6 +28,11 @@ final class DeleteCustomFieldHandler
             throw new \DomainException("Custom field not found: {$command->id}");
         }
 
+        // Prevenir eliminación de campos del sistema
+        if ($field->isSystem()) {
+            throw new \DomainException("Cannot delete system field: {$field->label()}");
+        }
+
         // Eliminar todos los valores asociados
         $this->valueRepository->deleteByField($fieldId);
 

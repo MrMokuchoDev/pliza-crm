@@ -323,12 +323,12 @@ final class CustomFieldIndex extends Component
         $entityTypes = $service->getAvailableEntityTypes();
         $groups = $service->getGroupsByEntity($this->selectedEntityType);
 
-        // Obtener campos agrupados por grupo
+        // Obtener campos agrupados por grupo (incluir inactivos para mostrar badge de sistema)
         $fieldsByGroup = [];
         foreach ($groups as $group) {
             $fieldsByGroup[$group->id] = $service->getFieldsByEntity(
                 $this->selectedEntityType,
-                activeOnly: true,
+                activeOnly: false, // Mostrar todos para poder ver campos del sistema inactivos
                 groupId: $group->id
             );
         }
