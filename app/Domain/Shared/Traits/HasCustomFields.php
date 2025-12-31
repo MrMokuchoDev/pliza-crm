@@ -59,6 +59,7 @@ trait HasCustomFields
             : $this->customFieldValues()->get();
 
         foreach ($values as $value) {
+            // El accessor del modelo ya decodifica JSON automáticamente
             $this->customFieldValuesCache[$value->custom_field_id] = $value->value;
         }
     }
@@ -146,7 +147,7 @@ trait HasCustomFields
                     'entity_id' => $this->getKey(),
                 ],
                 [
-                    'value' => $value,
+                    'value' => $value, // El mutator del modelo se encarga de encodear arrays
                 ]
             );
         }
@@ -186,7 +187,7 @@ trait HasCustomFields
                     'entity_id' => $this->getKey(),
                 ],
                 [
-                    'value' => $value,
+                    'value' => $value, // El mutator del modelo se encarga de encodear arrays
                 ]
             );
         }

@@ -36,17 +36,39 @@ if (file_exists($laravelBootstrap)) {
             ->where('is_active', 1)
             ->where('is_required', 1)
             ->orderBy('order', 'asc')
-            ->get(['id', 'name', 'label', 'type', 'is_required', 'validation_rules'])
+            ->get(['id', 'name', 'label', 'type', 'is_required', 'validation_rules', 'default_value'])
             ->map(fn($field) => (array) $field)
             ->toArray();
 
         foreach ($fields as $field) {
+            $options = null;
+
+            // Si el campo requiere opciones, consultar tabla dinámica
+            if (in_array($field['type'], ['select', 'radio', 'multiselect'])) {
+                $optionsTableName = $field['name'] . '_options';
+                if (\Illuminate\Support\Facades\Schema::hasTable($optionsTableName)) {
+                    $optionsData = \Illuminate\Support\Facades\DB::table($optionsTableName)
+                        ->orderBy('order')
+                        ->get(['label', 'value'])
+                        ->toArray();
+
+                    if (!empty($optionsData)) {
+                        $options = array_map(fn($opt) => [
+                            'label' => $opt->label,
+                            'value' => $opt->value
+                        ], $optionsData);
+                    }
+                }
+            }
+
             $customFields[] = [
                 'name' => $field['name'],
                 'label' => $field['label'],
                 'type' => $field['type'],
                 'required' => (bool) $field['is_required'],
                 'validation' => $field['validation_rules'],
+                'options' => $options,
+                'default_value' => $field['default_value'],
             ];
         }
     } catch (\Exception $e) {

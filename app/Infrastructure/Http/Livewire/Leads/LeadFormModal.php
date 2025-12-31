@@ -107,10 +107,19 @@ class LeadFormModal extends Component
 
                 // Cargar custom field values dinámicamente desde la relación
                 foreach ($lead->customFieldValues as $cfValue) {
-                    // Obtener el nombre del custom field
+                    // Obtener el nombre del custom field y tipo
                     $fieldName = $cfValue->customField->name ?? null;
+                    $fieldType = $cfValue->customField->type ?? null;
+
                     if ($fieldName) {
-                        $this->customFieldValues[$fieldName] = $cfValue->value ?? '';
+                        $value = $cfValue->value ?? '';
+
+                        // Convertir valores de checkbox a booleanos
+                        if ($fieldType === 'checkbox') {
+                            $value = in_array(strtolower((string)$value), ['1', 'true', 'sí', 'si', 'yes'], true);
+                        }
+
+                        $this->customFieldValues[$fieldName] = $value;
                     }
                 }
 
@@ -121,6 +130,15 @@ class LeadFormModal extends Component
             $this->canEdit = true;
             // Asignar por defecto al usuario actual al crear nuevo contacto
             $this->assigned_to = Auth::user()?->uuid;
+
+            // Inicializar custom fields con valores por defecto
+            $customFieldService = app(\App\Application\CustomField\Services\CustomFieldService::class);
+            $fields = $customFieldService->getFieldsByEntity('lead', activeOnly: true);
+            foreach ($fields as $field) {
+                if ($field->defaultValue !== null && $field->defaultValue !== '') {
+                    $this->customFieldValues[$field->name] = $field->defaultValue;
+                }
+            }
         }
 
         $this->show = true;

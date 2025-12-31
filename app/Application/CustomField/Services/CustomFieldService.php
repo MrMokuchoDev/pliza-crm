@@ -160,6 +160,7 @@ final class CustomFieldService
         ?bool $isActive = null,
         ?array $validationRules = null,
         ?int $order = null,
+        ?array $options = null,
     ): CustomFieldData {
         $command = new UpdateCustomFieldCommand(
             id: $id,
@@ -170,6 +171,7 @@ final class CustomFieldService
             isActive: $isActive,
             validationRules: $validationRules,
             order: $order,
+            options: $options,
         );
         return $this->updateFieldHandler->handle($command);
     }

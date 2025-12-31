@@ -426,7 +426,8 @@
                 color: #EF4444 !important;
             }
             .mcw-form-group input,
-            .mcw-form-group textarea {
+            .mcw-form-group textarea,
+            .mcw-form-group select {
                 width: 100% !important;
                 padding: 12px !important;
                 border: 1px solid #D1D5DB !important;
@@ -441,7 +442,8 @@
                 box-sizing: border-box !important;
             }
             .mcw-form-group input:focus,
-            .mcw-form-group textarea:focus {
+            .mcw-form-group textarea:focus,
+            .mcw-form-group select:focus {
                 outline: none !important;
                 border-color: var(--mcw-color) !important;
                 box-shadow: 0 0 0 3px var(--mcw-color-light) !important;
@@ -461,11 +463,45 @@
                 background: transparent !important;
             }
             .mcw-form-group.mcw-invalid input,
-            .mcw-form-group.mcw-invalid textarea {
+            .mcw-form-group.mcw-invalid textarea,
+            .mcw-form-group.mcw-invalid select {
                 border-color: #EF4444 !important;
             }
             .mcw-form-group.mcw-invalid .mcw-error {
                 display: block !important;
+            }
+            /* Estilos para radio buttons */
+            .mcw-form-group .mcw-radio-group {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            .mcw-form-group .mcw-radio-group label {
+                display: flex !important;
+                align-items: center !important;
+                cursor: pointer !important;
+                font-weight: normal !important;
+            }
+            .mcw-form-group .mcw-radio-group input[type="radio"] {
+                width: auto !important;
+                margin-right: 8px !important;
+                cursor: pointer !important;
+            }
+            /* Estilos para checkbox */
+            .mcw-form-group input[type="checkbox"] {
+                width: auto !important;
+                margin-right: 8px !important;
+                cursor: pointer !important;
+            }
+            .mcw-form-group label:has(input[type="checkbox"]) {
+                display: flex !important;
+                align-items: center !important;
+                cursor: pointer !important;
+                font-weight: normal !important;
+            }
+            /* Estilos para multiselect */
+            .mcw-form-group select[multiple] {
+                min-height: 80px !important;
             }
             /* Estilos para intl-tel-input */
             .mcw-form-group .iti {
@@ -805,12 +841,62 @@
 
                 switch (field.type) {
                     case 'textarea':
-                        inputHtml = `<textarea name="${field.name}" ${requiredAttr} placeholder="${field.label}"></textarea>`;
+                        const textareaDefault = field.default_value || '';
+                        inputHtml = `<textarea name="${field.name}" ${requiredAttr} placeholder="${field.label}">${textareaDefault}</textarea>`;
                         break;
                     case 'select':
                         const options = field.options || [];
-                        const optionsHtml = options.map(opt => `<option value="${opt.value || opt}">${opt.label || opt}</option>`).join('');
+                        console.log('[MiniCRM Widget] Select field options:', field.name, options);
+                        const defaultValue = field.default_value || '';
+                        const optionsHtml = options.map(opt => {
+                            const value = opt.value || opt;
+                            const label = opt.label || opt;
+                            const selected = value === defaultValue ? 'selected' : '';
+                            return `<option value="${value}" ${selected}>${label}</option>`;
+                        }).join('');
                         inputHtml = `<select name="${field.name}" ${requiredAttr}><option value="">Selecciona...</option>${optionsHtml}</select>`;
+                        break;
+                    case 'multiselect':
+                        const multiOptions = field.options || [];
+                        // Parsear default_value: puede ser string, array JSON, o null
+                        let multiDefaults = [];
+                        if (field.default_value) {
+                            try {
+                                // Intentar parsear como JSON
+                                if (field.default_value.startsWith('[')) {
+                                    multiDefaults = JSON.parse(field.default_value);
+                                } else {
+                                    // Si es un valor simple, crear array con ese valor
+                                    multiDefaults = [field.default_value];
+                                }
+                            } catch (e) {
+                                // Si falla el parse, usar como valor simple
+                                multiDefaults = [field.default_value];
+                            }
+                        }
+                        const multiOptionsHtml = multiOptions.map(opt => {
+                            const value = opt.value || opt;
+                            const label = opt.label || opt;
+                            const selected = multiDefaults.includes(value) ? 'selected' : '';
+                            return `<option value="${value}" ${selected}>${label}</option>`;
+                        }).join('');
+                        inputHtml = `<select name="${field.name}[]" ${requiredAttr} multiple size="3">${multiOptionsHtml}</select>`;
+                        break;
+                    case 'radio':
+                        const radioOptions = field.options || [];
+                        const radioDefault = field.default_value || '';
+                        const radioHtml = radioOptions.map(opt => {
+                            const value = opt.value || opt;
+                            const label = opt.label || opt;
+                            const checked = value === radioDefault ? 'checked' : '';
+                            return `<label><input type="radio" name="${field.name}" value="${value}" ${requiredAttr} ${checked}> ${label}</label>`;
+                        }).join('');
+                        inputHtml = `<div class="mcw-radio-group">${radioHtml}</div>`;
+                        break;
+                    case 'checkbox':
+                        const checkboxDefault = field.default_value === '1' || field.default_value === 'true';
+                        const checked = checkboxDefault ? 'checked' : '';
+                        inputHtml = `<label><input type="checkbox" name="${field.name}" value="1" ${checked}> ${field.placeholder || 'Sí'}</label>`;
                         break;
                     case 'tel':
                     case 'phone':
@@ -818,14 +904,25 @@
                         inputHtml = `<input type="tel" name="${field.name}" id="mcw-phone-input" ${requiredAttr}>`;
                         break;
                     case 'email':
-                        inputHtml = `<input type="email" name="${field.name}" ${requiredAttr} placeholder="${field.label}">`;
+                        const emailDefault = field.default_value || '';
+                        inputHtml = `<input type="email" name="${field.name}" ${requiredAttr} placeholder="${field.label}" value="${emailDefault}">`;
                         break;
                     case 'number':
-                        inputHtml = `<input type="number" name="${field.name}" ${requiredAttr} placeholder="${field.label}">`;
+                        const numberDefault = field.default_value || '';
+                        inputHtml = `<input type="number" name="${field.name}" ${requiredAttr} placeholder="${field.label}" value="${numberDefault}">`;
+                        break;
+                    case 'date':
+                        const dateDefault = field.default_value || '';
+                        inputHtml = `<input type="date" name="${field.name}" ${requiredAttr} value="${dateDefault}">`;
+                        break;
+                    case 'url':
+                        const urlDefault = field.default_value || '';
+                        inputHtml = `<input type="url" name="${field.name}" ${requiredAttr} placeholder="${field.label}" value="${urlDefault}">`;
                         break;
                     default:
                         // text por defecto
-                        inputHtml = `<input type="text" name="${field.name}" ${requiredAttr} placeholder="${field.label}">`;
+                        const textDefault = field.default_value || '';
+                        inputHtml = `<input type="text" name="${field.name}" ${requiredAttr} placeholder="${field.label}" value="${textDefault}">`;
                 }
 
                 fieldsHtml += `
@@ -981,8 +1078,18 @@
                     }
                     data[name] = phoneNumber;
                 } else {
-                    // Otros campos
-                    data[name] = (value || '').trim();
+                    // Manejar campos multiselect (name termina en [])
+                    if (name.endsWith('[]')) {
+                        // Remover [] del nombre para enviar al backend
+                        const cleanName = name.slice(0, -2);
+                        if (!data[cleanName]) {
+                            data[cleanName] = [];
+                        }
+                        data[cleanName].push((value || '').trim());
+                    } else {
+                        // Otros campos
+                        data[name] = (value || '').trim();
+                    }
                 }
             }
 
@@ -991,12 +1098,14 @@
 
             // Validar todos los campos requeridos
             form.querySelectorAll('[required]').forEach(field => {
-                const fieldName = field.name;
-                const fieldValue = data[fieldName];
+                let fieldName = field.name;
+                // Si el nombre termina en [], quitarlo para buscar en data
+                const cleanFieldName = fieldName.endsWith('[]') ? fieldName.slice(0, -2) : fieldName;
+                const fieldValue = data[cleanFieldName];
                 const formGroup = field.closest('.mcw-form-group');
 
-                // Validar campo vacío
-                if (!fieldValue || fieldValue.trim() === '') {
+                // Validar campo vacío (arrays deben tener al menos un elemento)
+                if (!fieldValue || (Array.isArray(fieldValue) && fieldValue.length === 0) || (!Array.isArray(fieldValue) && fieldValue.trim() === '')) {
                     formGroup.classList.add('mcw-invalid');
                     hasErrors = true;
                 }

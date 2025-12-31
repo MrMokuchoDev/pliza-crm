@@ -28,6 +28,7 @@ final class CustomFieldIndex extends Component
     public bool $fieldRequired = false;
     public bool $fieldActive = true;
     public string $fieldDefaultValue = '';
+    public string $fieldOptions = ''; // Opciones para select/radio/multiselect (una por línea)
     public array $openAccordions = [];
 
     public function mount(): void
@@ -170,7 +171,7 @@ final class CustomFieldIndex extends Component
 
     public function openCreateFieldModal(string $groupId): void
     {
-        $this->reset(['editingFieldId', 'fieldLabel', 'fieldType', 'fieldRequired', 'fieldActive', 'fieldDefaultValue']);
+        $this->reset(['editingFieldId', 'fieldLabel', 'fieldType', 'fieldRequired', 'fieldActive', 'fieldDefaultValue', 'fieldOptions']);
         $this->fieldGroupId = $groupId;
         $this->fieldActive = true; // Por defecto activo
         $this->resetValidation();
@@ -180,7 +181,7 @@ final class CustomFieldIndex extends Component
     public function closeFieldModal(): void
     {
         $this->showFieldModal = false;
-        $this->reset(['editingFieldId', 'fieldGroupId', 'fieldLabel', 'fieldType', 'fieldRequired', 'fieldActive', 'fieldDefaultValue']);
+        $this->reset(['editingFieldId', 'fieldGroupId', 'fieldLabel', 'fieldType', 'fieldRequired', 'fieldActive', 'fieldDefaultValue', 'fieldOptions']);
         $this->resetValidation();
     }
 
@@ -197,6 +198,24 @@ final class CustomFieldIndex extends Component
             $this->fieldRequired = $field->isRequired;
             $this->fieldActive = $field->isActive;
             $this->fieldDefaultValue = $field->defaultValue ?? '';
+
+            // Cargar opciones desde tabla dinámica si el campo requiere opciones
+            $this->fieldOptions = '';
+            if (in_array($field->type, ['select', 'radio', 'multiselect'])) {
+                try {
+                    $optionsManager = app(\App\Domain\CustomField\Services\CustomFieldOptionsTableManagerInterface::class);
+                    $fieldName = \App\Domain\CustomField\ValueObjects\FieldName::fromString($field->name);
+
+                    if ($optionsManager->tableExists($fieldName)) {
+                        $options = $optionsManager->getOptions($fieldName);
+                        $labels = array_column($options, 'label');
+                        $this->fieldOptions = implode("\n", $labels);
+                    }
+                } catch (\Exception $e) {
+                    // Si falla, dejar vacío
+                }
+            }
+
             $this->resetValidation();
             $this->showFieldModal = true;
         }
@@ -221,7 +240,26 @@ final class CustomFieldIndex extends Component
             'fieldRequired' => 'boolean',
             'fieldActive' => 'boolean',
             'fieldDefaultValue' => 'nullable|string',
+            'fieldOptions' => 'nullable|string',
         ]);
+
+        // Procesar opciones para campos select/radio/multiselect
+        $options = [];
+        if (in_array($this->fieldType, ['select', 'radio', 'multiselect']) && !empty($this->fieldOptions)) {
+            $rawOptions = array_values(array_filter(
+                array_map('trim', explode("\n", $this->fieldOptions)),
+                fn($option) => !empty($option)
+            ));
+
+            // Convertir a formato esperado por el handler: ['label' => 'X', 'value' => 'X', 'order' => N]
+            foreach ($rawOptions as $index => $optionLabel) {
+                $options[] = [
+                    'label' => $optionLabel,
+                    'value' => $optionLabel, // Por defecto, value = label
+                    'order' => $index,
+                ];
+            }
+        }
 
         $service = app(CustomFieldService::class);
 
@@ -235,7 +273,8 @@ final class CustomFieldIndex extends Component
                     isRequired: $this->fieldRequired,
                     isActive: $this->fieldActive,
                     validationRules: null,
-                    order: null
+                    order: null,
+                    options: $options
                 );
                 $this->dispatch('notify', type: 'success', message: 'Campo actualizado correctamente');
             } else {
@@ -248,7 +287,7 @@ final class CustomFieldIndex extends Component
                     isRequired: $this->fieldRequired,
                     validationRules: null,
                     order: null,
-                    options: []
+                    options: $options
                 );
                 $this->dispatch('notify', type: 'success', message: 'Campo creado correctamente');
             }

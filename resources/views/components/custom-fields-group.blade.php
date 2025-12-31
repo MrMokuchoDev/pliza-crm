@@ -44,6 +44,17 @@
 
             {{-- Render Fields --}}
             @foreach($groupFields as $field)
+                @php
+                    // Cargar opciones dinámicas para campos select/radio/multiselect
+                    $fieldOptions = [];
+                    if (in_array($field->type, ['select', 'radio', 'multiselect'])) {
+                        $optionsManager = app(\App\Domain\CustomField\Services\CustomFieldOptionsTableManagerInterface::class);
+                        $fieldName = \App\Domain\CustomField\ValueObjects\FieldName::fromString($field->name);
+                        if ($optionsManager->tableExists($fieldName)) {
+                            $fieldOptions = $optionsManager->getOptions($fieldName);
+                        }
+                    }
+                @endphp
                 <div class="{{ $field->type === 'textarea' ? 'col-span-full' : '' }}">
                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                         {{ $field->label }}
@@ -103,22 +114,23 @@
                                     @if($field->isRequired) required @endif
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                                 <option value="">Seleccionar...</option>
-                                @foreach($field->options ?? [] as $option)
-                                    <option value="{{ $option->value }}">{{ $option->label }}</option>
+                                @foreach($fieldOptions as $option)
+                                    <option value="{{ $option['value'] }}" @if($field->defaultValue === $option['value']) selected @endif>{{ $option['label'] }}</option>
                                 @endforeach
                             </select>
                             @break
 
                         @case('radio')
                             <div class="space-y-2">
-                                @foreach($field->options ?? [] as $option)
+                                @foreach($fieldOptions as $option)
                                     <label class="inline-flex items-center mr-4">
                                         <input type="radio"
                                                wire:model="{{ $wireModelPrefix }}.{{ $field->name }}"
-                                               value="{{ $option->value }}"
+                                               value="{{ $option['value'] }}"
                                                @if($field->isRequired) required @endif
+                                               @if($field->defaultValue === $option['value']) checked @endif
                                                class="form-radio text-blue-600 dark:text-blue-500">
-                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ $option->label }}</span>
+                                        <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ $option['label'] }}</span>
                                     </label>
                                 @endforeach
                             </div>
@@ -127,8 +139,7 @@
                         @case('checkbox')
                             <label class="inline-flex items-center">
                                 <input type="checkbox"
-                                       wire:model="{{ $wireModelPrefix }}.{{ $field->name }}"
-                                       value="1"
+                                       wire:model.boolean="{{ $wireModelPrefix }}.{{ $field->name }}"
                                        @if($field->isRequired) required @endif
                                        class="form-checkbox text-blue-600 dark:text-blue-500 rounded">
                                 <span class="ml-2 text-sm text-gray-700 dark:text-gray-300">{{ $field->placeholder ?? 'Sí' }}</span>
@@ -141,8 +152,8 @@
                                     @if($field->isRequired) required @endif
                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                                     size="3">
-                                @foreach($field->options ?? [] as $option)
-                                    <option value="{{ $option->value }}">{{ $option->label }}</option>
+                                @foreach($fieldOptions as $option)
+                                    <option value="{{ $option['value'] }}">{{ $option['label'] }}</option>
                                 @endforeach
                             </select>
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Mantén presionado Ctrl/Cmd para seleccionar múltiples opciones</p>

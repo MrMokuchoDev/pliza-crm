@@ -15,5 +15,6 @@ final class UpdateCustomFieldCommand
         public readonly ?bool $isActive = null,
         public readonly ?array $validationRules = null,
         public readonly ?int $order = null,
+        public readonly ?array $options = null,
     ) {}
 }

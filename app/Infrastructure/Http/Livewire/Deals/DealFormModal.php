@@ -174,8 +174,17 @@ class DealFormModal extends Component
                 // Cargar custom field values del Deal dinámicamente desde la relación
                 foreach ($deal->customFieldValues as $cfValue) {
                     $fieldName = $cfValue->customField->name ?? null;
+                    $fieldType = $cfValue->customField->type ?? null;
+
                     if ($fieldName) {
-                        $this->customFieldValues[$fieldName] = $cfValue->value ?? '';
+                        $value = $cfValue->value ?? '';
+
+                        // Convertir valores de checkbox a booleanos
+                        if ($fieldType === 'checkbox') {
+                            $value = in_array(strtolower((string)$value), ['1', 'true', 'sí', 'si', 'yes'], true);
+                        }
+
+                        $this->customFieldValues[$fieldName] = $value;
                     }
                 }
 
