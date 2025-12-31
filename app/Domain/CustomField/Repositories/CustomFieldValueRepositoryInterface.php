@@ -28,4 +28,9 @@ interface CustomFieldValueRepositoryInterface
      * Guardar múltiples valores de campos personalizados para una entidad
      */
     public function saveBulk(EntityType $entityType, UuidInterface $entityId, array $values): void;
+
+    /**
+     * Contar valores de un campo personalizado
+     */
+    public function countByField(UuidInterface $customFieldId): int;
 }

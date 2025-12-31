@@ -115,8 +115,7 @@
                                                 </button>
                                             @endif
                                             @if($canDelete)
-                                                <button wire:click="deleteGroup('{{ $group->id }}')"
-                                                        wire:confirm="¿Eliminar este grupo?"
+                                                <button wire:click="openDeleteGroupModal('{{ $group->id }}')"
                                                         class="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -310,8 +309,7 @@
                                                                             </button>
                                                                         @endif
                                                                         @if($canDelete)
-                                                                            <button wire:click="deleteField('{{ $field->id }}')"
-                                                                                    wire:confirm="¿Eliminar este campo?"
+                                                                            <button wire:click="openDeleteFieldModal('{{ $field->id }}')"
                                                                                     title="Eliminar campo"
                                                                                     class="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded hover:bg-gray-100 dark:hover:bg-gray-700 transition">
                                                                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -439,6 +437,26 @@
                                 @enderror
                             </div>
 
+                            {{-- Group --}}
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                    Grupo
+                                </label>
+                                <select wire:model="fieldGroupId"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">Sin grupo</option>
+                                    @foreach($groups as $group)
+                                        <option value="{{ $group->id }}">{{ $group->name }}</option>
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Selecciona el grupo al que pertenece este campo
+                                </p>
+                                @error('fieldGroupId')
+                                    <p class="mt-1 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
+                                @enderror
+                            </div>
+
                             {{-- Type (solo editable en creación) --}}
                             @if(!$editingFieldId)
                                 <div>
@@ -542,6 +560,159 @@
                         <button wire:click="saveField"
                                 class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
                             {{ $editingFieldId ? 'Actualizar' : 'Crear' }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Delete Group Confirmation Modal --}}
+    @if($showDeleteGroupModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75" aria-hidden="true" wire:click="closeDeleteGroupModal"></div>
+
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                <div class="inline-block overflow-hidden text-left align-bottom transition-all transform bg-white dark:bg-gray-800 rounded-lg shadow-xl sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <h3 class="text-lg font-medium text-gray-900 dark:text-white">
+                            Confirmar Eliminación de Grupo
+                        </h3>
+                    </div>
+
+                    <div class="px-6 py-4 space-y-4">
+                        @if($fieldsCount > 0)
+                            <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                                <div class="flex items-start">
+                                    <svg class="w-5 h-5 text-yellow-600 dark:text-yellow-500 mt-0.5 mr-3" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/>
+                                    </svg>
+                                    <div>
+                                        <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-300">
+                                            Este grupo contiene {{ $fieldsCount }} campo(s)
+                                        </h4>
+                                        <p class="mt-1 text-sm text-yellow-700 dark:text-yellow-400">
+                                            Debes seleccionar un grupo destino para transferir los campos antes de eliminar este grupo.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                                    Grupo Destino <span class="text-red-500">*</span>
+                                </label>
+                                <select wire:model="targetGroupId"
+                                        class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <option value="">Selecciona un grupo...</option>
+                                    @foreach($groups as $group)
+                                        @if($group->id !== $deletingGroupId)
+                                            <option value="{{ $group->id }}">{{ $group->name }}</option>
+                                        @endif
+                                    @endforeach
+                                </select>
+                                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                    Los campos de este grupo se transferirán al grupo seleccionado.
+                                </p>
+                            </div>
+                        @else
+                            <p class="text-sm text-gray-600 dark:text-gray-400">
+                                Este grupo no contiene campos. ¿Estás seguro de que deseas eliminarlo?
+                            </p>
+                        @endif
+                    </div>
+
+                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
+                        <button wire:click="closeDeleteGroupModal"
+                                type="button"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition">
+                            Cancelar
+                        </button>
+                        <button wire:click="confirmDeleteGroup"
+                                class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
+                            Eliminar Grupo
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+
+    {{-- Delete Field Confirmation Modal --}}
+    @if($showDeleteFieldModal)
+        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-75 transition-opacity" wire:click="closeDeleteFieldModal"></div>
+
+                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                    <div class="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                ⚠️ Confirmar Eliminación de Campo
+                            </h3>
+                            <button wire:click="closeDeleteFieldModal" class="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="px-6 py-4">
+                        <p class="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">
+                            Vas a eliminar el campo "<span class="font-bold">{{ $deletingFieldLabel }}</span>"
+                        </p>
+
+                        @if($deletingFieldValuesCount > 0 || $deletingFieldOptionsCount > 0)
+                            <div class="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg mb-4">
+                                <h4 class="text-sm font-medium text-yellow-800 dark:text-yellow-300 mb-2">
+                                    ⚠️ Impacto de la eliminación:
+                                </h4>
+                                <ul class="text-sm text-yellow-700 dark:text-yellow-400 space-y-1">
+                                    @if($deletingFieldValuesCount > 0)
+                                        <li class="flex items-start gap-2">
+                                            <span class="font-bold">•</span>
+                                            <span><strong>{{ $deletingFieldValuesCount }}</strong> registro(s) con datos se eliminarán permanentemente</span>
+                                        </li>
+                                    @endif
+                                    @if($deletingFieldOptionsCount > 0)
+                                        <li class="flex items-start gap-2">
+                                            <span class="font-bold">•</span>
+                                            <span>La tabla de opciones será eliminada (<strong>{{ $deletingFieldOptionsCount }}</strong> opcion(es))</span>
+                                        </li>
+                                    @endif
+                                    <li class="flex items-start gap-2">
+                                        <span class="font-bold">•</span>
+                                        <span class="font-bold">Esta acción NO se puede deshacer</span>
+                                    </li>
+                                </ul>
+                            </div>
+                        @else
+                            <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                                Este campo no contiene datos. ¿Estás seguro de que deseas eliminarlo?
+                            </p>
+                        @endif
+
+                        @if($deletingFieldValuesCount > 0)
+                            <div class="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                                <p class="text-xs text-blue-700 dark:text-blue-400">
+                                    💡 <strong>Sugerencia:</strong> Considera inactivar el campo en lugar de eliminarlo. Los datos históricos se preservarán y el campo no aparecerá en formularios nuevos.
+                                </p>
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="px-6 py-4 bg-gray-50 dark:bg-gray-700/50 flex justify-end gap-3">
+                        <button wire:click="closeDeleteFieldModal"
+                                type="button"
+                                class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition">
+                            Cancelar
+                        </button>
+                        <button wire:click="confirmDeleteField"
+                                class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 transition">
+                            {{ $deletingFieldValuesCount > 0 ? 'Eliminar de todas formas' : 'Eliminar Campo' }}
                         </button>
                     </div>
                 </div>

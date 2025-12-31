@@ -19,6 +19,12 @@ final class CustomFieldIndex extends Component
     public string $groupName = '';
     public int $groupOrder = 0;
 
+    // Delete group confirmation
+    public bool $showDeleteGroupModal = false;
+    public ?string $deletingGroupId = null;
+    public ?string $targetGroupId = null;
+    public int $fieldsCount = 0;
+
     // Field management
     public bool $showFieldModal = false;
     public ?string $editingFieldId = null;
@@ -30,6 +36,13 @@ final class CustomFieldIndex extends Component
     public string $fieldDefaultValue = '';
     public string $fieldOptions = ''; // Opciones para select/radio/multiselect (una por línea)
     public array $openAccordions = [];
+
+    // Delete field confirmation
+    public bool $showDeleteFieldModal = false;
+    public ?string $deletingFieldId = null;
+    public ?string $deletingFieldLabel = null;
+    public int $deletingFieldValuesCount = 0;
+    public ?int $deletingFieldOptionsCount = null;
 
     public function mount(): void
     {
@@ -122,7 +135,7 @@ final class CustomFieldIndex extends Component
         }
     }
 
-    public function deleteGroup(string $groupId): void
+    public function openDeleteGroupModal(string $groupId): void
     {
         if (! Auth::user()?->canDeleteCustomFields()) {
             $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar grupos');
@@ -131,8 +144,43 @@ final class CustomFieldIndex extends Component
 
         $service = app(CustomFieldService::class);
 
+        // Contar campos del grupo
+        $fields = $service->getFieldsByEntity($this->selectedEntityType, activeOnly: false, groupId: $groupId);
+        $this->fieldsCount = count($fields);
+
+        $this->deletingGroupId = $groupId;
+        $this->targetGroupId = null;
+        $this->showDeleteGroupModal = true;
+    }
+
+    public function closeDeleteGroupModal(): void
+    {
+        $this->showDeleteGroupModal = false;
+        $this->reset(['deletingGroupId', 'targetGroupId', 'fieldsCount']);
+    }
+
+    public function confirmDeleteGroup(): void
+    {
+        if (! Auth::user()?->canDeleteCustomFields()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar grupos');
+            return;
+        }
+
+        if (!$this->deletingGroupId) {
+            return;
+        }
+
+        // Si hay campos y no se seleccionó grupo destino, mostrar error
+        if ($this->fieldsCount > 0 && empty($this->targetGroupId)) {
+            $this->dispatch('notify', type: 'error', message: 'Debes seleccionar un grupo destino para transferir los campos');
+            return;
+        }
+
+        $service = app(CustomFieldService::class);
+
         try {
-            $service->deleteGroup($groupId);
+            $service->deleteGroup($this->deletingGroupId, $this->targetGroupId);
+            $this->closeDeleteGroupModal();
             $this->dispatch('notify', type: 'success', message: 'Grupo eliminado correctamente');
         } catch (\Exception $e) {
             $this->dispatch('notify', type: 'error', message: $e->getMessage());
@@ -298,7 +346,7 @@ final class CustomFieldIndex extends Component
         }
     }
 
-    public function deleteField(string $fieldId): void
+    public function openDeleteFieldModal(string $fieldId): void
     {
         if (! Auth::user()?->canDeleteCustomFields()) {
             $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar campos');
@@ -306,13 +354,52 @@ final class CustomFieldIndex extends Component
         }
 
         $service = app(CustomFieldService::class);
+        $field = $service->getFieldById($fieldId);
+
+        if (!$field) {
+            $this->dispatch('notify', type: 'error', message: 'Campo no encontrado');
+            return;
+        }
+
+        $this->deletingFieldId = $fieldId;
+        $this->deletingFieldLabel = $field->label;
+        $this->deletingFieldValuesCount = $service->countFieldValues($fieldId);
+        $this->deletingFieldOptionsCount = $service->countFieldOptions($fieldId);
+        $this->showDeleteFieldModal = true;
+    }
+
+    public function closeDeleteFieldModal(): void
+    {
+        $this->showDeleteFieldModal = false;
+        $this->reset(['deletingFieldId', 'deletingFieldLabel', 'deletingFieldValuesCount', 'deletingFieldOptionsCount']);
+    }
+
+    public function confirmDeleteField(): void
+    {
+        if (! Auth::user()?->canDeleteCustomFields()) {
+            $this->dispatch('notify', type: 'error', message: 'No tienes permiso para eliminar campos');
+            return;
+        }
+
+        if (!$this->deletingFieldId) {
+            return;
+        }
+
+        $service = app(CustomFieldService::class);
 
         try {
-            $service->deleteField($fieldId);
+            $service->deleteField($this->deletingFieldId);
+            $this->closeDeleteFieldModal();
             $this->dispatch('notify', type: 'success', message: 'Campo eliminado correctamente');
         } catch (\Exception $e) {
             $this->dispatch('notify', type: 'error', message: $e->getMessage());
         }
+    }
+
+    public function deleteField(string $fieldId): void
+    {
+        // Método legacy - redirigir al nuevo flujo
+        $this->openDeleteFieldModal($fieldId);
     }
 
     public function updateFieldsOrder(string $groupId, array $fieldIds): void

@@ -30,11 +30,55 @@ final class UpdateCustomFieldHandler
             $field->updateLabel($command->label);
         }
 
+        // Detectar cambio de grupo para reordenar
+        $originalGroupId = $field->groupId();
+        $groupChanged = false;
+
         if ($command->groupId !== null) {
-            if ($command->groupId === '') {
-                $field->removeGroup();
-            } else {
-                $field->updateGroup(Uuid::fromString($command->groupId));
+            $newGroupId = $command->groupId === '' ? null : Uuid::fromString($command->groupId);
+
+            // Verificar si el grupo realmente cambió
+            $groupChanged = ($originalGroupId?->toString() ?? null) !== ($newGroupId?->toString() ?? null);
+
+            if ($groupChanged) {
+                $originalOrder = $field->order();
+                $entityType = $field->entityType();
+
+                if ($command->groupId === '') {
+                    $field->removeGroup();
+                } else {
+                    // Obtener campos del grupo destino para calcular el siguiente orden
+                    $targetGroupFields = $this->fieldRepository->findByGroup($newGroupId);
+                    $maxOrder = 0;
+                    foreach ($targetGroupFields as $targetField) {
+                        if ($targetField->order() > $maxOrder) {
+                            $maxOrder = $targetField->order();
+                        }
+                    }
+
+                    // Actualizar grupo y asignar orden al final
+                    $field->updateGroup($newGroupId);
+                    $field->updateOrder($maxOrder + 1);
+                }
+
+                // Reordenar campos del grupo original (cerrar el hueco)
+                $remainingFields = $this->fieldRepository->findByEntityType($entityType);
+                $fieldsToReorder = array_filter($remainingFields, function ($remainingField) use ($originalGroupId, $command) {
+                    // Filtrar campos del grupo original, excluyendo el campo que se está moviendo
+                    if ($originalGroupId === null) {
+                        return $remainingField->groupId() === null && $remainingField->id()->toString() !== $command->id;
+                    }
+                    return $remainingField->groupId()?->toString() === $originalGroupId->toString()
+                        && $remainingField->id()->toString() !== $command->id;
+                });
+
+                // Reordenar campos que estaban después del que se movió
+                foreach ($fieldsToReorder as $remainingField) {
+                    if ($remainingField->order() > $originalOrder) {
+                        $remainingField->updateOrder($remainingField->order() - 1);
+                        $this->fieldRepository->save($remainingField);
+                    }
+                }
             }
         }
 
