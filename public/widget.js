@@ -1277,6 +1277,49 @@
         }
     }
 
+    // Cargar custom fields desde API
+    async function loadCustomFields() {
+        // Si ya están cargados globalmente (por widget-serve.php), usar esos
+        if (window.MCW_CUSTOM_FIELDS && window.MCW_CUSTOM_FIELDS.length > 0) {
+            console.log('[MiniCRM Widget] Using custom fields from window.MCW_CUSTOM_FIELDS');
+            return window.MCW_CUSTOM_FIELDS;
+        }
+
+        // Si no, cargar desde API
+        try {
+            const directUrl = baseUrl + '/api/v1/custom-fields/widget';
+            const proxyUrl = baseUrl + '/api-proxy.php?endpoint=custom-fields/widget';
+
+            let response;
+            try {
+                // Intentar API directa primero
+                response = await fetch(directUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+            } catch (e) {
+                // Si falla la directa (CORS/WAF), usar proxy
+                response = await fetch(proxyUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' }
+                });
+            }
+
+            if (response.ok) {
+                const fields = await response.json();
+                window.MCW_CUSTOM_FIELDS = fields;
+                console.log('[MiniCRM Widget] Custom fields loaded from API:', fields.length);
+                return fields;
+            }
+        } catch (error) {
+            console.warn('[MiniCRM Widget] Failed to load custom fields from API, using defaults');
+        }
+
+        // Fallback a array vacío (usará campos por defecto)
+        window.MCW_CUSTOM_FIELDS = [];
+        return [];
+    }
+
     // Inicializar widget
     async function init() {
         // Verificar si el sitio está activo antes de mostrar el widget
@@ -1285,6 +1328,9 @@
             console.log('MiniCRM Widget: Sitio inactivo, widget no se mostrará');
             return;
         }
+
+        // Cargar custom fields
+        await loadCustomFields();
 
         initStyles();
 
