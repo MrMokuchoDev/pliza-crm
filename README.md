@@ -63,4 +63,8 @@ Genera código embed para capturar leads desde cualquier sitio web:
 
 ## Licencia
 
-Este proyecto está licenciado bajo [AGPL-3.0](LICENSE).
+Este proyecto está licenciado bajo [MIT License](LICENSE).
+
+## Descargo de Responsabilidad
+
+Este software se proporciona "tal cual", sin garantía de ningún tipo. Ver [DISCLAIMER.md](DISCLAIMER.md) para más información sobre limitaciones de responsabilidad, seguridad y cumplimiento legal.
