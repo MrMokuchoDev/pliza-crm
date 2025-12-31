@@ -103,6 +103,12 @@ final class EloquentCustomFieldValueRepository implements CustomFieldValueReposi
         }
     }
 
+    public function countByField(UuidInterface $customFieldId): int
+    {
+        return CustomFieldValueModel::where('custom_field_id', $customFieldId->toString())
+            ->count();
+    }
+
     private function toDomain(CustomFieldValueModel $model): CustomFieldValue
     {
         return CustomFieldValue::reconstruct(

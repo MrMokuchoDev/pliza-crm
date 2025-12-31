@@ -48,6 +48,11 @@ use App\Application\CustomField\Queries\GetCustomFieldGroupsQuery;
 use App\Application\CustomField\Queries\GetCustomFieldOptionsQuery;
 use App\Application\CustomField\Queries\GetCustomFieldsByEntityQuery;
 use App\Application\CustomField\Queries\GetCustomFieldValuesForEntityQuery;
+use App\Domain\CustomField\Repositories\CustomFieldRepositoryInterface;
+use App\Domain\CustomField\Repositories\CustomFieldValueRepositoryInterface;
+use App\Domain\CustomField\Services\CustomFieldOptionsTableManagerInterface;
+use App\Domain\CustomField\ValueObjects\FieldName;
+use Ramsey\Uuid\Uuid;
 
 final class CustomFieldService
 {
@@ -77,6 +82,10 @@ final class CustomFieldService
         private readonly GetCustomFieldOptionsHandler $getOptionsHandler,
         // Entity Type Handlers
         private readonly GetAvailableEntityTypesHandler $getAvailableEntityTypesHandler,
+        // Repositories
+        private readonly CustomFieldRepositoryInterface $fieldRepository,
+        private readonly CustomFieldValueRepositoryInterface $valueRepository,
+        private readonly CustomFieldOptionsTableManagerInterface $optionsTableManager,
     ) {}
 
     // ========== GROUP METHODS ==========
@@ -273,5 +282,33 @@ final class CustomFieldService
     {
         $query = new GetAvailableEntityTypesQuery();
         return $this->getAvailableEntityTypesHandler->handle($query);
+    }
+
+    // ========== HELPER METHODS ==========
+
+    /**
+     * Cuenta cuántos valores tiene un campo (cuántos registros tienen datos en este campo)
+     */
+    public function countFieldValues(string $fieldId): int
+    {
+        $uuid = Uuid::fromString($fieldId);
+        return $this->valueRepository->countByField($uuid);
+    }
+
+    /**
+     * Cuenta cuántas opciones tiene un campo (si es de tipo select/radio/multiselect)
+     * Retorna null si el campo no tiene opciones
+     */
+    public function countFieldOptions(string $fieldId): ?int
+    {
+        $uuid = Uuid::fromString($fieldId);
+        $field = $this->fieldRepository->findById($uuid);
+
+        if (!$field || !$field->type()->requiresOptions()) {
+            return null;
+        }
+
+        $options = $this->optionsTableManager->getOptions($field->name());
+        return count($options);
     }
 }
