@@ -16,6 +16,7 @@ define('RATE_LIMIT_WINDOW', 60);         // Ventana de tiempo en segundos
 define('ALLOWED_ENDPOINTS', [            // Endpoints permitidos (whitelist)
     'leads/capture',                     // POST - captura de leads
     'sites/*/status',                    // GET - verificar estado del sitio
+    'custom-fields/widget',              // GET - obtener custom fields para widgets
 ]);
 
 // ============================================
