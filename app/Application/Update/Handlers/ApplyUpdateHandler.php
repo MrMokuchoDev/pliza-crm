@@ -189,6 +189,9 @@ class ApplyUpdateHandler
         // Copy files, respecting preserved paths
         $this->copyUpdateFiles($sourceDir, $basePath, $preservedPaths, $logs);
 
+        // Copy public files to hosting root (shared hosting compatibility)
+        $this->copyPublicFilesToRoot($sourceDir, $basePath, $logs);
+
         // Cleanup temp directory
         $this->deleteDirectory($tempDir);
         $logs[] = "Directorio temporal eliminado.";
@@ -311,6 +314,51 @@ class ApplyUpdateHandler
         }
 
         return ['logs' => $logs];
+    }
+
+    /**
+     * Copy public files to hosting root for shared hosting compatibility.
+     */
+    private function copyPublicFilesToRoot(string $sourceDir, string $basePath, array &$logs): void
+    {
+        $publicSourceDir = $sourceDir . '/public';
+
+        // Si no existe carpeta public en el source, salir
+        if (!is_dir($publicSourceDir)) {
+            return;
+        }
+
+        // Lista de archivos/carpetas de public/ que deben copiarse a la raíz
+        // Solo copiamos archivos PHP y JS que son críticos para widgets/API
+        $filesToCopy = [
+            'api-proxy.php',
+            'widget.js',
+            'widget-serve.php',
+        ];
+
+        $copiedCount = 0;
+
+        foreach ($filesToCopy as $file) {
+            $sourceFile = $publicSourceDir . '/' . $file;
+            $destFile = $basePath . '/' . $file;
+
+            if (file_exists($sourceFile)) {
+                // Asegurar que el directorio destino existe
+                $destDir = dirname($destFile);
+                if (!is_dir($destDir)) {
+                    mkdir($destDir, 0755, true);
+                }
+
+                // Copiar archivo
+                if (copy($sourceFile, $destFile)) {
+                    $copiedCount++;
+                }
+            }
+        }
+
+        if ($copiedCount > 0) {
+            $logs[] = "Archivos públicos copiados a raíz del hosting: {$copiedCount}.";
+        }
     }
 
     /**
