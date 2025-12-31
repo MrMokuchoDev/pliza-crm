@@ -10,7 +10,7 @@ return [
     | the latest version available on GitHub to determine if an update is available.
     |
     */
-    'current' => '1.3.2',
+    'current' => '1.4.0',
 
     /*
     |--------------------------------------------------------------------------
