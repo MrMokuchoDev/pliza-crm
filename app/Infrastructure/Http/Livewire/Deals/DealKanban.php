@@ -118,7 +118,15 @@ class DealKanban extends Component
 
         // Stats calculados desde la colección ya cargada (sin queries adicionales)
         $totalDeals = $allDeals->count();
-        $totalValue = $allDeals->sum('value') ?? 0;
+
+        // Sumar valores dinámicamente desde custom fields
+        // El campo 'value' ahora es cf_deal_2, accedemos via el trait HasCustomFields
+        $totalValue = $allDeals->reduce(function ($carry, $deal) {
+            // Acceder a 'value' via magic getter que usa HasCustomFields trait
+            $value = $deal->value ?? 0;
+            // Convertir a float para asegurar suma correcta
+            return $carry + (is_numeric($value) ? (float) $value : 0);
+        }, 0);
 
         return view('livewire.deals.kanban', [
             'openPhases' => $openPhases,

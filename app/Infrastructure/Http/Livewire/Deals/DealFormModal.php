@@ -27,24 +27,15 @@ class DealFormModal extends Component
 
     public ?string $leadId = null;
 
-    public string $name = '';
-
-    public ?string $value = '';
-
-    public string $description = '';
-
     public string $salePhaseId = '';
-
-    public ?string $estimatedCloseDate = null;
 
     public ?string $closeDate = null;
 
-    // Lead data for display/edit
-    public string $leadName = '';
+    // Array dinámico para custom field values del Deal
+    public array $customFieldValues = [];
 
-    public string $leadEmail = '';
-
-    public string $leadPhone = '';
+    // Array dinámico para custom field values del Lead asociado
+    public array $leadCustomFieldValues = [];
 
     // Lead search
     public string $leadSearch = '';
@@ -137,15 +128,10 @@ class DealFormModal extends Component
     protected function rules(): array
     {
         return [
-            'name' => 'required|string|max:255',
-            'value' => 'nullable|numeric|min:0',
-            'description' => 'nullable|string|max:5000',
+            'customFieldValues.*' => 'nullable',
+            'leadCustomFieldValues.*' => 'nullable',
             'salePhaseId' => 'required|exists:sale_phases,id',
-            'estimatedCloseDate' => 'nullable|date',
             'closeDate' => 'nullable|date',
-            'leadName' => 'nullable|string|max:255',
-            'leadEmail' => 'nullable|email|max:255',
-            'leadPhone' => 'nullable|string|max:50',
             'assigned_to' => 'nullable|exists:users,uuid',
         ];
     }
@@ -153,10 +139,7 @@ class DealFormModal extends Component
     protected function messages(): array
     {
         return [
-            'name.required' => 'El nombre del negocio es requerido.',
             'salePhaseId.required' => 'La fase de venta es requerida.',
-            'value.numeric' => 'El valor debe ser un número.',
-            'leadEmail.email' => 'El email debe ser válido.',
         ];
     }
 
@@ -185,18 +168,35 @@ class DealFormModal extends Component
 
                 $this->dealId = $dealId;
                 $this->leadId = $deal->lead_id;
-                $this->name = $deal->name;
-                $this->value = $deal->value ? (string) $deal->value : '';
-                $this->description = $deal->description ?? '';
                 $this->salePhaseId = $deal->sale_phase_id;
-                $this->estimatedCloseDate = $deal->estimated_close_date?->format('Y-m-d');
                 $this->closeDate = $deal->close_date?->format('Y-m-d');
+
+                // Cargar custom field values del Deal dinámicamente desde la relación
+                foreach ($deal->customFieldValues as $cfValue) {
+                    $fieldName = $cfValue->customField->name ?? null;
+                    $fieldType = $cfValue->customField->type ?? null;
+
+                    if ($fieldName) {
+                        $value = $cfValue->value ?? '';
+
+                        // Convertir valores de checkbox a booleanos
+                        if ($fieldType === 'checkbox') {
+                            $value = in_array(strtolower((string)$value), ['1', 'true', 'sí', 'si', 'yes'], true);
+                        }
+
+                        $this->customFieldValues[$fieldName] = $value;
+                    }
+                }
 
                 // Load lead data
                 if ($deal->lead) {
-                    $this->leadName = $deal->lead->name ?? '';
-                    $this->leadEmail = $deal->lead->email ?? '';
-                    $this->leadPhone = $deal->lead->phone ?? '';
+                    // Cargar custom field values del Lead dinámicamente desde la relación
+                    foreach ($deal->lead->customFieldValues as $cfValue) {
+                        $fieldName = $cfValue->customField->name ?? null;
+                        if ($fieldName) {
+                            $this->leadCustomFieldValues[$fieldName] = $cfValue->value ?? '';
+                        }
+                    }
 
                     // Determinar si el usuario puede editar el lead
                     $this->canEditLead = $this->determineCanEditLead($deal->lead->assigned_to);
@@ -218,25 +218,27 @@ class DealFormModal extends Component
                 }
 
                 $this->leadId = $leadId;
-                $this->leadName = $lead->name ?? '';
-                $this->leadEmail = $lead->email ?? '';
-                $this->leadPhone = $lead->phone ?? '';
+
+                // Cargar custom field values del Lead dinámicamente desde la relación
+                foreach ($lead->customFieldValues as $cfValue) {
+                    $fieldName = $cfValue->customField->name ?? null;
+                    if ($fieldName) {
+                        $this->leadCustomFieldValues[$fieldName] = $cfValue->value ?? '';
+                    }
+                }
+
                 $this->showLeadSearch = false;
                 // Determinar si el usuario puede editar el lead
                 $this->canEditLead = $this->determineCanEditLead($lead->assigned_to);
-                // Auto-asignar al usuario actual si no puede asignar a otros
-                if (!$this->canAssign) {
-                    $this->assigned_to = Auth::user()?->uuid;
-                }
+                // Asignar por defecto al usuario actual al crear nuevo negocio
+                $this->assigned_to = Auth::user()?->uuid;
             }
         } else {
             // Opening modal without lead - show search
             $this->showLeadSearch = true;
             $this->createNewLead = false;
-            // Auto-asignar al usuario actual si no puede asignar a otros
-            if (!$this->canAssign) {
-                $this->assigned_to = Auth::user()?->uuid;
-            }
+            // Asignar por defecto al usuario actual al crear nuevo negocio
+            $this->assigned_to = Auth::user()?->uuid;
         }
 
         $this->show = true;
@@ -264,9 +266,15 @@ class DealFormModal extends Component
         }
 
         $this->leadId = $id;
-        $this->leadName = $lead->name ?? '';
-        $this->leadEmail = $lead->email ?? '';
-        $this->leadPhone = $lead->phone ?? '';
+
+        // Cargar custom field values del Lead dinámicamente desde la relación
+        foreach ($lead->customFieldValues as $cfValue) {
+            $fieldName = $cfValue->customField->name ?? null;
+            if ($fieldName) {
+                $this->leadCustomFieldValues[$fieldName] = $cfValue->value ?? '';
+            }
+        }
+
         $this->showLeadSearch = false;
         $this->leadSearch = '';
         $this->leadHasOpenDealError = null;
@@ -290,19 +298,15 @@ class DealFormModal extends Component
         $this->createNewLead = false;
         $this->showLeadSearch = true;
         $this->leadId = null;
-        $this->leadName = '';
-        $this->leadEmail = '';
-        $this->leadPhone = '';
-        $this->name = '';
+        $this->leadCustomFieldValues = [];
+        $this->customFieldValues = [];
     }
 
     public function clearSelectedLead(): void
     {
         $this->leadId = null;
-        $this->leadName = '';
-        $this->leadEmail = '';
-        $this->leadPhone = '';
-        $this->name = '';
+        $this->leadCustomFieldValues = [];
+        $this->customFieldValues = [];
         $this->showLeadSearch = true;
         $this->createNewLead = false;
     }
@@ -316,20 +320,19 @@ class DealFormModal extends Component
             return;
         }
 
-        // Verificar PRIMERO si se quiere cerrar como GANADO sin valor
+        $this->validate();
+
         $phaseService = app(SalePhaseService::class);
         $phase = $phaseService->find($this->salePhaseId);
-        if ($phase) {
-            $valueValidation = DealPhaseService::validateValueForWonPhase($phase, $this->value);
-            if (! $valueValidation['valid']) {
-                $this->addError('value', $valueValidation['error']);
-                $this->dispatch('notify', type: 'error', message: $valueValidation['error']);
 
+        // Validar si la fase seleccionada es ganada y requiere valor (tanto para crear como para editar)
+        if ($phase && $phase->is_closed && $phase->is_won) {
+            $value = $this->customFieldValues['cf_deal_2'] ?? null;
+            if (empty($value) || !is_numeric($value) || (float)$value <= 0) {
+                $this->dispatch('notify', type: 'error', message: 'El valor del negocio es obligatorio para cerrarlo como ganado.');
                 return;
             }
         }
-
-        $this->validate();
 
         // Si estamos editando un negocio, validar cambio de fase ANTES de la transacción
         $dealService = app(DealService::class);
@@ -338,10 +341,13 @@ class DealFormModal extends Component
             if ($deal && $deal->sale_phase_id !== $phase->id) {
                 $service = new DealPhaseService();
                 $validation = $service->canChangePhase($deal, $phase);
-                if (! $validation['can_change'] && $validation['reason'] === DealPhaseService::RESULT_LEAD_HAS_OPEN_DEAL) {
-                    $this->dispatch('notify', type: 'error', message: $service->getErrorMessage($validation['reason']));
+                if (! $validation['can_change']) {
+                    // Validar solo si el lead tiene negocio abierto (el valor ya se validó arriba)
+                    if ($validation['reason'] === DealPhaseService::RESULT_LEAD_HAS_OPEN_DEAL) {
+                        $this->dispatch('notify', type: 'error', message: $service->getErrorMessage($validation['reason']));
 
-                    return;
+                        return;
+                    }
                 }
             }
         }
@@ -354,23 +360,17 @@ class DealFormModal extends Component
         DB::transaction(function () use ($phase, $leadService, $dealService) {
             // If creating new lead
             if ($this->createNewLead && ! $this->leadId) {
-                $leadData = new LeadData(
-                    name: $this->leadName ?: null,
-                    email: $this->leadEmail ?: null,
-                    phone: $this->leadPhone ?: null,
-                    sourceType: SourceType::MANUAL,
-                );
+                $leadData = LeadData::fromArray(array_merge(
+                    $this->leadCustomFieldValues,
+                    ['source_type' => SourceType::MANUAL->value]
+                ));
                 $newLead = $leadService->create($leadData);
                 $this->leadId = $newLead->id;
             }
 
             // Update lead data if we have a lead AND user can edit it
             if ($this->leadId && ! $this->createNewLead && $this->canEditLead) {
-                $leadData = new LeadData(
-                    name: $this->leadName ?: null,
-                    email: $this->leadEmail ?: null,
-                    phone: $this->leadPhone ?: null,
-                );
+                $leadData = LeadData::fromArray($this->leadCustomFieldValues);
                 $leadService->update($this->leadId, $leadData);
             }
 
@@ -382,16 +382,15 @@ class DealFormModal extends Component
             // Si no puede asignar, usar el usuario actual para nuevos deals
             $assignedTo = $this->canAssign ? $this->assigned_to : ($this->dealId ? null : Auth::user()?->uuid);
 
-            $dealData = DealData::fromArray([
-                'lead_id' => $this->leadId,
-                'name' => $this->name,
-                'value' => $this->value ?: null,
-                'description' => $this->description ?: null,
-                'sale_phase_id' => $this->salePhaseId,
-                'estimated_close_date' => $this->estimatedCloseDate ?: null,
-                'close_date' => $closeDate,
-                'assigned_to' => $assignedTo,
-            ]);
+            $dealData = DealData::fromArray(array_merge(
+                $this->customFieldValues,
+                [
+                    'lead_id' => $this->leadId,
+                    'sale_phase_id' => $this->salePhaseId,
+                    'close_date' => $closeDate,
+                    'assigned_to' => $assignedTo,
+                ]
+            ));
 
             if ($this->dealId) {
                 $dealService->update($this->dealId, $dealData);
@@ -415,14 +414,9 @@ class DealFormModal extends Component
     {
         $this->dealId = null;
         $this->leadId = null;
-        $this->name = '';
-        $this->value = '';
-        $this->description = '';
-        $this->estimatedCloseDate = null;
+        $this->customFieldValues = [];
+        $this->leadCustomFieldValues = [];
         $this->closeDate = null;
-        $this->leadName = '';
-        $this->leadEmail = '';
-        $this->leadPhone = '';
         $this->leadSearch = '';
         $this->showLeadSearch = false;
         $this->createNewLead = false;

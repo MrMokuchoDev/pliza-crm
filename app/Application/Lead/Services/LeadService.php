@@ -218,10 +218,7 @@ class LeadService
     public function capture(
         string $siteId,
         SourceType $sourceType,
-        ?string $name = null,
-        ?string $email = null,
-        ?string $phone = null,
-        ?string $message = null,
+        array $customFields = [],
         ?string $sourceUrl = null,
         ?string $userAgent = null,
         ?string $ipAddress = null,
@@ -230,10 +227,7 @@ class LeadService
         $command = new CaptureLeadCommand(
             siteId: $siteId,
             sourceType: $sourceType,
-            name: $name,
-            email: $email,
-            phone: $phone,
-            message: $message,
+            customFields: $customFields,
             sourceUrl: $sourceUrl,
             userAgent: $userAgent,
             ipAddress: $ipAddress,

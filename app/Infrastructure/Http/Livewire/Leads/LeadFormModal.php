@@ -20,13 +20,8 @@ class LeadFormModal extends Component
 
     public ?string $leadId = null;
 
-    public string $name = '';
-
-    public string $email = '';
-
-    public string $phone = '';
-
-    public string $message = '';
+    // Array dinámico para custom field values (cf_lead_1 => 'valor', cf_lead_2 => 'valor', etc.)
+    public array $customFieldValues = [];
 
     public ?string $assigned_to = null;
 
@@ -79,27 +74,9 @@ class LeadFormModal extends Component
 
     protected function rules(): array
     {
-        $emailUniqueRule = 'unique:leads,email';
-        if ($this->leadId) {
-            $emailUniqueRule .= ',' . $this->leadId;
-        }
-
         return [
-            'name' => 'nullable|string|max:255',
-            'email' => ['nullable', 'email', 'max:255', $emailUniqueRule],
-            'phone' => ['nullable', 'string', 'min:7', 'max:20', 'regex:/^\+?[0-9\s\-\(\)]+$/'],
-            'message' => 'nullable|string|max:5000',
+            'customFieldValues.*' => 'nullable',
             'assigned_to' => 'nullable|exists:users,uuid',
-        ];
-    }
-
-    protected function messages(): array
-    {
-        return [
-            'email.email' => 'El email debe ser válido.',
-            'email.unique' => 'Este email ya está registrado en otro contacto.',
-            'phone.min' => 'El teléfono debe tener al menos 7 dígitos.',
-            'phone.regex' => 'El teléfono solo puede contener números, espacios, guiones y paréntesis.',
         ];
     }
 
@@ -127,18 +104,40 @@ class LeadFormModal extends Component
                 }
 
                 $this->leadId = $leadId;
-                $this->name = $lead->name ?? '';
-                $this->email = $lead->email ?? '';
-                $this->phone = $lead->phone ?? '';
-                $this->message = $lead->message ?? '';
+
+                // Cargar custom field values dinámicamente desde la relación
+                foreach ($lead->customFieldValues as $cfValue) {
+                    // Obtener el nombre del custom field y tipo
+                    $fieldName = $cfValue->customField->name ?? null;
+                    $fieldType = $cfValue->customField->type ?? null;
+
+                    if ($fieldName) {
+                        $value = $cfValue->value ?? '';
+
+                        // Convertir valores de checkbox a booleanos
+                        if ($fieldType === 'checkbox') {
+                            $value = in_array(strtolower((string)$value), ['1', 'true', 'sí', 'si', 'yes'], true);
+                        }
+
+                        $this->customFieldValues[$fieldName] = $value;
+                    }
+                }
+
                 $this->assigned_to = $lead->assigned_to;
             }
         } else {
             // Para nuevos leads siempre puede editar
             $this->canEdit = true;
-            // Auto-asignar al usuario actual si no puede asignar a otros
-            if (!$this->canAssign) {
-                $this->assigned_to = Auth::user()?->uuid;
+            // Asignar por defecto al usuario actual al crear nuevo contacto
+            $this->assigned_to = Auth::user()?->uuid;
+
+            // Inicializar custom fields con valores por defecto
+            $customFieldService = app(\App\Application\CustomField\Services\CustomFieldService::class);
+            $fields = $customFieldService->getFieldsByEntity('lead', activeOnly: true);
+            foreach ($fields as $field) {
+                if ($field->defaultValue !== null && $field->defaultValue !== '') {
+                    $this->customFieldValues[$field->name] = $field->defaultValue;
+                }
             }
         }
 
@@ -154,14 +153,6 @@ class LeadFormModal extends Component
             return;
         }
 
-        // Validar que al menos uno de los datos de contacto esté presente
-        if (empty($this->email) && empty($this->phone)) {
-            $this->addError('email', 'Debes proporcionar al menos un email o teléfono.');
-            $this->addError('phone', 'Debes proporcionar al menos un email o teléfono.');
-
-            return;
-        }
-
         $this->validate();
 
         $leadService = app(LeadService::class);
@@ -169,14 +160,14 @@ class LeadFormModal extends Component
         // Si no puede asignar, usar el usuario actual para nuevos leads
         $assignedTo = $this->canAssign ? $this->assigned_to : ($this->leadId ? null : Auth::user()?->uuid);
 
-        $leadData = new LeadData(
-            name: $this->name ?: null,
-            email: $this->email ?: null,
-            phone: $this->phone ?: null,
-            message: $this->message ?: null,
-            sourceType: $this->leadId ? null : SourceType::MANUAL,
-            assignedTo: $assignedTo,
-        );
+        // Preparar datos: custom field values + campos del sistema
+        $data = array_merge($this->customFieldValues, [
+            'source_type' => $this->leadId ? null : SourceType::MANUAL->value,
+            'assigned_to' => $assignedTo,
+        ]);
+
+        // Crear DTO desde array (el DTO ahora separa automáticamente custom fields de campos del sistema)
+        $leadData = LeadData::fromArray($data);
 
         if ($this->leadId) {
             $leadService->update($this->leadId, $leadData);
@@ -199,10 +190,7 @@ class LeadFormModal extends Component
     private function resetForm(): void
     {
         $this->leadId = null;
-        $this->name = '';
-        $this->email = '';
-        $this->phone = '';
-        $this->message = '';
+        $this->customFieldValues = [];
         $this->assigned_to = null;
         $this->canEdit = true;
         $this->resetValidation();

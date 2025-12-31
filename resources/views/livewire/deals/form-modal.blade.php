@@ -6,7 +6,7 @@
 
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
 
-                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full">
                     <form wire:submit="save">
                         <div class="bg-white dark:bg-gray-800 px-6 pt-6 pb-4">
                             <h3 class="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -109,85 +109,49 @@
                             @else
                                 {{-- Main form (when lead is selected or creating new or editing) --}}
                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <!-- Columna izquierda: Datos del Negocio -->
-                                    <div class="space-y-4">
-                                        <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide border-b border-gray-200 dark:border-gray-700 pb-2">Datos del Negocio</h4>
+                                        <!-- Columna izquierda: Datos del Negocio -->
+                                    <div class="grid grid-cols-1 gap-4 content-start">
+                                        {{-- Custom Fields del Deal agrupados --}}
+                                        <x-custom-fields-group entityType="deal" />
 
-                                        <!-- Deal Name -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Negocio *</label>
-                                            <input type="text"
-                                                   wire:model="name"
-                                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                                                   placeholder="Ej: Proyecto Web Empresa X">
-                                            @error('name') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
+                                        {{-- Configuración (campos del sistema) --}}
+                                        <div class="col-span-full border-t border-gray-200 dark:border-gray-700 pt-4 mt-2">
+                                            <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-4">Configuración</h4>
 
-                                        <!-- Value -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Valor</label>
-                                            <div class="relative">
-                                                <span class="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
-                                                <input type="number"
-                                                       wire:model="value"
-                                                       step="0.01"
-                                                       min="0"
-                                                       class="w-full pl-8 pr-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                                                       placeholder="0.00">
+                                            <div class="space-y-4">
+                                                <!-- Sale Phase -->
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fase de Venta *</label>
+                                                    <select wire:model="salePhaseId"
+                                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                                                        @foreach($phases as $phase)
+                                                            <option value="{{ $phase->id }}">
+                                                                {{ $phase->name }}
+                                                                @if($phase->is_closed)
+                                                                    ({{ $phase->is_won ? 'Ganado' : 'Perdido' }})
+                                                                @endif
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('salePhaseId') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                                </div>
+
+                                                <!-- Assigned To -->
+                                                @if($canAssign)
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asignado a</label>
+                                                    <select wire:model="assigned_to"
+                                                            class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                                                        <option value="">Sin asignar</option>
+                                                        @foreach($assignableUsers as $user)
+                                                            <option value="{{ $user->uuid }}">{{ $user->name }} ({{ $user->email }})</option>
+                                                        @endforeach
+                                                    </select>
+                                                    @error('assigned_to') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
+                                                </div>
+                                                @endif
                                             </div>
-                                            @error('value') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
                                         </div>
-
-                                        <!-- Sale Phase -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fase de Venta *</label>
-                                            <select wire:model="salePhaseId"
-                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                                                @foreach($phases as $phase)
-                                                    <option value="{{ $phase->id }}">
-                                                        {{ $phase->name }}
-                                                        @if($phase->is_closed)
-                                                            ({{ $phase->is_won ? 'Ganado' : 'Perdido' }})
-                                                        @endif
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            @error('salePhaseId') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
-
-                                        <!-- Estimated Close Date -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Fecha Estimada de Cierre</label>
-                                            <input type="date"
-                                                   wire:model="estimatedCloseDate"
-                                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                                            @error('estimatedCloseDate') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
-
-                                        <!-- Description -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Descripcion</label>
-                                            <textarea wire:model="description"
-                                                      rows="3"
-                                                      class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-                                                      placeholder="Detalles del negocio..."></textarea>
-                                            @error('description') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
-
-                                        <!-- Assigned To -->
-                                        @if($canAssign)
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Asignado a</label>
-                                            <select wire:model="assigned_to"
-                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                                                <option value="">Sin asignar</option>
-                                                @foreach($assignableUsers as $user)
-                                                    <option value="{{ $user->uuid }}">{{ $user->name }} ({{ $user->email }})</option>
-                                                @endforeach
-                                            </select>
-                                            @error('assigned_to') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
-                                        @endif
                                     </div>
 
                                     <!-- Columna derecha: Datos del Contacto -->
@@ -225,41 +189,27 @@
                                             </div>
                                         @endif
 
-                                        <!-- Lead Name -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre</label>
-                                            <input type="text"
-                                                   wire:model="leadName"
-                                                   @if(!$canEditLead && !$createNewLead) readonly @endif
-                                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 {{ !$canEditLead && !$createNewLead ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : '' }}"
-                                                   placeholder="Nombre del contacto">
-                                            @error('leadName') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
+                                        {{-- Custom Fields del Lead (con prefijo leadCustomFieldValues) --}}
+                                        <x-custom-fields-group entityType="lead" wireModelPrefix="leadCustomFieldValues" />
 
-                                        <!-- Lead Email -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
-                                            <input type="email"
-                                                   wire:model="leadEmail"
-                                                   @if(!$canEditLead && !$createNewLead) readonly @endif
-                                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 {{ !$canEditLead && !$createNewLead ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : '' }}"
-                                                   placeholder="email@ejemplo.com">
-                                            @error('leadEmail') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
+                                        {{-- Quick Actions: detectar dinámicamente los campos phone y email --}}
+                                        @php
+                                            $customFieldService = app(\App\Application\CustomField\Services\CustomFieldService::class);
+                                            $leadFields = collect($customFieldService->getFieldsByEntity('lead'));
 
-                                        <!-- Lead Phone -->
-                                        <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Telefono</label>
-                                            <input type="text"
-                                                   wire:model="leadPhone"
-                                                   @if(!$canEditLead && !$createNewLead) readonly @endif
-                                                   class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 {{ !$canEditLead && !$createNewLead ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : '' }}"
-                                                   placeholder="+57 300 123 4567">
-                                            @error('leadPhone') <span class="text-red-500 text-xs mt-1 block">{{ $message }}</span> @enderror
-                                        </div>
+                                            $phoneField = $leadFields->firstWhere('type', 'tel');
+                                            $emailField = $leadFields->firstWhere('type', 'email');
 
-                                        <!-- Quick Actions -->
-                                        @if(($leadPhone || $leadEmail) && !$createNewLead)
+                                            $leadPhone = $phoneField ? ($this->leadCustomFieldValues[$phoneField->name] ?? null) : null;
+                                            $leadEmail = $emailField ? ($this->leadCustomFieldValues[$emailField->name] ?? null) : null;
+
+                                            // Mostrar acciones rápidas si:
+                                            // 1. Hay datos de contacto (teléfono o email)
+                                            // 2. Y NO estamos creando un nuevo contacto (createNewLead = true)
+                                            // Esto permite mostrar los botones al editar un deal existente
+                                            $showQuickActions = ($leadPhone || $leadEmail) && !$this->createNewLead;
+                                        @endphp
+                                        @if($showQuickActions)
                                             <div class="pt-2">
                                                 <label class="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">Acciones Rapidas</label>
                                                 <div class="flex gap-2">

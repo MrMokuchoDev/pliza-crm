@@ -12,14 +12,11 @@ readonly class DealData
     public function __construct(
         public ?string $id = null,
         public ?string $leadId = null,
-        public ?string $name = null,
-        public ?float $value = null,
         public ?string $salePhaseId = null,
-        public ?string $description = null,
-        public ?string $estimatedCloseDate = null,
         public ?string $closeDate = null,
         public ?string $assignedTo = null,
         public ?string $createdBy = null,
+        public array $customFields = [],
     ) {}
 
     /**
@@ -27,38 +24,42 @@ readonly class DealData
      */
     public static function fromArray(array $data): self
     {
+        // Separar campos del sistema de custom fields
+        $systemFields = ['id', 'lead_id', 'sale_phase_id', 'close_date', 'assigned_to', 'created_by'];
+        $customFields = [];
+
+        foreach ($data as $key => $value) {
+            if (!in_array($key, $systemFields)) {
+                $customFields[$key] = $value;
+            }
+        }
+
         return new self(
             id: $data['id'] ?? null,
             leadId: $data['lead_id'] ?? null,
-            name: $data['name'] ?? null,
-            value: isset($data['value']) ? (float) $data['value'] : null,
             salePhaseId: $data['sale_phase_id'] ?? null,
-            description: $data['description'] ?? null,
-            estimatedCloseDate: $data['estimated_close_date'] ?? null,
             closeDate: $data['close_date'] ?? null,
             assignedTo: $data['assigned_to'] ?? null,
             createdBy: $data['created_by'] ?? null,
+            customFields: $customFields,
         );
     }
 
     /**
-     * Convertir a array para persistencia (solo campos con valor).
-     * Usar toArrayForUpdate() cuando se necesite poder limpiar campos.
+     * Convertir a array para persistencia.
      */
     public function toArray(): array
     {
-        return array_filter([
+        $systemData = array_filter([
             'id' => $this->id,
             'lead_id' => $this->leadId,
-            'name' => $this->name,
-            'value' => $this->value,
             'sale_phase_id' => $this->salePhaseId,
-            'description' => $this->description,
-            'estimated_close_date' => $this->estimatedCloseDate,
             'close_date' => $this->closeDate,
             'assigned_to' => $this->assignedTo,
             'created_by' => $this->createdBy,
         ], fn ($value) => $value !== null);
+
+        return array_merge($systemData, $this->customFields);
     }
 
     /**
@@ -67,25 +68,22 @@ readonly class DealData
      */
     public function toArrayForUpdate(): array
     {
-        $data = [
-            'name' => $this->name,
-            'value' => $this->value,
-            'description' => $this->description,
-            'estimated_close_date' => $this->estimatedCloseDate,
-            'close_date' => $this->closeDate,
-        ];
+        $systemData = [];
 
         // Solo incluir campos de relación si tienen valor
         if ($this->leadId !== null) {
-            $data['lead_id'] = $this->leadId;
+            $systemData['lead_id'] = $this->leadId;
         }
         if ($this->salePhaseId !== null) {
-            $data['sale_phase_id'] = $this->salePhaseId;
+            $systemData['sale_phase_id'] = $this->salePhaseId;
+        }
+        if ($this->closeDate !== null) {
+            $systemData['close_date'] = $this->closeDate;
         }
         if ($this->assignedTo !== null) {
-            $data['assigned_to'] = $this->assignedTo;
+            $systemData['assigned_to'] = $this->assignedTo;
         }
 
-        return $data;
+        return array_merge($systemData, $this->customFields);
     }
 }

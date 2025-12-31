@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Deals;
 
+use App\Application\CustomField\Services\CustomFieldService;
 use App\Application\Deal\Services\DealService;
 use App\Application\DealComment\DTOs\DealCommentData;
 use App\Application\DealComment\Services\DealCommentService;
@@ -19,6 +20,8 @@ class DealShow extends Component
     public $deal = null;
 
     public string $dealId;
+
+    public array $customFieldGroups = [];
 
     public string $salePhaseId = '';
 
@@ -76,6 +79,76 @@ class DealShow extends Component
         if ($this->deal) {
             $this->salePhaseId = $this->deal->sale_phase_id;
             $this->calculateDealPermissions();
+            $this->loadCustomFields();
+        }
+    }
+
+    /**
+     * Carga los custom fields agrupados por bloques con sus valores.
+     */
+    protected function loadCustomFields(): void
+    {
+        if (!$this->deal) {
+            return;
+        }
+
+        $customFieldService = app(CustomFieldService::class);
+
+        // Obtener grupos de custom fields para deals
+        $groups = $customFieldService->getGroupsByEntity('deal');
+
+        // Cargar valores actuales del deal
+        $customFieldValues = $this->deal->customFieldValues ?? collect();
+
+        $this->customFieldGroups = [];
+
+        foreach ($groups as $group) {
+            // Obtener campos del grupo
+            $fields = $customFieldService->getFieldsByEntity('deal', true, $group->id);
+
+            // Agregar valores a los campos
+            $fieldsWithValues = [];
+            foreach ($fields as $field) {
+                // Excluir campos que ya se muestran en otras secciones
+                // cf_deal_1 = Nombre del Negocio (header)
+                // cf_deal_2 = Descripción (card propio)
+                // cf_deal_3 = Valor (card Detalles)
+                // cf_deal_4 = Fecha Estimada de Cierre (card Detalles)
+                if (in_array($field->name, ['cf_deal_1', 'cf_deal_2', 'cf_deal_3', 'cf_deal_4'])) {
+                    continue;
+                }
+
+                $value = $customFieldValues->firstWhere('custom_field_id', $field->id);
+
+                // Determinar si el campo necesita opciones
+                $needsOptions = in_array($field->type, ['select', 'multiselect', 'radio', 'checkbox']);
+
+                // Obtener opciones y convertirlas a arrays simples
+                $options = [];
+                if ($needsOptions) {
+                    $optionDtos = $customFieldService->getOptions($field->id);
+                    foreach ($optionDtos as $optionDto) {
+                        $options[] = [
+                            'value' => $optionDto->value,
+                            'label' => $optionDto->label,
+                        ];
+                    }
+                }
+
+                $fieldsWithValues[] = [
+                    'field' => $field->toArray(), // Convertir DTO a array
+                    'value' => $value?->value,
+                    'options' => $options,
+                ];
+            }
+
+            // Solo agregar grupos que tengan campos
+            if (count($fieldsWithValues) > 0) {
+                $this->customFieldGroups[] = [
+                    'group' => $group->toArray(), // Convertir DTO a array
+                    'fields' => $fieldsWithValues,
+                ];
+            }
         }
     }
 

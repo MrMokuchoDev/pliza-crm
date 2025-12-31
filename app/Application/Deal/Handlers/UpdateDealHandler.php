@@ -20,7 +20,21 @@ class UpdateDealHandler
             return null;
         }
 
-        $deal->update($command->data->toArrayForUpdate());
+        // Obtener custom fields directamente del DTO
+        $customFields = $command->data->customFields;
+
+        // Campos regulares del sistema (NO incluir los que son custom fields)
+        $regularFields = array_filter([
+            'sale_phase_id' => $command->data->salePhaseId,
+            'close_date' => $command->data->closeDate,
+            'assigned_to' => $command->data->assignedTo,
+        ], fn($value) => $value !== null);
+
+        // Actualizar campos regulares
+        $deal->update($regularFields);
+
+        // Asignar custom fields usando helper del trait
+        $deal->setCustomFieldsFromArray($customFields)->save();
 
         return $deal->fresh();
     }

@@ -426,7 +426,8 @@
                 color: #EF4444 !important;
             }
             .mcw-form-group input,
-            .mcw-form-group textarea {
+            .mcw-form-group textarea,
+            .mcw-form-group select {
                 width: 100% !important;
                 padding: 12px !important;
                 border: 1px solid #D1D5DB !important;
@@ -441,7 +442,8 @@
                 box-sizing: border-box !important;
             }
             .mcw-form-group input:focus,
-            .mcw-form-group textarea:focus {
+            .mcw-form-group textarea:focus,
+            .mcw-form-group select:focus {
                 outline: none !important;
                 border-color: var(--mcw-color) !important;
                 box-shadow: 0 0 0 3px var(--mcw-color-light) !important;
@@ -461,11 +463,45 @@
                 background: transparent !important;
             }
             .mcw-form-group.mcw-invalid input,
-            .mcw-form-group.mcw-invalid textarea {
+            .mcw-form-group.mcw-invalid textarea,
+            .mcw-form-group.mcw-invalid select {
                 border-color: #EF4444 !important;
             }
             .mcw-form-group.mcw-invalid .mcw-error {
                 display: block !important;
+            }
+            /* Estilos para radio buttons */
+            .mcw-form-group .mcw-radio-group {
+                display: flex !important;
+                flex-direction: column !important;
+                gap: 8px !important;
+            }
+            .mcw-form-group .mcw-radio-group label {
+                display: flex !important;
+                align-items: center !important;
+                cursor: pointer !important;
+                font-weight: normal !important;
+            }
+            .mcw-form-group .mcw-radio-group input[type="radio"] {
+                width: auto !important;
+                margin-right: 8px !important;
+                cursor: pointer !important;
+            }
+            /* Estilos para checkbox */
+            .mcw-form-group input[type="checkbox"] {
+                width: auto !important;
+                margin-right: 8px !important;
+                cursor: pointer !important;
+            }
+            .mcw-form-group label:has(input[type="checkbox"]) {
+                display: flex !important;
+                align-items: center !important;
+                cursor: pointer !important;
+                font-weight: normal !important;
+            }
+            /* Estilos para multiselect */
+            .mcw-form-group select[multiple] {
+                min-height: 80px !important;
             }
             /* Estilos para intl-tel-input */
             .mcw-form-group .iti {
@@ -785,28 +821,148 @@
 
     // Generar formulario HTML
     function getFormHtml(cfg) {
-        return `
-            <form id="mcw-form">
+        // Usar custom fields si están disponibles, sino campos por defecto
+        const customFields = window.MCW_CUSTOM_FIELDS || [];
+
+        console.log('[MiniCRM Widget] Custom fields loaded:', customFields.length > 0 ? customFields : 'Using default fields');
+
+        let fieldsHtml = '';
+
+        if (customFields.length > 0) {
+            console.log('[MiniCRM Widget] Rendering dynamic form with', customFields.length, 'custom fields');
+            // Generar campos dinámicamente desde custom fields
+            customFields.forEach(field => {
+                const requiredAttr = field.required ? 'required' : '';
+                const requiredMark = field.required ? '<span>*</span>' : '';
+                const errorMsg = field.required ? `${field.label} es requerido` : `Ingresa un ${field.label.toLowerCase()} válido`;
+
+                // Determinar el tipo de input según el tipo de custom field
+                let inputHtml = '';
+
+                switch (field.type) {
+                    case 'textarea':
+                        const textareaDefault = field.default_value || '';
+                        inputHtml = `<textarea name="${field.name}" ${requiredAttr} placeholder="${field.label}">${textareaDefault}</textarea>`;
+                        break;
+                    case 'select':
+                        const options = field.options || [];
+                        console.log('[MiniCRM Widget] Select field options:', field.name, options);
+                        const defaultValue = field.default_value || '';
+                        const optionsHtml = options.map(opt => {
+                            const value = opt.value || opt;
+                            const label = opt.label || opt;
+                            const selected = value === defaultValue ? 'selected' : '';
+                            return `<option value="${value}" ${selected}>${label}</option>`;
+                        }).join('');
+                        inputHtml = `<select name="${field.name}" ${requiredAttr}><option value="">Selecciona...</option>${optionsHtml}</select>`;
+                        break;
+                    case 'multiselect':
+                        const multiOptions = field.options || [];
+                        // Parsear default_value: puede ser string, array JSON, o null
+                        let multiDefaults = [];
+                        if (field.default_value) {
+                            try {
+                                // Intentar parsear como JSON
+                                if (field.default_value.startsWith('[')) {
+                                    multiDefaults = JSON.parse(field.default_value);
+                                } else {
+                                    // Si es un valor simple, crear array con ese valor
+                                    multiDefaults = [field.default_value];
+                                }
+                            } catch (e) {
+                                // Si falla el parse, usar como valor simple
+                                multiDefaults = [field.default_value];
+                            }
+                        }
+                        const multiOptionsHtml = multiOptions.map(opt => {
+                            const value = opt.value || opt;
+                            const label = opt.label || opt;
+                            const selected = multiDefaults.includes(value) ? 'selected' : '';
+                            return `<option value="${value}" ${selected}>${label}</option>`;
+                        }).join('');
+                        inputHtml = `<select name="${field.name}[]" ${requiredAttr} multiple size="3">${multiOptionsHtml}</select>`;
+                        break;
+                    case 'radio':
+                        const radioOptions = field.options || [];
+                        const radioDefault = field.default_value || '';
+                        const radioHtml = radioOptions.map(opt => {
+                            const value = opt.value || opt;
+                            const label = opt.label || opt;
+                            const checked = value === radioDefault ? 'checked' : '';
+                            return `<label><input type="radio" name="${field.name}" value="${value}" ${requiredAttr} ${checked}> ${label}</label>`;
+                        }).join('');
+                        inputHtml = `<div class="mcw-radio-group">${radioHtml}</div>`;
+                        break;
+                    case 'checkbox':
+                        const checkboxDefault = field.default_value === '1' || field.default_value === 'true';
+                        const checked = checkboxDefault ? 'checked' : '';
+                        inputHtml = `<label><input type="checkbox" name="${field.name}" value="1" ${checked}> ${field.placeholder || 'Sí'}</label>`;
+                        break;
+                    case 'tel':
+                    case 'phone':
+                        // Campo teléfono con intl-tel-input
+                        inputHtml = `<input type="tel" name="${field.name}" id="mcw-phone-input" ${requiredAttr}>`;
+                        break;
+                    case 'email':
+                        const emailDefault = field.default_value || '';
+                        inputHtml = `<input type="email" name="${field.name}" ${requiredAttr} placeholder="${field.label}" value="${emailDefault}">`;
+                        break;
+                    case 'number':
+                        const numberDefault = field.default_value || '';
+                        inputHtml = `<input type="number" name="${field.name}" ${requiredAttr} placeholder="${field.label}" value="${numberDefault}">`;
+                        break;
+                    case 'date':
+                        const dateDefault = field.default_value || '';
+                        inputHtml = `<input type="date" name="${field.name}" ${requiredAttr} value="${dateDefault}">`;
+                        break;
+                    case 'url':
+                        const urlDefault = field.default_value || '';
+                        inputHtml = `<input type="url" name="${field.name}" ${requiredAttr} placeholder="${field.label}" value="${urlDefault}">`;
+                        break;
+                    default:
+                        // text por defecto
+                        const textDefault = field.default_value || '';
+                        inputHtml = `<input type="text" name="${field.name}" ${requiredAttr} placeholder="${field.label}" value="${textDefault}">`;
+                }
+
+                fieldsHtml += `
+                    <div class="mcw-form-group">
+                        <label>${field.label} ${requiredMark}</label>
+                        ${inputHtml}
+                        <div class="mcw-error">${errorMsg}</div>
+                    </div>
+                `;
+            });
+        } else {
+            console.log('[MiniCRM Widget] Using default hardcoded fields');
+            // Campos por defecto (fallback si no hay custom fields)
+            fieldsHtml = `
                 <div class="mcw-form-group">
                     <label>Nombre <span>*</span></label>
-                    <input type="text" name="name" required placeholder="Tu nombre">
+                    <input type="text" name="cf_lead_1" required placeholder="Tu nombre">
                     <div class="mcw-error">El nombre es requerido</div>
                 </div>
                 <div class="mcw-form-group">
                     <label>Teléfono <span>*</span></label>
-                    <input type="tel" name="phone" id="mcw-phone-input" required>
+                    <input type="tel" name="cf_lead_3" id="mcw-phone-input" required>
                     <div class="mcw-error">Ingresa un número de teléfono válido</div>
                 </div>
                 <div class="mcw-form-group">
                     <label>Email</label>
-                    <input type="email" name="email" placeholder="tu@email.com">
+                    <input type="email" name="cf_lead_2" placeholder="tu@email.com">
                     <div class="mcw-error">Ingresa un email válido</div>
                 </div>
                 <div class="mcw-form-group">
                     <label>Mensaje <span>*</span></label>
-                    <textarea name="message" required placeholder="¿En qué podemos ayudarte?"></textarea>
+                    <textarea name="cf_lead_4" required placeholder="¿En qué podemos ayudarte?"></textarea>
                     <div class="mcw-error">El mensaje es requerido</div>
                 </div>
+            `;
+        }
+
+        return `
+            <form id="mcw-form">
+                ${fieldsHtml}
                 <button type="submit" class="mcw-btn-submit" style="background: ${cfg.color};">${cfg.buttonText}</button>
             </form>
         `;
@@ -891,25 +1047,8 @@
 
             const formData = new FormData(form);
 
-            // Obtener teléfono completo con código de país desde intl-tel-input
-            let phoneNumber = formData.get('phone').trim();
-            let phoneValid = true;
-
-            if (MCW.itiInstance) {
-                // Obtener número en formato E.164 (+573001234567)
-                phoneNumber = MCW.itiInstance.getNumber();
-
-                // Validar usando la librería
-                if (phoneNumber && !MCW.itiInstance.isValidNumber()) {
-                    phoneValid = false;
-                }
-            }
-
+            // Construir data object dinámicamente desde todos los campos del formulario
             const data = {
-                name: formData.get('name').trim(),
-                phone: phoneNumber,
-                email: formData.get('email').trim(),
-                message: formData.get('message').trim(),
                 site_id: cfg.siteId,
                 source_type: cfg.type === 'contact_form' ? 'contact_form' : (cfg.type + '_button'),
                 source_url: window.location.href,
@@ -917,29 +1056,74 @@
                 user_agent: navigator.userAgent
             };
 
-            // Validaciones
+            // Procesar cada campo del formulario
+            let phoneNumber = '';
+            let phoneValid = true;
+            let phoneFieldName = null;
+
+            for (let [name, value] of formData.entries()) {
+                // Detectar campo de teléfono (buscar input type="tel" o id con "phone")
+                const input = form.querySelector(`[name="${name}"]`);
+                if (input && (input.type === 'tel' || input.id === 'mcw-phone-input')) {
+                    phoneFieldName = name;
+                    // Obtener teléfono completo con código de país desde intl-tel-input
+                    if (MCW.itiInstance) {
+                        phoneNumber = MCW.itiInstance.getNumber();
+                        // Validar usando la librería
+                        if (phoneNumber && !MCW.itiInstance.isValidNumber()) {
+                            phoneValid = false;
+                        }
+                    } else {
+                        phoneNumber = (value || '').trim();
+                    }
+                    data[name] = phoneNumber;
+                } else {
+                    // Manejar campos multiselect (name termina en [])
+                    if (name.endsWith('[]')) {
+                        // Remover [] del nombre para enviar al backend
+                        const cleanName = name.slice(0, -2);
+                        if (!data[cleanName]) {
+                            data[cleanName] = [];
+                        }
+                        data[cleanName].push((value || '').trim());
+                    } else {
+                        // Otros campos
+                        data[name] = (value || '').trim();
+                    }
+                }
+            }
+
+            // Validaciones dinámicas
             let hasErrors = false;
 
-            if (!data.name) {
-                form.querySelector('[name="name"]').closest('.mcw-form-group').classList.add('mcw-invalid');
-                hasErrors = true;
-            }
-            if (!data.phone || !phoneValid) {
-                const phoneGroup = form.querySelector('[name="phone"]').closest('.mcw-form-group');
-                phoneGroup.classList.add('mcw-invalid');
-                if (!phoneValid && data.phone) {
-                    phoneGroup.querySelector('.mcw-error').textContent = 'El número de teléfono no es válido para el país seleccionado';
+            // Validar todos los campos requeridos
+            form.querySelectorAll('[required]').forEach(field => {
+                let fieldName = field.name;
+                // Si el nombre termina en [], quitarlo para buscar en data
+                const cleanFieldName = fieldName.endsWith('[]') ? fieldName.slice(0, -2) : fieldName;
+                const fieldValue = data[cleanFieldName];
+                const formGroup = field.closest('.mcw-form-group');
+
+                // Validar campo vacío (arrays deben tener al menos un elemento)
+                if (!fieldValue || (Array.isArray(fieldValue) && fieldValue.length === 0) || (!Array.isArray(fieldValue) && fieldValue.trim() === '')) {
+                    formGroup.classList.add('mcw-invalid');
+                    hasErrors = true;
                 }
-                hasErrors = true;
-            }
-            if (!isValidEmail(data.email)) {
-                form.querySelector('[name="email"]').closest('.mcw-form-group').classList.add('mcw-invalid');
-                hasErrors = true;
-            }
-            if (!data.message) {
-                form.querySelector('[name="message"]').closest('.mcw-form-group').classList.add('mcw-invalid');
-                hasErrors = true;
-            }
+                // Validar email si es tipo email
+                else if (field.type === 'email' && !isValidEmail(fieldValue)) {
+                    formGroup.classList.add('mcw-invalid');
+                    hasErrors = true;
+                }
+                // Validar teléfono con intl-tel-input
+                else if (field.type === 'tel' && phoneFieldName === fieldName && !phoneValid) {
+                    formGroup.classList.add('mcw-invalid');
+                    const errorDiv = formGroup.querySelector('.mcw-error');
+                    if (errorDiv) {
+                        errorDiv.textContent = 'El número de teléfono no es válido para el país seleccionado';
+                    }
+                    hasErrors = true;
+                }
+            });
 
             if (hasErrors) return;
 
@@ -972,28 +1156,18 @@
                 if (!response.ok) {
                     // Mostrar errores de validación del servidor
                     if (result.errors) {
-                        // Mapear errores a los campos del formulario
-                        const fieldMap = {
-                            'name': 'name',
-                            'phone': 'phone',
-                            'email': 'email',
-                            'message': 'message'
-                        };
-
-                        Object.keys(result.errors).forEach(field => {
-                            const inputName = fieldMap[field];
-                            if (inputName) {
-                                const formGroup = form.querySelector(`[name="${inputName}"]`)?.closest('.mcw-form-group');
-                                if (formGroup) {
-                                    formGroup.classList.add('mcw-invalid');
-                                    const errorDiv = formGroup.querySelector('.mcw-error');
-                                    if (errorDiv) {
-                                        // Mostrar el primer mensaje de error
-                                        const errorMsg = Array.isArray(result.errors[field])
-                                            ? result.errors[field][0]
-                                            : result.errors[field];
-                                        errorDiv.textContent = errorMsg;
-                                    }
+                        // Mapear errores dinámicamente a los campos del formulario
+                        Object.keys(result.errors).forEach(fieldName => {
+                            const formGroup = form.querySelector(`[name="${fieldName}"]`)?.closest('.mcw-form-group');
+                            if (formGroup) {
+                                formGroup.classList.add('mcw-invalid');
+                                const errorDiv = formGroup.querySelector('.mcw-error');
+                                if (errorDiv) {
+                                    // Mostrar el primer mensaje de error
+                                    const errorMsg = Array.isArray(result.errors[fieldName])
+                                        ? result.errors[fieldName][0]
+                                        : result.errors[fieldName];
+                                    errorDiv.textContent = errorMsg;
                                 }
                             }
                         });
@@ -1019,7 +1193,10 @@
                 setTimeout(() => {
                     if (cfg.type === 'whatsapp' && cfg.phone) {
                         const cleanPhone = cfg.phone.replace(/[^0-9]/g, '');
-                        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(data.message)}`;
+                        // Buscar campo textarea para el mensaje (probablemente mensaje)
+                        const textareaField = form.querySelector('textarea');
+                        const messageText = textareaField ? data[textareaField.name] : '';
+                        const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(messageText || 'Hola')}`;
                         window.open(whatsappUrl, '_blank');
                     } else if (cfg.type === 'phone' && cfg.phone) {
                         window.location.href = `tel:${cfg.phone}`;
