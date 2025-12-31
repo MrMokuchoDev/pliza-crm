@@ -46,6 +46,12 @@ enum Permission: string
     case REPORTS_VIEW_ALL = 'reports.view_all';
     case REPORTS_VIEW_OWN = 'reports.view_own';
 
+    // Campos Personalizados
+    case CUSTOM_FIELDS_VIEW = 'custom_fields.view';
+    case CUSTOM_FIELDS_CREATE = 'custom_fields.create';
+    case CUSTOM_FIELDS_UPDATE = 'custom_fields.update';
+    case CUSTOM_FIELDS_DELETE = 'custom_fields.delete';
+
     // Sistema
     case SYSTEM_MAINTENANCE = 'system.maintenance';
     case SYSTEM_UPDATES = 'system.updates';
@@ -93,6 +99,12 @@ enum Permission: string
             self::REPORTS_VIEW_ALL => 'Ver todos los reportes',
             self::REPORTS_VIEW_OWN => 'Ver reportes propios',
 
+            // Custom Fields
+            self::CUSTOM_FIELDS_VIEW => 'Ver campos personalizados',
+            self::CUSTOM_FIELDS_CREATE => 'Crear campos personalizados',
+            self::CUSTOM_FIELDS_UPDATE => 'Editar campos personalizados',
+            self::CUSTOM_FIELDS_DELETE => 'Eliminar campos personalizados',
+
             // System
             self::SYSTEM_MAINTENANCE => 'Acceso a mantenimiento',
             self::SYSTEM_UPDATES => 'Gestionar actualizaciones',
@@ -111,6 +123,7 @@ enum Permission: string
             str_starts_with($this->value, 'phases.') => 'Fases',
             str_starts_with($this->value, 'sites.') => 'Sitios',
             str_starts_with($this->value, 'reports.') => 'Reportes',
+            str_starts_with($this->value, 'custom_fields.') => 'Campos Personalizados',
             str_starts_with($this->value, 'system.') => 'Sistema',
             default => 'Otros',
         };
@@ -128,6 +141,7 @@ enum Permission: string
             str_starts_with($this->value, 'phases.') => 'phases',
             str_starts_with($this->value, 'sites.') => 'sites',
             str_starts_with($this->value, 'reports.') => 'reports',
+            str_starts_with($this->value, 'custom_fields.') => 'custom_fields',
             str_starts_with($this->value, 'system.') => 'system',
             default => 'other',
         };
@@ -158,6 +172,7 @@ enum Permission: string
                 self::DEALS_ASSIGN,
                 self::PHASES_MANAGE,
                 self::REPORTS_VIEW_ALL,
+                self::CUSTOM_FIELDS_VIEW, // Solo ver para llenar formularios
             ],
 
             Role::SALES => [
@@ -170,6 +185,7 @@ enum Permission: string
                 self::DEALS_UPDATE_OWN,
                 self::DEALS_DELETE_OWN,
                 self::REPORTS_VIEW_OWN,
+                self::CUSTOM_FIELDS_VIEW, // Solo ver para llenar formularios
             ],
         };
     }

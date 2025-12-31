@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Infrastructure\Http\Livewire\CustomField\CustomFieldIndex;
 use App\Infrastructure\Http\Livewire\Dashboard\DashboardIndex;
 use App\Infrastructure\Http\Livewire\Deals\DealFormModal;
 use App\Infrastructure\Http\Livewire\Deals\DealIndex;
@@ -51,5 +52,6 @@ class AppServiceProvider extends ServiceProvider
         Livewire::component('app.infrastructure.http.livewire.updates.updates-panel', UpdatesPanel::class);
         Livewire::component('app.infrastructure.http.livewire.users.user-index', UserIndex::class);
         Livewire::component('app.infrastructure.http.livewire.roles.role-permissions', RolePermissions::class);
+        Livewire::component('app.infrastructure.http.livewire.custom-field.custom-field-index', CustomFieldIndex::class);
     }
 }

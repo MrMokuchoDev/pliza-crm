@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Site\Handlers;
 
 use App\Application\Site\Queries\GetSiteStatisticsQuery;
+use App\Application\Deal\Services\DealValueCalculationService;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use App\Infrastructure\Persistence\Eloquent\SalePhaseModel;
@@ -14,6 +15,10 @@ use Illuminate\Support\Facades\DB;
 
 final class GetSiteStatisticsHandler
 {
+    public function __construct(
+        private readonly DealValueCalculationService $dealValueCalculator
+    ) {}
+
     /**
      * @return array{
      *     site: SiteModel|null,
@@ -70,10 +75,15 @@ final class GetSiteStatisticsHandler
             ->whereHas('salePhase', fn ($q) => $q->where('is_closed', true)->where('is_won', false))
             ->count();
 
-        // Valor total de deals ganados
-        $totalValue = (clone $dealsQuery)
+        // Valor total de deals ganados usando servicio centralizado
+        $wonDealIds = (clone $dealsQuery)
             ->whereHas('salePhase', fn ($q) => $q->where('is_closed', true)->where('is_won', true))
-            ->sum('value');
+            ->pluck('id')
+            ->toArray();
+
+        $totalValue = !empty($wonDealIds)
+            ? $this->dealValueCalculator->calculateTotalValueByDealIds($wonDealIds)
+            : 0.0;
 
         // Tasa de conversión real:
         // Un lead se considera "convertido" si tiene al menos un negocio que:

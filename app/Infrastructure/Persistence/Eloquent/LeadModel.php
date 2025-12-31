@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Infrastructure\Persistence\Eloquent;
 
 use App\Domain\Lead\ValueObjects\SourceType;
+use App\Domain\Shared\Traits\HasCustomFields;
 use App\Domain\Shared\Traits\HasUuid;
+use App\Infrastructure\Persistence\Eloquent\Concerns\CustomFieldSearchable;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,6 +18,8 @@ class LeadModel extends Model
 {
     use HasUuid;
     use SoftDeletes;
+    use HasCustomFields;
+    use CustomFieldSearchable;
 
     protected $table = 'leads';
 
@@ -23,12 +27,11 @@ class LeadModel extends Model
 
     public $incrementing = false;
 
+    protected $with = ['customFieldValues'];
+
     protected $fillable = [
         'id',
-        'name',
-        'email',
-        'phone',
-        'message',
+        // name, email, phone, message -> ahora son custom fields
         'source_type',
         'source_site_id',
         'source_url',
@@ -86,5 +89,28 @@ class LeadModel extends Model
     public function assignedTo(): BelongsTo
     {
         return $this->belongsTo(User::class, 'assigned_to', 'uuid');
+    }
+
+    /**
+     * Tipo de entidad para custom fields.
+     */
+    protected function getEntityType(): string
+    {
+        return 'lead';
+    }
+
+    /**
+     * DEPRECADO: Mapeo de propiedades a custom fields.
+     * Mantenido solo para compatibilidad temporal con trait HasCustomFields.
+     * NO usar en código nuevo.
+     */
+    public function getCustomFieldMapping(): array
+    {
+        return [
+            'name' => 'cf_lead_1',
+            'email' => 'cf_lead_2',
+            'phone' => 'cf_lead_3',
+            'message' => 'cf_lead_4',
+        ];
     }
 }

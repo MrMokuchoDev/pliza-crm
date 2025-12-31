@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Http\Livewire\Leads;
 
+use App\Application\CustomField\Services\CustomFieldService;
 use App\Application\Lead\Services\LeadService;
 use App\Application\Note\DTOs\NoteData;
 use App\Application\Note\Services\NoteService;
@@ -18,6 +19,8 @@ class LeadShow extends Component
     public $lead = null;
 
     public string $leadId;
+
+    public array $customFieldGroups = [];
 
     public bool $canEditLead = false;
 
@@ -54,6 +57,75 @@ class LeadShow extends Component
 
         // Calcular permisos de edición/eliminación del lead
         $this->calculateLeadPermissions();
+
+        // Cargar custom fields agrupados
+        $this->loadCustomFields();
+    }
+
+    /**
+     * Carga los custom fields agrupados por bloques con sus valores.
+     */
+    protected function loadCustomFields(): void
+    {
+        if (!$this->lead) {
+            return;
+        }
+
+        $customFieldService = app(CustomFieldService::class);
+
+        // Obtener grupos de custom fields para leads
+        $groups = $customFieldService->getGroupsByEntity('lead');
+
+        // Cargar valores actuales del lead
+        $customFieldValues = $this->lead->customFieldValues ?? collect();
+
+        $this->customFieldGroups = [];
+
+        foreach ($groups as $group) {
+            // Obtener campos del grupo
+            $fields = $customFieldService->getFieldsByEntity('lead', true, $group->id);
+
+            // Agregar valores a los campos
+            $fieldsWithValues = [];
+            foreach ($fields as $field) {
+                // Excluir campos que ya se muestran en el card de contacto superior
+                // cf_lead_1 = Nombre, cf_lead_2 = Email, cf_lead_3 = Teléfono
+                if (in_array($field->name, ['cf_lead_1', 'cf_lead_2', 'cf_lead_3'])) {
+                    continue;
+                }
+
+                $value = $customFieldValues->firstWhere('custom_field_id', $field->id);
+
+                // Determinar si el campo necesita opciones
+                $needsOptions = in_array($field->type, ['select', 'multiselect', 'radio', 'checkbox']);
+
+                // Obtener opciones y convertirlas a arrays simples
+                $options = [];
+                if ($needsOptions) {
+                    $optionDtos = $customFieldService->getOptions($field->id);
+                    foreach ($optionDtos as $optionDto) {
+                        $options[] = [
+                            'value' => $optionDto->value,
+                            'label' => $optionDto->label,
+                        ];
+                    }
+                }
+
+                $fieldsWithValues[] = [
+                    'field' => $field->toArray(), // Convertir DTO a array
+                    'value' => $value?->value,
+                    'options' => $options,
+                ];
+            }
+
+            // Solo agregar grupos que tengan campos
+            if (count($fieldsWithValues) > 0) {
+                $this->customFieldGroups[] = [
+                    'group' => $group->toArray(), // Convertir DTO a array
+                    'fields' => $fieldsWithValues,
+                ];
+            }
+        }
     }
 
     /**

@@ -63,7 +63,11 @@
             @foreach($openPhases as $phase)
                 @php
                     $phaseDeals = $dealsByPhase[$phase->id] ?? collect();
-                    $phaseValue = $phaseDeals->sum('value');
+                    // Sumar valores dinámicamente desde custom fields
+                    $phaseValue = $phaseDeals->reduce(function ($carry, $deal) {
+                        $value = $deal->value ?? 0;
+                        return $carry + (is_numeric($value) ? (float) $value : 0);
+                    }, 0);
                 @endphp
                 <div class="w-72 lg:w-80 flex-shrink-0">
                     <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">

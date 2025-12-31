@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Deal\Handlers;
 
 use App\Application\Deal\Queries\GetDealStatsQuery;
+use App\Application\Deal\Services\DealValueCalculationService;
 use App\Infrastructure\Persistence\Eloquent\DealModel;
 
 /**
@@ -12,6 +13,10 @@ use App\Infrastructure\Persistence\Eloquent\DealModel;
  */
 class GetDealStatsHandler
 {
+    public function __construct(
+        private readonly DealValueCalculationService $dealValueCalculator
+    ) {}
+
     /**
      * @return array{total: int, open: int, total_value: float}
      */
@@ -28,12 +33,14 @@ class GetDealStatsHandler
         }
 
         $openDeals = DealModel::whereIn('sale_phase_id', $query->openPhaseIds)->count();
-        $totalValue = DealModel::whereIn('sale_phase_id', $query->openPhaseIds)->sum('value') ?? 0;
+
+        // Calcular valor total usando servicio centralizado
+        $totalValue = $this->dealValueCalculator->calculateTotalValueByPhaseIds($query->openPhaseIds);
 
         return [
             'total' => $total,
             'open' => $openDeals,
-            'total_value' => (float) $totalValue,
+            'total_value' => $totalValue,
         ];
     }
 }

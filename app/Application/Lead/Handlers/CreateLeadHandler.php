@@ -15,16 +15,33 @@ class CreateLeadHandler
 {
     public function handle(CreateLeadCommand $command): LeadModel
     {
-        $data = $command->data->toArray();
+        // Obtener custom fields directamente del DTO
+        $customFields = $command->data->customFields;
 
         // Auto-asignar al vendedor que crea el lead si no tiene asignación
-        if (empty($data['assigned_to'])) {
+        $assignedTo = $command->data->assignedTo;
+        if (empty($assignedTo)) {
             $user = Auth::user();
             if ($user && $user->isSales()) {
-                $data['assigned_to'] = $user->uuid;
+                $assignedTo = $user->uuid;
             }
         }
 
-        return LeadModel::create($data);
+        // Campos regulares del sistema (NO incluir los que son custom fields)
+        $regularFields = array_filter([
+            'source_type' => $command->data->sourceType?->value,
+            'source_site_id' => $command->data->sourceSiteId,
+            'source_url' => $command->data->sourceUrl,
+            'metadata' => $command->data->metadata,
+            'assigned_to' => $assignedTo,
+        ], fn($value) => $value !== null);
+
+        // Crear el lead con campos regulares y custom fields
+        $lead = LeadModel::create($regularFields);
+
+        // Asignar custom fields usando helper del trait
+        $lead->setCustomFieldsFromArray($customFields)->save();
+
+        return $lead;
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\ProfileController;
+use App\Infrastructure\Http\Livewire\CustomField\CustomFieldIndex;
 use App\Infrastructure\Http\Livewire\Dashboard\DashboardIndex;
 use App\Infrastructure\Http\Livewire\Deals\DealIndex;
 use App\Infrastructure\Http\Livewire\Deals\DealKanban;
@@ -26,13 +27,13 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard
     Route::get('/dashboard', DashboardIndex::class)->name('dashboard');
 
-    // Contactos (Leads)
-    Route::get('/contactos', LeadIndex::class)->name('leads.index');
-    Route::get('/contactos/{id}', LeadShow::class)->name('leads.show');
+    // Leads
+    Route::get('/leads', LeadIndex::class)->name('leads.index');
+    Route::get('/leads/{id}', LeadShow::class)->name('leads.show');
 
-    // Negocios (Deals)
-    Route::get('/negocios', DealIndex::class)->name('deals.index');
-    Route::get('/negocios/{id}', DealShow::class)->name('deals.show');
+    // Deals
+    Route::get('/deals', DealIndex::class)->name('deals.index');
+    Route::get('/deals/{id}', DealShow::class)->name('deals.show');
     Route::get('/pipeline', DealKanban::class)->name('deals.kanban');
 
     // =========================================
@@ -55,7 +56,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('sites.statistics');
 
     // Users - requiere permiso users.view o cualquier permiso de usuarios
-    Route::get('/usuarios', UserIndex::class)
+    Route::get('/users', UserIndex::class)
         ->middleware('permission:users.view|users.create|users.update|users.delete')
         ->name('users.index');
 
@@ -63,6 +64,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/roles', RolePermissions::class)
         ->middleware('permission:users.assign_role')
         ->name('roles.index');
+
+    // Custom Fields - requiere permiso custom_fields.view o system.maintenance
+    Route::get('/custom-fields', CustomFieldIndex::class)
+        ->middleware('permission:system.maintenance|custom_fields.view|custom_fields.create|custom_fields.update|custom_fields.delete')
+        ->name('custom-fields.index');
 
     // Maintenance Panel - requiere permiso system.maintenance
     Route::get('/admin/maintenance', MaintenancePanel::class)

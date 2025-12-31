@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Infrastructure\Persistence\Repositories;
 
+use App\Domain\CustomField\ValueObjects\SystemCustomFields;
 use App\Domain\Lead\Entities\Lead;
 use App\Domain\Lead\Repositories\LeadRepositoryInterface;
 use App\Domain\Lead\ValueObjects\SourceType;
@@ -65,17 +66,14 @@ class EloquentLeadRepository implements LeadRepositoryInterface
 
     public function save(Lead $lead): void
     {
+        // Los campos name, email, phone, message ahora son custom fields
+        // y se guardan automáticamente via el trait HasCustomFields
         LeadModel::updateOrCreate(
             ['id' => $lead->id],
             [
-                'name' => $lead->name,
-                'email' => $lead->email,
-                'phone' => $lead->phone,
-                'message' => $lead->message,
                 'source_type' => $lead->sourceType->value,
                 'source_site_id' => $lead->sourceSiteId,
                 'source_url' => $lead->sourceUrl,
-                'sale_phase_id' => $lead->salePhaseId,
                 'metadata' => $lead->metadata,
             ]
         );
@@ -123,12 +121,10 @@ class EloquentLeadRepository implements LeadRepositoryInterface
     private function applyFilters($query, array $filters)
     {
         if (! empty($filters['search'])) {
-            $search = $filters['search'];
-            $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
-            });
+            $query->searchInCustomFields(
+                $filters['search'],
+                SystemCustomFields::getLeadSearchableFields()
+            );
         }
 
         if (! empty($filters['sale_phase_id'])) {
@@ -158,16 +154,17 @@ class EloquentLeadRepository implements LeadRepositoryInterface
 
     private function toDomain(LeadModel $model): Lead
     {
+        // Los campos name, email, phone, message ahora son custom fields
+        // El trait HasCustomFields los mapea automáticamente via getAttribute
         return new Lead(
             id: $model->id,
-            name: $model->name,
-            email: $model->email,
-            phone: $model->phone,
-            message: $model->message,
+            name: $model->getAttribute('name'),        // cf_lead_1
+            email: $model->getAttribute('email'),      // cf_lead_2
+            phone: $model->getAttribute('phone'),      // cf_lead_3
+            message: $model->getAttribute('message'),  // cf_lead_4
             sourceType: $model->source_type,
             sourceSiteId: $model->source_site_id,
             sourceUrl: $model->source_url,
-            salePhaseId: $model->sale_phase_id,
             metadata: $model->metadata,
             createdAt: $model->created_at ? \DateTimeImmutable::createFromMutable($model->created_at->toDateTime()) : null,
             updatedAt: $model->updated_at ? \DateTimeImmutable::createFromMutable($model->updated_at->toDateTime()) : null,

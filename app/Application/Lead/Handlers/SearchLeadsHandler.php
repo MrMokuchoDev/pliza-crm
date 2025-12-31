@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Application\Lead\Handlers;
 
 use App\Application\Lead\Queries\SearchLeadsQuery;
+use App\Domain\CustomField\ValueObjects\SystemCustomFields;
 use App\Infrastructure\Persistence\Eloquent\LeadModel;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -19,11 +20,7 @@ class SearchLeadsHandler
     public function handle(SearchLeadsQuery $query): Collection
     {
         $builder = LeadModel::query()
-            ->where(function ($q) use ($query) {
-                $q->where('name', 'like', "%{$query->term}%")
-                    ->orWhere('email', 'like', "%{$query->term}%")
-                    ->orWhere('phone', 'like', "%{$query->term}%");
-            });
+            ->searchInCustomFields($query->term, SystemCustomFields::getLeadSearchableFields());
 
         // Filtrar por usuario si es necesario
         if ($query->onlyOwn && $query->userUuid) {
