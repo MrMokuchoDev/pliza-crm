@@ -26,10 +26,12 @@ Route::prefix('v1')->group(function () {
     })->middleware('throttle:120,1')->name('api.sites.status');
 
     // Obtener custom fields para widgets - público, sin autenticación
+    // Solo trae campos obligatorios (incluye los de sistema)
     Route::get('/custom-fields/widget', function () {
         $fields = \Illuminate\Support\Facades\DB::table('custom_fields')
             ->where('entity_type', 'lead')
             ->where('is_active', 1)
+            ->where('is_required', 1)
             ->orderBy('order', 'asc')
             ->get(['id', 'name', 'label', 'type', 'is_required', 'validation_rules', 'default_value']);
 
