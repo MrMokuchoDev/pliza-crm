@@ -86,6 +86,7 @@
         color: customColor || typeColors[widgetType] || '#3B82F6',
         title: currentScript.getAttribute('data-title') || 'Contáctanos',
         buttonText: currentScript.getAttribute('data-button-text') || 'Enviar',
+        privacyPolicyUrl: currentScript.getAttribute('data-privacy-url') || '',
         // URLs para captura de leads (directa primero, proxy como fallback)
         apiUrlDirect: baseUrl + '/api/v1/leads/capture',
         apiUrlProxy: baseUrl + '/api-proxy.php?endpoint=leads/capture'
@@ -498,6 +499,26 @@
                 align-items: center !important;
                 cursor: pointer !important;
                 font-weight: normal !important;
+            }
+            /* Estilos para política de privacidad */
+            .mcw-privacy-group {
+                border-top: 1px solid #E5E7EB !important;
+                padding-top: 16px !important;
+                margin-top: 8px !important;
+            }
+            .mcw-privacy-label {
+                font-size: 13px !important;
+                line-height: 1.5 !important;
+                display: flex !important;
+                align-items: center !important;
+            }
+            .mcw-privacy-link {
+                color: var(--mcw-color) !important;
+                text-decoration: underline !important;
+                font-weight: 500 !important;
+            }
+            .mcw-privacy-link:hover {
+                text-decoration: none !important;
             }
             /* Estilos para multiselect */
             .mcw-form-group select[multiple] {
@@ -960,9 +981,21 @@
             `;
         }
 
+        // Checkbox de política de privacidad
+        const privacyCheckbox = cfg.privacyPolicyUrl ? `
+            <div class="mcw-form-group mcw-privacy-group">
+                <label class="mcw-privacy-label">
+                    <input type="checkbox" name="privacy_accepted" required>
+                    <span style="color: #374151 !important;">He leído y acepto la <a href="${cfg.privacyPolicyUrl}" target="_blank" rel="noopener noreferrer" class="mcw-privacy-link">política de privacidad</a> <span style="color: #EF4444 !important;">*</span></span>
+                </label>
+                <div class="mcw-error">Debes aceptar la política de privacidad</div>
+            </div>
+        ` : '';
+
         return `
             <form id="mcw-form">
                 ${fieldsHtml}
+                ${privacyCheckbox}
                 <button type="submit" class="mcw-btn-submit" style="background: ${cfg.color};">${cfg.buttonText}</button>
             </form>
         `;

@@ -41,6 +41,8 @@ class SiteIndex extends Component
 
     public string $widgetButtonText = 'Enviar';
 
+    public string $privacyPolicyUrl = '';
+
     public function mount(): void
     {
         // La verificación de acceso se hace en el middleware de la ruta
@@ -72,13 +74,41 @@ class SiteIndex extends Component
         return [
             'name' => 'required|string|max:255',
             'domain' => 'required|string|max:255',
+            'privacyPolicyUrl' => 'required|url|max:500',
             'defaultUserId' => 'nullable|exists:users,uuid',
             'widgetType' => 'required|in:whatsapp,phone,contact_form',
-            'widgetPhone' => 'nullable|string|max:50',
+            'widgetPhone' => 'required|string|max:50',
             'widgetPosition' => 'required|in:bottom-right,bottom-left,top-right,top-left',
             'widgetColor' => 'required|string|max:20',
-            'widgetTitle' => 'nullable|string|max:255',
-            'widgetButtonText' => 'nullable|string|max:100',
+            'widgetTitle' => 'required|string|max:255',
+            'widgetButtonText' => 'required|string|max:100',
+        ];
+    }
+
+    protected function validationAttributes(): array
+    {
+        return [
+            'name' => 'nombre del sitio',
+            'domain' => 'dominio',
+            'privacyPolicyUrl' => 'URL de política de privacidad',
+            'defaultUserId' => 'usuario por defecto',
+            'widgetType' => 'tipo de widget',
+            'widgetPhone' => 'teléfono del negocio',
+            'widgetPosition' => 'posición del widget',
+            'widgetColor' => 'color',
+            'widgetTitle' => 'título del modal',
+            'widgetButtonText' => 'texto del botón',
+        ];
+    }
+
+    protected function messages(): array
+    {
+        return [
+            'required' => 'El campo :attribute es obligatorio.',
+            'url' => 'El campo :attribute debe ser una URL válida.',
+            'max' => 'El campo :attribute no puede tener más de :max caracteres.',
+            'exists' => 'El :attribute seleccionado no es válido.',
+            'in' => 'El :attribute seleccionado no es válido.',
         ];
     }
 
@@ -112,6 +142,7 @@ class SiteIndex extends Component
             $this->domain = $site->domain;
             $this->isActive = $site->is_active;
             $this->defaultUserId = $site->default_user_id;
+            $this->privacyPolicyUrl = $site->privacy_policy_url ?? '';
 
             $settings = $site->settings ?? [];
             $this->widgetType = $settings['type'] ?? 'whatsapp';
@@ -163,19 +194,24 @@ class SiteIndex extends Component
             domain: $this->domain,
             isActive: $this->isActive,
             settings: $settings,
+            privacyPolicyUrl: $this->privacyPolicyUrl ?: null,
             defaultUserId: $this->defaultUserId ?: null,
             clearDefaultUser: empty($this->defaultUserId),
         );
 
-        if ($this->siteId) {
-            $service->update($this->siteId, $data);
-            $this->dispatch('notify', type: 'success', message: 'Sitio actualizado');
-        } else {
-            $service->create($data);
-            $this->dispatch('notify', type: 'success', message: 'Sitio creado');
-        }
+        try {
+            if ($this->siteId) {
+                $service->update($this->siteId, $data);
+                $this->dispatch('notify', type: 'success', message: 'Sitio actualizado');
+            } else {
+                $service->create($data);
+                $this->dispatch('notify', type: 'success', message: 'Sitio creado');
+            }
 
-        $this->closeModal();
+            $this->closeModal();
+        } catch (\InvalidArgumentException $e) {
+            $this->addError('privacyPolicyUrl', $e->getMessage());
+        }
     }
 
     public function closeModal(): void
@@ -283,6 +319,7 @@ class SiteIndex extends Component
         $position = $settings['position'] ?? 'bottom-right';
         $title = $settings['title'] ?? 'Contáctanos';
         $buttonText = $settings['button_text'] ?? 'Enviar';
+        $privacyUrl = $this->embedSite->privacy_policy_url ?? '';
 
         // Convertir caracteres especiales a entidades numéricas para evitar problemas de encoding
         $title = mb_encode_numericentity($title, [0x80, 0xFFFF, 0, 0xFFFF], 'UTF-8');
@@ -295,6 +332,11 @@ class SiteIndex extends Component
 
         if ($phone && in_array($this->selectedWidgetType, ['whatsapp', 'phone'])) {
             $attributes[] = "data-phone=\"{$phone}\"";
+        }
+
+        // Agregar URL de política de privacidad (requerido)
+        if ($privacyUrl) {
+            $attributes[] = "data-privacy-url=\"{$privacyUrl}\"";
         }
 
         $attributes[] = "data-position=\"{$position}\"";
@@ -313,6 +355,7 @@ class SiteIndex extends Component
         $this->name = '';
         $this->domain = '';
         $this->isActive = true;
+        $this->privacyPolicyUrl = '';
         $this->defaultUserId = null;
         $this->widgetType = 'whatsapp';
         $this->widgetPhone = '';
