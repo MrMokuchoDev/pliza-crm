@@ -16,6 +16,7 @@ final class Site
         public readonly string $apiKey,
         public readonly bool $isActive,
         public readonly ?array $settings,
+        public readonly ?string $privacyPolicyUrl,
         public readonly ?\DateTimeImmutable $createdAt = null,
     ) {}
 
@@ -26,6 +27,7 @@ final class Site
         string $apiKey,
         bool $isActive = true,
         ?array $settings = null,
+        ?string $privacyPolicyUrl = null,
     ): self {
         return new self(
             id: $id,
@@ -34,6 +36,7 @@ final class Site
             apiKey: $apiKey,
             isActive: $isActive,
             settings: $settings,
+            privacyPolicyUrl: $privacyPolicyUrl,
             createdAt: new \DateTimeImmutable(),
         );
     }
@@ -41,5 +44,15 @@ final class Site
     public function isEnabled(): bool
     {
         return $this->isActive;
+    }
+
+    public function hasPrivacyPolicy(): bool
+    {
+        return $this->privacyPolicyUrl !== null && $this->privacyPolicyUrl !== '';
+    }
+
+    public function canGenerateEmbedCode(): bool
+    {
+        return $this->isEnabled() && $this->hasPrivacyPolicy();
     }
 }

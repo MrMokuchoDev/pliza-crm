@@ -46,6 +46,28 @@ El uso de este software implica la aceptación de las siguientes limitaciones:
 - No garantizamos tiempos de respuesta específicos para la resolución de problemas
 - Las actualizaciones futuras pueden introducir cambios que requieran adaptación por parte del usuario
 
+#### 7. Cumplimiento de Protección de Datos y Privacidad
+- El software proporciona herramientas para recopilar datos personales mediante widgets embebibles
+- Es RESPONSABILIDAD EXCLUSIVA del usuario:
+  - Crear y publicar una política de privacidad válida según su jurisdicción
+  - Obtener consentimiento explícito de los usuarios antes de capturar datos personales
+  - Cumplir con regulaciones aplicables (GDPR, CCPA, LGPD, LOPD, Ley 1581 de 2012 en Colombia, etc.)
+  - Implementar medidas de seguridad adecuadas para proteger datos personales
+  - Gestionar los derechos de los interesados (acceso, rectificación, eliminación, portabilidad)
+  - Mantener registros de actividades de tratamiento de datos
+  - Designar un responsable de protección de datos si así lo requiere la legislación aplicable
+- El software exige configurar una URL de política de privacidad válida antes de generar códigos embed
+- La URL de política de privacidad debe pertenecer al mismo dominio del sitio donde se capturan los datos
+- El widget muestra automáticamente un checkbox obligatorio con enlace a la política configurada
+- El usuario debe asegurarse de que su política de privacidad cubre:
+  - Tipos de datos recopilados
+  - Finalidades del tratamiento
+  - Base legal del tratamiento
+  - Período de retención de datos
+  - Derechos de los interesados
+  - Transferencias internacionales de datos (si aplica)
+  - Información de contacto del responsable del tratamiento
+
 ### Recomendaciones
 
 Para minimizar riesgos, se recomienda:
@@ -101,6 +123,28 @@ Use of this software implies acceptance of the following limitations:
 - We do not guarantee specific response times for problem resolution
 - Future updates may introduce changes that require adaptation by the user
 
+#### 7. Data Protection and Privacy Compliance
+- The software provides tools to collect personal data through embeddable widgets
+- It is the user's EXCLUSIVE RESPONSIBILITY to:
+  - Create and publish a valid privacy policy according to their jurisdiction
+  - Obtain explicit consent from users before capturing personal data
+  - Comply with applicable regulations (GDPR, CCPA, LGPD, LOPD, Law 1581 of 2012 in Colombia, etc.)
+  - Implement adequate security measures to protect personal data
+  - Manage data subject rights (access, rectification, deletion, portability)
+  - Maintain records of data processing activities
+  - Appoint a data protection officer if required by applicable legislation
+- The software requires configuring a valid privacy policy URL before generating embed codes
+- The privacy policy URL must belong to the same domain as the site where data is captured
+- The widget automatically displays a mandatory checkbox with a link to the configured policy
+- The user must ensure their privacy policy covers:
+  - Types of data collected
+  - Processing purposes
+  - Legal basis for processing
+  - Data retention period
+  - Data subject rights
+  - International data transfers (if applicable)
+  - Contact information of the data controller
+
 ### Recommendations
 
 To minimize risks, we recommend:
@@ -114,4 +158,4 @@ To minimize risks, we recommend:
 
 ---
 
-**Última actualización:** 2025-01-01
+**Última actualización:** 2026-01-02

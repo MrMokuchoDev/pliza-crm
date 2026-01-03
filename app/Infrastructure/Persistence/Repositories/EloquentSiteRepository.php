@@ -59,6 +59,7 @@ class EloquentSiteRepository implements SiteRepositoryInterface
                 'api_key' => $site->apiKey,
                 'is_active' => $site->isActive,
                 'settings' => $site->settings,
+                'privacy_policy_url' => $site->privacyPolicyUrl,
                 'created_at' => $site->createdAt,
             ]
         );
@@ -87,6 +88,7 @@ class EloquentSiteRepository implements SiteRepositoryInterface
             apiKey: $model->api_key,
             isActive: $model->is_active,
             settings: $model->settings,
+            privacyPolicyUrl: $model->privacy_policy_url,
             createdAt: $model->created_at ? \DateTimeImmutable::createFromMutable($model->created_at->toDateTime()) : null,
         );
     }
