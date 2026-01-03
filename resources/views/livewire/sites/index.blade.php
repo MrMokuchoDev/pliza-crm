@@ -108,6 +108,7 @@
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
                                     </svg>
                                 </a>
+                                @if($site->privacy_policy_url)
                                 <button wire:click="openEmbedModal('{{ $site->id }}')"
                                         class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition flex items-center justify-center gap-1.5">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -115,6 +116,16 @@
                                     </svg>
                                     C&oacute;digo Embed
                                 </button>
+                                @else
+                                <button disabled
+                                        title="Configura una URL de pol&iacute;tica de privacidad para habilitar"
+                                        class="flex-1 bg-gray-400 dark:bg-gray-600 text-gray-200 dark:text-gray-400 px-3 py-2 rounded-lg text-sm font-medium cursor-not-allowed flex items-center justify-center gap-1.5">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                                    </svg>
+                                    Bloqueado
+                                </button>
+                                @endif
                                 @if(auth()->user()?->canUpdateSites())
                                 <button wire:click="openEditModal('{{ $site->id }}')"
                                         class="p-2 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 rounded-lg transition"
@@ -228,7 +239,10 @@
                                 <!-- Name & Domain en una fila -->
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Nombre del Sitio</label>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Nombre del Sitio
+                                            <span class="text-red-500">*</span>
+                                        </label>
                                         <input type="text"
                                                wire:model="name"
                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
@@ -236,13 +250,35 @@
                                         @error('name') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                     </div>
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Dominio</label>
+                                        <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                            Dominio
+                                            <span class="text-red-500">*</span>
+                                        </label>
                                         <input type="text"
                                                wire:model="domain"
                                                class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                                                placeholder="ejemplo.com">
                                         @error('domain') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                     </div>
+                                </div>
+
+                                <!-- Privacy Policy URL -->
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                        URL de Pol&iacute;tica de Privacidad
+                                        <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="url"
+                                           wire:model="privacyPolicyUrl"
+                                           class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                                           placeholder="https://ejemplo.com/privacidad">
+                                    <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                                        <svg class="w-3 h-3 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                        </svg>
+                                        Debe ser del mismo dominio configurado arriba. Requerido para generar c&oacute;digo embed.
+                                    </p>
+                                    @error('privacyPolicyUrl') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                 </div>
 
                                 <!-- Widget Settings -->
@@ -252,7 +288,10 @@
                                     <!-- Type & Phone en una fila -->
                                     <div class="grid grid-cols-2 gap-4 mb-4">
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tipo de Widget</label>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                Tipo de Widget
+                                                <span class="text-red-500">*</span>
+                                            </label>
                                             <select wire:model="widgetType"
                                                     class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100">
                                                 <option value="whatsapp">Bot&oacute;n WhatsApp</option>
@@ -261,11 +300,15 @@
                                             </select>
                                         </div>
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Tel&eacute;fono del Negocio</label>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                Tel&eacute;fono del Negocio
+                                                <span class="text-red-500">*</span>
+                                            </label>
                                             <input type="text"
                                                    wire:model="widgetPhone"
                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                                                    placeholder="+57 300 123 4567">
+                                            @error('widgetPhone') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                         </div>
                                     </div>
 
@@ -298,18 +341,26 @@
                                     <!-- Title & Button en una fila -->
                                     <div class="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">T&iacute;tulo del Modal</label>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                T&iacute;tulo del Modal
+                                                <span class="text-red-500">*</span>
+                                            </label>
                                             <input type="text"
                                                    wire:model="widgetTitle"
                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                                                    placeholder="Contactanos">
+                                            @error('widgetTitle') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                         </div>
                                         <div>
-                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Texto del Bot&oacute;n</label>
+                                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                                                Texto del Bot&oacute;n
+                                                <span class="text-red-500">*</span>
+                                            </label>
                                             <input type="text"
                                                    wire:model="widgetButtonText"
                                                    class="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                                                    placeholder="Enviar">
+                                            @error('widgetButtonText') <span class="text-red-500 text-xs mt-1">{{ $message }}</span> @enderror
                                         </div>
                                     </div>
                                 </div>

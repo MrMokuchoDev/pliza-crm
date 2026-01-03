@@ -31,6 +31,7 @@ class SiteModel extends Model
         'default_user_id',
         'round_robin_index',
         'settings',
+        'privacy_policy_url',
         'created_at',
     ];
 

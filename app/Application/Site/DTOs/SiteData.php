@@ -18,6 +18,7 @@ readonly class SiteData
         public ?string $defaultUserId = null,
         public bool $clearDefaultUser = false,
         public ?array $settings = null,
+        public ?string $privacyPolicyUrl = null,
     ) {}
 
     /**
@@ -34,6 +35,7 @@ readonly class SiteData
             defaultUserId: $data['default_user_id'] ?? null,
             clearDefaultUser: $data['clear_default_user'] ?? false,
             settings: $data['settings'] ?? null,
+            privacyPolicyUrl: $data['privacy_policy_url'] ?? null,
         );
     }
 
@@ -49,6 +51,7 @@ readonly class SiteData
             'api_key' => $this->apiKey,
             'is_active' => $this->isActive,
             'settings' => $this->settings,
+            'privacy_policy_url' => $this->privacyPolicyUrl,
         ], fn ($value) => $value !== null);
 
         // Para default_user_id, incluir explícitamente (puede ser null para quitar el usuario)
